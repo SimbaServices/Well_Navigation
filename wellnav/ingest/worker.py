@@ -9,6 +9,7 @@ from pathlib import Path
 from wellnav.gis import LAYER_SURFACE, LAYER_WELL_LOCATIONS, fetch_layer
 from wellnav.http_client import BlockedRequest
 from wellnav.ingest.classify import merge_county_features
+from wellnav.ingest.identity import fetch_county_identity, merge_identity
 from wellnav.states import DEFAULT_PERMIT_LIFETIME_DAYS, PERMIT_SYMNUMS
 
 
@@ -68,6 +69,9 @@ def _blocked(payload: dict, county_code: str, county_name: str, error: str, retr
         "attempt": int(payload.get("attempt") or 1),
         "default_features": 0,
         "surface_features": 0,
+        "identity_count": 0,
+        "identities": [],
+        "identity_only": bool(payload.get("identity_only")),
     }
 
 
@@ -77,7 +81,11 @@ def run_partition(payload: dict) -> dict:
     lifetime_days = int(payload.get("lifetime_days") or DEFAULT_PERMIT_LIFETIME_DAYS)
     delay = float(payload.get("delay") or 0.12)
     permit_only = bool(payload.get("permit_only"))
+    identity_only = bool(payload.get("identity_only"))
     try:
+        if identity_only:
+            return _run_identity(payload, county_code, county_name, delay)
+
         where = f"API LIKE '{county_code}%'"
         if permit_only:
             nums = ",".join(str(n) for n in sorted(PERMIT_SYMNUMS))
@@ -146,6 +154,14 @@ def run_partition(payload: dict) -> dict:
                     page.get("error") or "GIS surface layer blocked",
                     page.get("retry_after"),
                 )
+            scratch["surfaces_complete"] = True
+            scratch["surface_offset"] = page["offset"]
+
+        scratch["defaults"] = defaults
+        scratch["surfaces"] = surfaces
+        scratch["defaults_complete"] = True
+        if not permit_only:
+            scratch["surfaces_complete"] = True
 
         wells, permits = merge_county_features(
             defaults,
@@ -156,6 +172,9 @@ def run_partition(payload: dict) -> dict:
         )
         if permit_only:
             wells = []
+        identities = _pull_identity(payload, scratch, county_code, delay)
+        merge_identity(wells, identities)
+        merge_identity(permits, identities)
         _clear_scratch(payload)
         return {
             "county_code": county_code,
@@ -164,6 +183,9 @@ def run_partition(payload: dict) -> dict:
             "blocked": False,
             "wells": wells,
             "permits": permits,
+            "identities": identities,
+            "identity_count": len(identities),
+            "identity_only": False,
             "error": None,
             "attempt": int(payload.get("attempt") or 1),
             "default_features": len(defaults),
@@ -179,8 +201,53 @@ def run_partition(payload: dict) -> dict:
             "blocked": False,
             "wells": [],
             "permits": [],
+            "identities": [],
+            "identity_count": 0,
+            "identity_only": identity_only,
             "error": f"{exc}\n{traceback.format_exc()}",
             "attempt": int(payload.get("attempt") or 1),
             "default_features": 0,
             "surface_features": 0,
         }
+
+
+def _identity_scratch(scratch: dict) -> dict:
+    return {
+        "identity_wells": list(scratch.get("identity_wells") or []),
+        "identity_queue": scratch.get("identity_queue"),
+        "identity_seen_specs": list(scratch.get("identity_seen_specs") or []),
+        "identity_complete": bool(scratch.get("identity_complete")),
+    }
+
+
+def _pull_identity(payload: dict, scratch: dict, county_code: str, delay: float) -> list[dict]:
+    ident_state = _identity_scratch(scratch)
+    try:
+        result = fetch_county_identity(county_code, delay=delay, scratch=ident_state)
+    except BlockedRequest as exc:
+        merged = dict(scratch)
+        merged.update(ident_state)
+        _save_scratch(payload, merged)
+        raise exc
+    return list(result.get("wells") or [])
+
+
+def _run_identity(payload: dict, county_code: str, county_name: str, delay: float) -> dict:
+    scratch = _load_scratch(payload)
+    identities = _pull_identity(payload, scratch, county_code, delay)
+    _clear_scratch(payload)
+    return {
+        "county_code": county_code,
+        "county_name": county_name,
+        "ok": True,
+        "blocked": False,
+        "wells": [],
+        "permits": [],
+        "identities": identities,
+        "identity_count": len(identities),
+        "identity_only": True,
+        "error": None,
+        "attempt": int(payload.get("attempt") or 1),
+        "default_features": 0,
+        "surface_features": 0,
+    }
