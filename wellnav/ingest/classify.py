@@ -82,6 +82,7 @@ def build_record(
     now: str,
     expires_at: str,
     lifetime_days: int,
+    identity: dict | None = None,
 ) -> dict:
     default_attrs = _attrs(default_feat) if default_feat else {}
     surface_attrs = _attrs(surface_feat) if surface_feat else {}
@@ -112,7 +113,16 @@ def build_record(
         wellhead = _serialize_point(to_wgs84(float(lon83), float(lat83), "nad83"))
 
     county = county_name or TX_COUNTY_NAME.get(county_code, "")
-    well_name = f"{county} #{well_no}".strip(" #") if well_no else format_api(api8)
+    ident = identity or {}
+    ident_well_no = (ident.get("well_no") or "").strip()
+    ident_lease = (ident.get("lease_name") or "").strip()
+    well_no = ident_well_no or well_no
+    if ident.get("well_name"):
+        well_name = ident["well_name"]
+    elif ident_lease:
+        well_name = f"{ident_lease} #{well_no}".strip(" #") if well_no else ident_lease
+    else:
+        well_name = f"{county} #{well_no}".strip(" #") if well_no else format_api(api8)
 
     return {
         "bucket": bucket,
@@ -122,14 +132,14 @@ def build_record(
         "status": status,
         "well_name": well_name,
         "well_no": well_no,
-        "lease_name": "",
-        "lease_no": "",
-        "county": county,
+        "lease_name": ident_lease,
+        "lease_no": (ident.get("lease_no") or "").strip(),
+        "county": (ident.get("county") or "").strip() or county,
         "county_code": county_code,
-        "district": "",
-        "operator": "",
-        "operator_number": "",
-        "field": "",
+        "district": (ident.get("district") or "").strip(),
+        "operator": (ident.get("operator") or "").strip(),
+        "operator_number": (ident.get("operator_number") or "").strip(),
+        "field": (ident.get("field") or "").strip(),
         "well_type": symbol or "",
         "symbol": symbol,
         "symnum": symnum_i,
