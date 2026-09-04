@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import sqlite3
 
+from wellnav.ingest.classify import utcnow
 from wellnav.states import permits_table, wells_table
+
+IDENTITY_UPDATE_FIELDS = [
+    "well_name", "well_no", "lease_name", "lease_no",
+    "district", "operator", "operator_number", "field",
+]
 
 WELL_FIELDS = [
     "api", "api8", "well_name", "well_no", "lease_name", "lease_no", "county",
@@ -77,3 +83,50 @@ def upsert_permits(conn: sqlite3.Connection, state: str, rows: list[dict]) -> in
         payload.append(_values(item, PERMIT_FIELDS))
     conn.executemany(sql, payload)
     return len(rows)
+
+
+def update_identity(conn: sqlite3.Connection, state: str, rows: list[dict]) -> int:
+    """COALESCE identity onto existing wells/permits. Blanks do not wipe data."""
+    if not rows:
+        return 0
+    now = utcnow()
+    wtable = wells_table(state)
+    ptable = permits_table(state)
+    well_sql = f"""
+        UPDATE {wtable}
+        SET well_name=COALESCE(NULLIF(?, ''), well_name),
+            well_no=COALESCE(NULLIF(?, ''), well_no),
+            lease_name=COALESCE(NULLIF(?, ''), lease_name),
+            lease_no=COALESCE(NULLIF(?, ''), lease_no),
+            district=COALESCE(NULLIF(?, ''), district),
+            operator=COALESCE(NULLIF(?, ''), operator),
+            operator_number=COALESCE(NULLIF(?, ''), operator_number),
+            field=COALESCE(NULLIF(?, ''), field),
+            updated_at=?
+        WHERE api8=?
+    """
+    permit_sql = f"""
+        UPDATE {ptable}
+        SET well_name=COALESCE(NULLIF(?, ''), well_name),
+            well_no=COALESCE(NULLIF(?, ''), well_no),
+            lease_name=COALESCE(NULLIF(?, ''), lease_name),
+            lease_no=COALESCE(NULLIF(?, ''), lease_no),
+            district=COALESCE(NULLIF(?, ''), district),
+            operator=COALESCE(NULLIF(?, ''), operator),
+            operator_number=COALESCE(NULLIF(?, ''), operator_number),
+            updated_at=?
+        WHERE api8=? AND status NOT IN ('migrated')
+    """
+    updated = 0
+    for row in rows:
+        api8 = (row.get("api8") or row.get("api") or "")
+        if len(api8) > 8:
+            api8 = api8[-8:]
+        if len(api8) != 8:
+            continue
+        values = [row.get(name) or "" for name in IDENTITY_UPDATE_FIELDS]
+        wcur = conn.execute(well_sql, (*values, now, api8))
+        pcur = conn.execute(permit_sql, (*values[:-1], now, api8))
+        if wcur.rowcount or pcur.rowcount:
+            updated += 1
+    return updated

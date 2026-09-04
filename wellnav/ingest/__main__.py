@@ -22,6 +22,11 @@ def main(argv: list[str] | None = None) -> int:
     load.add_argument("--counties", nargs="*", help="Optional 3-digit county prefixes, e.g. 003 329")
     load.add_argument("--delay", type=float, default=0.15, help="Seconds between GIS requests (shared across workers)")
     load.add_argument("--max-retries", type=int, default=8, help="Re-queue a blocked partition this many times")
+    load.add_argument(
+        "--identity-only",
+        action="store_true",
+        help="Skip GIS; re-fetch EWA identity and COALESCE onto existing wells_tx/permits_tx rows",
+    )
 
     refresh = sub.add_parser("refresh-permits", help="Pull newly approved permitted locations")
     refresh.add_argument("--workers", type=int, default=6)
@@ -59,6 +64,7 @@ def main(argv: list[str] | None = None) -> int:
             counties=args.counties,
             delay=args.delay,
             max_retries=args.max_retries,
+            identity_only=args.identity_only,
         )
         print(stats)
         return 0 if stats["status"] == "ok" else 1
