@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Wellbore Query Results</title></head>
+  <body>
+    <table class="DataGrid" border="1">
+      <tr>
+        <td colspan="8" height="25" class="PagerBanner">
+          <table><tr><td>1 - 4 of 100 results</td></tr></table>
+        </td>
+      </tr>
+      <tr>
+        <th><a href="Javascript:doSort('API_NO','ASC')">API No.</a></th>
+        <th><a href="Javascript:doSort('DISTRICT_CODE','ASC')">District</a></th>
+        <th><a href="Javascript:doSort('LEASE_NUMBER','ASC')">Lease No.</a></th>
+        <th><a href="Javascript:doSort('LEASE_NAME','ASC')">Lease Name</a></th>
+        <th><a href="Javascript:doSort('WELL_NO','ASC')">Well No.</a></th>
+        <th><a href="Javascript:doSort('FIELD_NAME','ASC')">Field Name</a></th>
+        <th><a href="Javascript:doSort('OPERATOR_NAME','ASC')">Operator Name</a></th>
+        <th><a href="Javascript:doSort('COUNTY_NAME','ASC')">County</a></th>
+      </tr>
+
+      <!-- Live EWA shape: nested API/lease tables + field link after lease/well tds -->
+      <tr>
+        <td>
+          <table>
+            <tr>
+              <td width="50%">
+                <a href="leaseDetailAction.do?searchType=apiNo&amp;apiNo=00300290&amp;distCode=08&amp;leaseNo=39306&amp;methodToCall=displayLeaseDetail" title="Lease detail for API number 00300290">00300290</a>
+              </td>
+              <td>
+                <select id="apiRelatedLinks:00300290"><option>Links</option></select>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          <a href="wellboreByDistrictQueryAction.do?methodToCall=search&amp;district=08">08</a>
+        </td>
+        <td>
+          <table>
+            <tr>
+              <td>
+                <a href="leaseDetailAction.do?searchType=distLease&amp;distCode=08&amp;leaseNo=39306&amp;methodToCall=displayLeaseDetail">39306</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td>UNIVERSITY 11 SEC 1</td>
+        <td>2A</td>
+        <td>
+          <a href="wellboreByFieldQueryAction.do?methodToCall=search&amp;field=57774584" title="Field # 57774584">MARTIN (SECOND SIMPSON SD.)</a>
+        </td>
+        <td>
+          <a href="wellboreByOperatorQueryAction.do?methodToCall=search&amp;operator=103869" title="Operator # 103869">OXY USA EOR, LLC</a>
+        </td>
+        <td>
+          <a href="wellboreByCountyQueryAction.do?methodToCall=search&amp;county=003" title="County # 003">ANDREWS</a>
+        </td>
+      </tr>
+
+      <!-- Title attribute first (old Operator/County regex required title immediately before >).
+           Field is plain text so LEASE_NAME_WELL misses. Identity lives in td text. -->
+      <tr>
+        <td>
+          <a href="leaseDetailAction.do?searchType=apiNo&amp;apiNo=00112345&amp;selTab=1">00112345</a>
+        </td>
+        <td>05</td>
+        <td>18801</td>
+        <td>ANDERSON FALLBACK UNIT</td>
+        <td>14H</td>
+        <td>CARTHAGE (COTTON VALLEY)</td>
+        <td>
+          <a title="Operator # 630591" href="wellboreByOperatorQueryAction.do?methodToCall=search&amp;operator=630591">OXY USA INC.</a>
+        </td>
+        <td>ANDERSON</td>
+      </tr>
+
+      <!-- API href only; no lease/operator/district links. Must still emit the row. -->
+      <tr>
+        <td><a href="leaseDetailAction.do?searchType=apiNo&amp;apiNo=00100001">00100001</a></td>
+        <td>7B</td>
+        <td>77</td>
+        <td>API ONLY LEASE</td>
+        <td>3</td>
+        <td></td>
+        <td>NO LINK OPERATOR LLC</td>
+        <td>ANDERSON</td>
+      </tr>
+
+      <!-- td class wrappers + lease name longer than the old 80-char regex cap -->
+      <tr>
+        <td class="num"><a href="x.do?apiNo=00100002">00100002</a></td>
+        <td class="num">06</td>
+        <td class="num">55555</td>
+        <td class="name">UNIVERSITY 11 SEC 1 WITH A VERY LONG NAME THAT EXCEEDS EIGHTY CHARACTERS FOR THE OLD REGEX LIMIT XYZ</td>
+        <td class="num">2A</td>
+        <td class="name">MARTIN</td>
+        <td class="name">OXY USA WTP LP</td>
+        <td class="name">ANDREWS</td>
+      </tr>
+    </table>
+  </body>
+</html>
