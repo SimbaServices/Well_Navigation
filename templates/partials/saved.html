@@ -1,0 +1,44 @@
+<div class="result-head">
+  <div>
+    <h2>Saved wells</h2>
+    <p class="muted">{{ wells|length }} well{{ "s" if wells|length != 1 else "" }} on your account</p>
+  </div>
+</div>
+
+{% if wells %}
+  <div class="table-wrap">
+    <table class="wells">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Well name</th>
+          <th>API</th>
+          <th>Lease</th>
+          <th>County</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for well in wells %}
+          <tr class="well-row">
+            <td class="save-cell">{% with variant='saved' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
+            <td>
+              <a class="well-name-link"
+                 href="{{ well_href(well) }}"
+                 hx-get="{{ well_href(well) }}"
+                 hx-target="#map-panel"
+                 hx-push-url="true"
+                 hx-indicator="#spinner">
+                {{ well.well_name }}
+              </a>
+            </td>
+            <td class="mono">{{ well.api_display }}</td>
+            <td>{{ well.lease_name }}</td>
+            <td>{{ well.county }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">No saved wells yet. Open a well and press Save.</div>
+{% endif %}

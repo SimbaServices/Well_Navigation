@@ -1,0 +1,52 @@
+#cloud-config
+# Well Navigation — Hetzner CX23+ initial server config.
+# Paste this into the Cloud config box when creating the server.
+# After Graphs CPU usage drops to zero:
+#   ssh -p 2222 wellnav@<ip_address>
+
+timezone: America/Chicago
+
+users:
+  - name: wellnav
+    groups: users, sudo, admin, docker
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKOBF/orsSQUSoeJhlN9XhS5/MNstJOraMD9HXyQ43VW samwayneparker@gmail.com
+
+packages:
+  - fail2ban
+  - ufw
+  - git
+  - curl
+  - nginx
+  - docker.io
+  - docker-compose-v2
+package_update: true
+package_upgrade: true
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/ssh-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      Port 2222
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      MaxAuthTries 2
+      AllowTcpForwarding no
+      X11Forwarding no
+      AllowAgentForwarding no
+      AuthorizedKeysFile .ssh/authorized_keys
+      AllowUsers wellnav
+
+runcmd:
+  - printf "[sshd]\nenabled = true\nport = ssh, 2222\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - systemctl enable fail2ban
+  - systemctl enable docker
+  - ufw allow 2222/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - reboot

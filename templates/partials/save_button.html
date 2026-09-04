@@ -1,0 +1,33 @@
+{% if user %}
+  <form class="save-form"
+        action="/saved/{{ well.api }}"
+        method="post"
+        hx-post="/saved/{{ well.api }}"
+        {% if variant == 'saved' %}
+        hx-target="#results"
+        hx-swap="innerHTML"
+        {% else %}
+        hx-target="this"
+        hx-swap="outerHTML"
+        {% endif %}
+        hx-disabled-elt="find .save-btn">
+    <input type="hidden" name="name" value="{{ well.well_name or '' }}">
+    <input type="hidden" name="well_no" value="{{ well.well_no or '' }}">
+    <input type="hidden" name="lease" value="{{ well.lease_name or '' }}">
+    <input type="hidden" name="county" value="{{ well.county or '' }}">
+    <input type="hidden" name="operator" value="{{ well.operator or '' }}">
+    <input type="hidden" name="variant" value="{{ variant or 'row' }}">
+    {% if well.api in saved_apis %}
+      <button type="submit" class="save-btn on" title="Remove from saved wells" aria-pressed="true">★ Saved</button>
+    {% else %}
+      <button type="submit" class="save-btn" title="Save this well" aria-pressed="false">☆ Save</button>
+    {% endif %}
+  </form>
+{% else %}
+  <a class="save-btn"
+     href="/login?next=/well/{{ well.api }}"
+     hx-get="/login?next=/well/{{ well.api }}"
+     hx-target="#results"
+     hx-push-url="true"
+     title="Sign in to save wells">☆ Save</a>
+{% endif %}

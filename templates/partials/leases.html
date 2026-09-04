@@ -1,0 +1,23 @@
+<div class="result-head">
+  <h2>Matching leases</h2>
+  <p class="muted">{{ leases|length }} names for “{{ query }}”. Choose one to list wells.</p>
+</div>
+<ul class="lease-list">
+  {% for lease in leases %}
+    <li>
+      <form action="/search" method="get"
+            hx-get="/search" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
+        <input type="hidden" name="mode" value="name">
+        <input type="hidden" name="q" value="{{ lease.name }}">
+        <input type="hidden" name="lease_no" value="{{ lease.lease_no }}">
+        <input type="hidden" name="district" value="{{ lease.district }}">
+        <input type="hidden" name="lease_type" value="{{ 'O' if lease.kind == 'Oil' else 'G' if lease.kind == 'Gas' else '' }}">
+        <input type="hidden" name="offset" value="0">
+        <button type="submit" class="lease-item">
+          <strong>{{ lease.name }}</strong>
+          <span class="muted">{{ lease.kind or "Lease" }} {{ lease.lease_no }}{% if lease.district %} · Dist {{ lease.district }}{% endif %}</span>
+        </button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>

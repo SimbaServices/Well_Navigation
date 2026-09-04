@@ -1,0 +1,82 @@
+<div class="map-chrome">
+  <div class="map-head">
+    <div>
+      <h2>{{ well.well_name }}</h2>
+      <p class="muted">
+        {{ well.api_display }}
+        {% if well.lease_name %} · {{ well.lease_name }}{% endif %}
+        {% if well.county %} · {{ well.county }} County{% endif %}
+        {% if well.operator %} · {{ well.operator }}{% endif %}
+      </p>
+    </div>
+    <div class="map-actions">
+      {% with variant='detail' %}{% include 'partials/save_button.html' %}{% endwith %}
+      <label class="basemap-picker">
+        Base layer
+        <select id="basemap-select" hx-on:change="setBasemap(this.value)">
+          <option value="imagery">Esri Imagery</option>
+          <option value="streets">Esri Streets</option>
+          <option value="topo">Esri Topo</option>
+          <option value="osm">OpenStreetMap</option>
+          <option value="usgs">USGS Topo</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  {% if location.found and location.wellhead %}
+    <div id="well-map"
+         class="well-map"
+         data-lat="{{ location.wellhead.lat }}"
+         data-lon="{{ location.wellhead.lon }}"
+         data-label="{{ well.well_name }}"
+         {% if location.toe %}
+         data-toe-lat="{{ location.toe.lat }}"
+         data-toe-lon="{{ location.toe.lon }}"
+         {% endif %}></div>
+
+    <div class="coord-grid">
+      <article>
+        <h3>Wellhead (pin)</h3>
+        <p class="mono">{{ "%.6f"|format(location.wellhead.lat) }}, {{ "%.6f"|format(location.wellhead.lon) }}</p>
+        <p class="muted">WGS84 · from {{ location.wellhead.source_label }}</p>
+      </article>
+      {% if location.toe %}
+        <article>
+          <h3>Toe / bottom hole</h3>
+          <p class="mono">{{ "%.6f"|format(location.toe.lat) }}, {{ "%.6f"|format(location.toe.lon) }}</p>
+          <p class="muted">RRC default mapped point · {{ location.toe.source_label }}</p>
+        </article>
+      {% else %}
+        <article>
+          <h3>Profile</h3>
+          <p>{{ location.symbol or "Vertical / coincident surface-bottom" }}</p>
+          <p class="muted">{{ location.kind.replace("_", " ") }}</p>
+        </article>
+      {% endif %}
+    </div>
+    <p class="note">{{ location.note }}{% if location.from_cache %} <span class="pill">cached</span>{% endif %}</p>
+    {% if location.location_source %}
+      <p class="muted">GIS source: {{ location.location_source }}</p>
+    {% endif %}
+
+    <div class="route-row">
+      <a class="route apple"
+         target="_blank"
+         rel="noopener"
+         href="https://maps.apple.com/?daddr={{ location.wellhead.lat }},{{ location.wellhead.lon }}">
+        Route in Apple Maps
+      </a>
+      <a class="route google"
+         target="_blank"
+         rel="noopener"
+         href="https://www.google.com/maps/dir/?api=1&destination={{ location.wellhead.lat }},{{ location.wellhead.lon }}">
+        Route in Google Maps
+      </a>
+    </div>
+  {% else %}
+    <div class="empty">
+      {{ location.note or "No wellhead coordinates were returned from RRC GIS." }}
+    </div>
+  {% endif %}
+</div>

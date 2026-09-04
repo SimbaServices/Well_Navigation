@@ -1,0 +1,30 @@
+<div class="auth-card">
+  <h2>Sign in</h2>
+  <p class="muted">Your saved wells and lookup cache stay on this server, keyed to your account.</p>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  <form class="auth-form"
+        action="/login"
+        method="post"
+        hx-post="/login"
+        hx-target="#results"
+        hx-push-url="false"
+        hx-disabled-elt="find .primary">
+    <input type="hidden" name="next" value="{{ next_path or '/' }}">
+    <label>
+      Username
+      <input name="username" autocomplete="username" required value="{{ username or '' }}">
+    </label>
+    <label>
+      Password
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit" class="primary">Sign in</button>
+  </form>
+  <p class="hint">
+    Need an account?
+    <a href="/register" class="text-link"
+       hx-get="/register" hx-target="#results" hx-push-url="true">Create one</a>
+  </p>
+</div>

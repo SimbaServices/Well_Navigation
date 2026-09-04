@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+rrc_cookies.txt
+lease_cookies.txt
+lease_form.html
+lease_form2.html
+lease_result.html
+wellbore_form.html
+wellbore_api_result.html
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.log
+data/.session_secret
+data/ingest_scratch/

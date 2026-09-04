@@ -1,0 +1,68 @@
+<div class="result-head">
+  <div>
+    <h2>Your lookup cache</h2>
+    <p class="muted">
+      {{ stats.entries }} entries · {{ stats.hits }} hits · {{ '%.1f'|format(stats.bytes / 1024) }} KB.
+      Local SQLite searches, operator matches, and wellhead locations from your account are stored here.
+    </p>
+  </div>
+</div>
+
+<div class="account-actions cache-actions">
+  <form action="/cache/purge" method="post" hx-post="/cache/purge" hx-target="#results">
+    <button type="submit" class="ghost">Purge expired</button>
+  </form>
+  <form action="/cache/clear" method="post" hx-post="/cache/clear" hx-target="#results">
+    <input type="hidden" name="kind" value="search">
+    <button type="submit" class="ghost">Clear searches</button>
+  </form>
+  <form action="/cache/clear" method="post" hx-post="/cache/clear" hx-target="#results">
+    <input type="hidden" name="kind" value="location">
+    <button type="submit" class="ghost">Clear locations</button>
+  </form>
+  <form action="/cache/clear" method="post"
+        hx-post="/cache/clear"
+        hx-target="#results"
+        hx-confirm="Clear your entire lookup cache?">
+    <button type="submit" class="ghost danger-text">Clear all</button>
+  </form>
+</div>
+
+{% if entries %}
+  <div class="table-wrap">
+    <table class="wells cache-table">
+      <thead>
+        <tr>
+          <th>Kind</th>
+          <th>Key</th>
+          <th>Hits</th>
+          <th>Size</th>
+          <th>Last used</th>
+          <th>Expires</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+          <tr>
+            <td><span class="pill">{{ entry.kind }}</span></td>
+            <td class="mono cache-key" title="{{ entry.cache_key }}">{{ entry.cache_key }}</td>
+            <td>{{ entry.hits }}</td>
+            <td>{{ entry.bytes }} B</td>
+            <td class="muted">{{ entry.last_hit_at.replace('T', ' ') }}</td>
+            <td class="muted">{{ entry.expires_at.replace('T', ' ') }}</td>
+            <td>
+              <form action="/cache/{{ entry.id }}/delete" method="post"
+                    hx-post="/cache/{{ entry.id }}/delete"
+                    hx-target="#results">
+                <button type="submit" class="ghost">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">No cached lookups yet. Search or open a well while signed in and the local SQLite result is stored for you.</div>
+{% endif %}

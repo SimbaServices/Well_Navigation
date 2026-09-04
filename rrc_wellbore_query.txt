@@ -1,0 +1,2391 @@
+fetch("https://webapps2.rrc.texas.gov/EWA/wellboreQueryAction.do", {
+  "headers": {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "max-age=0",
+    "content-type": "application/x-www-form-urlencoded",
+    "sec-ch-ua": "\"Chromium\";v=\"152\", \"Not?A_Brand\";v=\"24\", \"Google Chrome\";v=\"152\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1"
+  },
+  "referrer": "https://webapps2.rrc.texas.gov/EWA/operatorQueryAction.do?methodToCall=selectOperators",
+  "body": "methodToCall=search&searchArgs.fieldNumbersArg=&searchArgs.operatorNumbersArg=103869%2C103919%2C630555%2C630591&searchArgs.leaseTypeArg=&searchArgs.districtCodeArg=None+Selected&searchArgs.leaseNumberArg=&searchArgs.wellTypeArg=None+Selected&searchArgs.countyCodeArg=None+Selected&operatorNames=630591+-+OXY+USA+INC.&searchArgs.drillingPermitArg=&searchArgs.apiNoPrefixArg=&searchArgs.apiNoSuffixArg=&searchArgs.scheduleTypeArg=Y",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+
+
+
+
+
+
+
+
+
+
+
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8;"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=5, IE=8, IE=9, IE=10" />
+    <link rel="stylesheet" type="text/css" href="/EWA/styles/ogm_style3.css">
+
+    <script type="text/javascript">
+      var dojoConfig = {
+      parseOnLoad: true,
+      isDebug: false,
+
+      has: {
+      "dojo-debug-messages": false
+      },
+
+      packages:
+       [ { name:"rrcGisModules", location:location.pathname.replace(/\/[^/]+$/, '') + '/gis/javascript'} ]
+
+      };
+    </script>
+
+    <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=3.3compact"></script>
+    <script type="text/javascript"> 
+      require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dojo/query", 
+               "dojo/dom-construct", "dojo/NodeList-manipulate", "dojo/dom-attr", "dojo/dom",
+               "dojo/_base/connect", "dojo/_base/event"]);
+    </script>
+
+    <title>Wellbore Query Results</title>
+  </head>
+
+  <body>
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr><td>
+
+
+
+
+
+<script type="text/javascript">
+function openHelp(obj) {
+
+  var help = '/EWA/help/' + obj;
+  //alert(help+', '+obj);
+
+  hold = window.open(help, 'popupWindow',
+                     'resizable=yes,menubar=yes,scrollbars=yes,width=500,height=400,x=1,y=1,screenx=1,screeny=1');
+  hold.focus();
+  return false;
+}
+</script>
+
+<!-- System Header -->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td class="MainHeader"><img src="/EWA/commonuiImages/rrc_online_header.gif"></td>
+    <td class="MainHeader" align="right" nowrap>&nbsp;</td>
+    <td class="MainHeader"><img src="/EWA/commonuiImages/spacer.gif"></td>
+  </tr>
+  <tr><td colspan="3" style="height: 3px;" class="BorderLines"/></tr>
+</table>
+
+<!--Application Header-->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr> 
+    <td class="AppHeader"><img src="/EWA/commonuiImages/spacer.gif"></td>
+    <td class="AppHeader">Oil & Gas Data Query</td>
+  </tr>
+</table>
+
+<!-- Top Nav Level 2 -->
+<!--Navigation Table Level 2 and 3 -->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr><td colspan="2" style="height: 2px;" class="BorderLines"/></tr>
+  <!--Level 2 navigation row-->
+  <tr>
+    <td class="AppNavMain" width="1%"><img src="/EWA/commonuiImages/spacer.gif" height="1px"></td>
+    <td class="AppNavMain">
+      <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <!-- Main -->
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <td class="AppNavMainSelected">
+            <a href="/EWA/ewaMain.do">Query Menu</a>
+          </td>
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <!--Help-->
+          <td class="AppNavMain">
+            
+            <a href="#" onclick="openHelp('Wellbore_TOC.html');">Help</a>
+          </td>
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <!--Help END-->
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr><td colspan="2" style="height: 1px;" class="BorderLines"/></tr>
+</table>
+
+</td></tr>
+    </table>
+
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr valign="top">
+        <td style="width: 100%;" class="ContentArea">
+          <span id="messageArea">
+
+
+
+
+
+<!-- /tiles/messages.jsp BEGIN -->
+
+
+
+
+<!-- /tiles/messages.jsp END -->
+</span>
+          
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/EWA/js/ewaPageUtils.js">
+</script>
+
+
+
+<script>
+  function doSearch(){
+    document.forms["wellboreQueryActionForm"].elements["methodToCall"].value = "search";
+    document.forms["wellboreQueryActionForm"].submit();
+  }
+
+  function doSort(columnName, direction) {
+    ewaDoSort(document.forms["wellboreQueryActionForm"], "searchArgs", columnName, direction);
+  }
+
+function generateWellboreCriteriaReportCsv() {
+    document.forms["wellboreQueryActionForm"].methodToCall.value = 
+        "generateWellboreCriteriaReportCsv";
+    document.forms["wellboreQueryActionForm"].submit();
+}
+</script>
+
+<!--Content Area-->
+<form name="wellboreQueryActionForm" method="post" action="/EWA/wellboreQueryAction.do">
+
+  <input type="hidden" name="searchArgs.orderByColumnName" value="">
+  
+    <input type="hidden" name="searchArgs.countyCodeArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.drillingPermitArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.apiNoPrefixArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.apiNoSuffixArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.scheduleTypeArgHndlr.inputValue" value="Y">
+    <input type="hidden" name="searchArgs.wellTypeArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.orderByHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.leaseTypeArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.districtCodeArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.leaseNumberArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.fieldNumbersArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.operatorNumbersArgHndlr.inputValue" value="103869,103919,630555,630591">
+
+  
+    
+  
+
+
+
+
+
+
+
+
+  
+
+  
+    <input type="hidden" name="methodToCall" value="search">
+  
+
+  
+
+
+
+  <input type="hidden" name="actionManager.recordCountHndlr.inputValue" value="2">
+  <input type="hidden" name="actionManager.currentIndexHndlr.inputValue" value="1">
+
+  
+    <input type="hidden" name="actionManager.actionRcrd[0].actionDisplayNmHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].hostHndlr.inputValue" value="webapps2.rrc.texas.gov:443">
+    <input type="hidden" name="actionManager.actionRcrd[0].contextPathHndlr.inputValue" value="/EWA">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionHndlr.inputValue" value="/wellboreQueryAction.do">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionParameterHndlr.inputValue" value="methodToCall">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionMethodHndlr.inputValue" value="returnToSearch">
+    <input type="hidden" name="actionManager.actionRcrd[0].pagerParameterKeyHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionParametersHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].returnIndexHndlr.inputValue" value="0">
+  
+    <input type="hidden" name="actionManager.actionRcrd[0].argRcrdParameters(searchArgs.paramValue)" value="|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP">
+
+  
+    <input type="hidden" name="actionManager.actionRcrd[1].actionDisplayNmHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[1].hostHndlr.inputValue" value="webapps2.rrc.texas.gov:443">
+    <input type="hidden" name="actionManager.actionRcrd[1].contextPathHndlr.inputValue" value="/EWA">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionHndlr.inputValue" value="/wellboreQueryAction.do">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionParameterHndlr.inputValue" value="methodToCall">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionMethodHndlr.inputValue" value="search">
+    <input type="hidden" name="actionManager.actionRcrd[1].pagerParameterKeyHndlr.inputValue" value="wellborePager.paramValue">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionParametersHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[1].returnIndexHndlr.inputValue" value="0">
+  
+    <input type="hidden" name="actionManager.actionRcrd[1].argRcrdParameters(searchArgs.paramValue)" value="|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP">
+    <input type="hidden" name="actionManager.actionRcrd[1].argRcrdParameters(wellborePager.paramValue)" value="|1=1|2=10|3=4594|4=0|5=460|6=10">
+
+
+
+
+  <table class="ewaPage">
+    <tr>
+      <td>
+        <h2 class="style5">Wellbore Query Results</h2>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <table class="TabBox2" cellspacing="0" cellpadding="4" border="0">
+          <tr>
+            <td>
+              <table style="white-space: nowrap; width:99%; margin: auto;">
+                <tr>
+                  <td>
+                    <p><b>Search Criteria:</b></p>
+                    <p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <strong>Operator(s):</strong>
+  OXY USA EOR, LLC;   OXY USA INC.;   OXY USA WTP EOR, LLC;   OXY USA WTP LP
+  <br>
+
+
+
+
+
+
+
+  <strong>Schedule Type:</strong>
+  
+  
+  Current
+  <br>
+
+
+
+
+</p>
+                  </td>
+                  <td valign="bottom">
+                    <input type="button" name="unused" value="Return" onclick="returnToCaller('/EWA/wellboreQueryAction.do?methodToCall=returnToSearch&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAAHWPQUvDMBSAf029BELStHU9vEMsE4Ti5ladY3jI2scmZEt5bZ3CfryvUw-C3j6-7yV5OWulQJ-10qCuiGpb96_huKip2agXuPgTbl3bdrHkLHt8d53chbfI2CQxPBBDFN9OV5bRjHhC77eB8GFA-vi6TjaBawIH7PehqULhvGeRAmE_0LEKS3RU71lN_thi012qpV0nW0fu8OT8gLxcDms-kgE_PMnyKC4Ycj1CZlSapt-Qj9-7htnzWjwurZjOFhxEWRaRuRFC_Pi7-0L-Nqtq_u_02Mr5J9nLm50-AQAA');" style="float: right;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr><td>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table style="white-space: normal; width:98%; text-align: center; margin: auto;" 
+       class="DataGrid" border="1" cellpadding="4" cellspacing="0" bordercolor="#666666">
+  <tr>
+    <td colspan="10" height="25" class="PagerBanner">
+      
+        
+      
+
+
+
+
+
+
+
+
+
+
+
+
+  <table style="width:100%; white-space: nowrap;">
+    <tr>
+      <td style="text-align: left; border-style:none; font-weight: bold">
+        1 - 10 of 4594 results
+      </td>
+      <td style="text-align: center; border-style:none;">
+        
+          
+
+            
+            <!-- Add pager control links -->  
+            
+              
+                [&lt;&lt;First][&lt;Previous]
+              
+              
+            
+            
+              
+              
+                <!-- Next page link -->  
+                <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=10&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">[Next&gt]</a>
+
+                <!-- Last page link -->  
+                <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=4590&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">[Last&gt;&gt;]</a>
+              
+            
+
+            &nbsp; | &nbsp; Page: &nbsp;
+
+            <!-- Page index links -->  
+            
+              
+                
+                  <b>1</b>
+                
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=10&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">2</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=20&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">3</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=30&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">4</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=40&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">5</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=50&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">6</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=60&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">7</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=70&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">8</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=80&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">9</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=90&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">10</a>
+                
+              
+            
+
+            &nbsp; of &nbsp;
+
+            
+              
+              
+                <a href="/EWA/wellboreQueryAction.do?pager.pageSize=10&pager.offset=4590&methodToCall=search&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">460</a>
+              
+            
+
+          
+        
+      </td>
+
+      <!-- Page size control -->  
+      <td style="text-align: right; border-style:none;">
+        <label>
+          Page Size:
+          <select name="pager.pageSize" onchange="doSearch()"><option value="-1">View All</option>
+<option value="5">5</option>
+<option value="10" selected="selected">10</option>
+<option value="20">20</option>
+<option value="25">25</option>
+<option value="50">50</option>
+<option value="100">100</option></select>
+        </label>
+      </td>
+
+    </tr>
+  </table>
+
+
+
+    </td>
+  </tr>
+
+  <tr>
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('API_NO','ASC')">API No.</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('DISTRICT_CODE','ASC')">District</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('LEASE_NUMBER','ASC')">Lease No.</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('LEASE_NAME','ASC')">Lease Name</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('WELL_NO','ASC')">Well No.</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('FIELD_NAME','ASC')">Field Name</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('OPERATOR_NAME','ASC')">Operator Name</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('COUNTY_NAME','ASC')">County</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('ON_SCHEDULE','ASC')">On Schedule</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('API_DEPTH','ASC')">API Depth</a>
+
+  
+
+</th>
+
+
+  </tr>
+
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00300290&distCode=08&leaseNo=39306&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00300290">00300290</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00300290"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00300290&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00300290&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00300290&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=39306&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 39306">39306</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=39306&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>UNIVERSITY 11 SEC 1</td>
+      <td>2A</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=57774584&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 57774584">MARTIN (SECOND SIMPSON SD.)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=103869&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 103869">OXY USA EOR, LLC</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8923</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00300771&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00300771">00300771</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00300771"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00300771&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00300771&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00300771&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 11267">11267</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=11267&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>104W</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188400&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188400">DOLLARHIDE (DEVONIAN)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8100</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00300871&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00300871">00300871</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00300871"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00300871&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00300871&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00300871&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 32853">32853</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=32853&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>108WC</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188200&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188200">DOLLARHIDE (CLEAR FORK)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8470</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00300872&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00300872">00300872</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00300872"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00300872&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00300872&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00300872&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 32853">32853</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=32853&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>313</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188200&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188200">DOLLARHIDE (CLEAR FORK)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8498</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301973&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301973">00301973</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301973"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301973&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301973&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301973&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 32853">32853</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=32853&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>101WC</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188200&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188200">DOLLARHIDE (CLEAR FORK)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8792</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301976&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301976">00301976</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301976"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301976&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301976&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301976&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 11267">11267</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=11267&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>401D</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188400&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188400">DOLLARHIDE (DEVONIAN)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8103</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301977&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301977">00301977</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301977"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301977&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301977&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301977&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 11267">11267</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=11267&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>501WD</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188400&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188400">DOLLARHIDE (DEVONIAN)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8373</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301978&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301978">00301978</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301978"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301978&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301978&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301978&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 11267">11267</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=11267&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>601</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188400&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188400">DOLLARHIDE (DEVONIAN)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8293</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301979&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301979">00301979</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301979"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301979&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301979&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301979&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=11267&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 11267">11267</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=11267&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>801WD</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188400&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188400">DOLLARHIDE (DEVONIAN)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8476</td>
+    </tr>
+  
+    
+    <tr>    
+      <td>  
+        
+          
+
+          
+            
+              
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=apiNo&selTab=1&apiNo=00301981&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for API number 00301981">00301981</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="apiRelatedLinks:00301981"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;api_no=00301981&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option>
+<option value="{&quot;url&quot;: &quot;https://gis.rrc.texas.gov/GISViewer/index.html?api=00301981&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">GIS Viewer</option>
+<option value="{&quot;url&quot;: &quot;https://webapps.rrc.texas.gov/CMPL/ewaSearchAction.do?methodToCall=searchByApiNo&amp;apiNo=00301981&amp;relatedLink=Y&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: false}">Completion</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByDistrictQueryAction.do?methodToCall=search&district=08&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA">08</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+           
+            
+              
+              
+              
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <table>
+    <tr>
+      <td width="50%">
+        
+
+        <a href="leaseDetailAction.do?searchType=distLease&selTab=1&distCode=08&leaseNo=32853&methodToCall=displayLeaseDetail&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Lease detail for district 08 and lease number 32853">32853</a>
+      </td>
+
+      <td>
+        <select name="propertyValue" onchange="gotoRelatedLink(this.value)" id="distLeaseRelatedLinks:_"><option value="" selected="selected">Links</option>
+          <option value="{&quot;url&quot;: &quot;https://rrcsearch3.neubus.com/esd3-rrc/api.php?function=GetImage&amp;district=08&amp;lease_id=32853&amp;rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA&quot;, &quot;newWindow&quot;: true}">Images</option></select>
+      </td>
+    </tr>
+  </table>
+
+
+
+          
+        
+      </td>
+
+      <td>NORTH DOLLARHIDE UNIT</td>
+      <td>901</td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByFieldQueryAction.do?methodToCall=search&field=25188200&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Field # 25188200">DOLLARHIDE (CLEAR FORK)</a>
+          
+        
+      </td>
+      
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByOperatorQueryAction.do?methodToCall=search&operator=630555&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="Operator # 630555">OXY USA WTP LP</a>
+          
+        
+      </td>
+
+      <td>
+        
+          
+
+          
+            
+
+            <a href="wellboreByCountyQueryAction.do?methodToCall=search&county=003&rrcActionMan=H4sIAAAAAAAAANWQS0vDQBSFf03cBIZ5JTaLu4ihghBsbKu1BBfTZEiFtBMmiVWYH-9NbcBXly7cHc65d-bczzFKgTtGGbALa4u46J7Nfl7YMqdPcPQPeqOapuUEY9LpV9WSyrx4IpZS4AAHj19PVzFKMciDruuNsfqu1_bt4zlSGkwl7HS3NeXSJKqu0QjA6q63-6VZaGWLLVoToD9a5O0xjW3VkkZZtXtQda-xXARrXAkBP56EkccTFBEbRChoEAQnETGcuoTZ49q_X8T-dDbHwE_TxBNXvu-P_s1tQr46q2V2dnrI0uxbV_b3xNqRVAjjWqYqbT-R-RUj-1cY83O3DYCBOY5lnQAZRNJJoC4AGVI3nPAOfc7IUtACAAA" title="County # 003">ANDREWS</a>
+          
+        
+      </td>
+
+      <td>Y</td>
+      <td>8512</td>
+    </tr>
+  
+
+</table>
+</td></tr>          
+
+          <tr>
+            <td>
+              <table style="white-space: nowrap; text-align: center; width:99%; margin: auto;">
+                <tr>
+                  <td align="left">
+                    
+                                 
+                      <input type="button" name="unused" value="Download" onclick="generateWellboreCriteriaReportCsv();">
+                     
+                  </td>
+                  <td align="right">
+                    <input type="button" name="unused" value="Return" onclick="returnToCaller('/EWA/wellboreQueryAction.do?methodToCall=returnToSearch&searchArgs.paramValue=|9=Y|106=103869%2C103919%2C630555%2C630591|107=OXY+USA+EOR%2C+LLC%3B+++OXY+USA+INC.%3B+++OXY+USA+WTP+EOR%2C+LLC%3B+++OXY+USA+WTP+LP&rrcActionMan=H4sIAAAAAAAAAHWPQUvDMBSAf029BELStHU9vEMsE4Ti5ladY3jI2scmZEt5bZ3CfryvUw-C3j6-7yV5OWulQJ-10qCuiGpb96_huKip2agXuPgTbl3bdrHkLHt8d53chbfI2CQxPBBDFN9OV5bRjHhC77eB8GFA-vi6TjaBawIH7PehqULhvGeRAmE_0LEKS3RU71lN_thi012qpV0nW0fu8OT8gLxcDms-kgE_PMnyKC4Ycj1CZlSapt-Qj9-7htnzWjwurZjOFhxEWRaRuRFC_Pi7-0L-Nqtq_u_02Mr5J9nLm50-AQAA');" style="float: right;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+    <tr><td>&nbsp;&nbsp;</td></tr>
+  </table>
+</form>
+
+        </td>
+      </tr>
+    </table>
+
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr><td><table style="width: 100%" class="MainFooter">
+  <tr><td style="width: 100%;" class="BorderLines"></td></tr>
+  <tr>
+    <td style="width: 100%; height: 100%;" align="center" class="MainFooter">
+      <a target="_blank" href="http://www.rrc.texas.gov/site-policies/">Disclaimer</a> |
+      <a target="_blank" href="http://www.rrc.texas.gov">RRC Home</a> |
+      <a href="mailto:helpdesk@rrc.texas.gov?subject=Oil & Gas Queries">Contact</a>
+    </td>
+  </tr>
+</table>
+</td></tr>
+    </table>
+  </body>
+</html>
+

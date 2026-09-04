@@ -1,0 +1,47 @@
+fetch("https://webapps2.rrc.texas.gov/EWA/operatorQueryAction.do?methodToCall=searchByName&name=oxy&wildcard=beginsWith&searchType=&uniqIdx=17884501687690&ajaxRef=OperatorQueryFunctions/SearchByName", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.9",
+    "sec-ch-ua": "\"Chromium\";v=\"152\", \"Not?A_Brand\";v=\"24\", \"Google Chrome\";v=\"152\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin"
+  },
+  "referrer": "https://webapps2.rrc.texas.gov/EWA/wellboreQueryAction.do",
+  "body": null,
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+<rrcResponse type="queryContent">
+<OperatorVO OprtrNmbr_OgOprtr="100129" OrgnztnNm_EwOrgnztn="OXY LOW CARBON VENTURES, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="102324" OrgnztnNm_EwOrgnztn="OXYROCK OPERATING, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="103869" OrgnztnNm_EwOrgnztn="OXY USA EOR, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="103919" OrgnztnNm_EwOrgnztn="OXY USA WTP EOR, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630555" OrgnztnNm_EwOrgnztn="OXY USA WTP LP"/>
+<OperatorVO OprtrNmbr_OgOprtr="630562" OrgnztnNm_EwOrgnztn="OXY INGLESIDE ENERGY CENTER, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630566" OrgnztnNm_EwOrgnztn="OXY INGLESIDE LPG PIPELINE, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630567" OrgnztnNm_EwOrgnztn="OXY INGLESIDE LPG TERMINAL, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630568" OrgnztnNm_EwOrgnztn="OXY INGLESIDE LPG STORAGE CO,LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630569" OrgnztnNm_EwOrgnztn="OXY MIDSTREAM OPERATING CO, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630570" OrgnztnNm_EwOrgnztn="OXY INGLESIDE NGL PIPELINE, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630571" OrgnztnNm_EwOrgnztn="OXY SALT CREEK PIPELINE LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630572" OrgnztnNm_EwOrgnztn="OXY INGLESIDE OIL STORAGE CO,LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630574" OrgnztnNm_EwOrgnztn="OXY PERMIAN GATHERING, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630576" OrgnztnNm_EwOrgnztn="OXY INGLESIDE NGL TERMINAL, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630577" OrgnztnNm_EwOrgnztn="OXY INGLESIDE OIL TERMINAL, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630578" OrgnztnNm_EwOrgnztn="OXY INGLESIDE OIL PIPELINE, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630580" OrgnztnNm_EwOrgnztn="OXY LEVELLAND PIPELINE CO, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630582" OrgnztnNm_EwOrgnztn="OXY LEVELLAND TERMINAL CO, LLC"/>
+<OperatorVO OprtrNmbr_OgOprtr="630583" OrgnztnNm_EwOrgnztn="OXY FRACTIONATORS INC."/>
+<OperatorVO OprtrNmbr_OgOprtr="630585" OrgnztnNm_EwOrgnztn="OXY PETROCHEMICALS INC."/>
+<OperatorVO OprtrNmbr_OgOprtr="630586" OrgnztnNm_EwOrgnztn="OXY NGL INC."/>
+<OperatorVO OprtrNmbr_OgOprtr="630588" OrgnztnNm_EwOrgnztn="OXY NGL PIPELINE COMPANY"/>
+<OperatorVO OprtrNmbr_OgOprtr="630591" OrgnztnNm_EwOrgnztn="OXY USA INC."/>
+<OperatorVO OprtrNmbr_OgOprtr="630593" OrgnztnNm_EwOrgnztn="OXY CITIES SERVICE NGL INC."/>
+<OperatorVO OprtrNmbr_OgOprtr="630607" OrgnztnNm_EwOrgnztn="OXY PETR. INC"/>
+
+</rrcResponse>
+

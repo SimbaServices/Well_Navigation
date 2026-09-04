@@ -1,0 +1,20 @@
+<nav id="account-nav" class="account-nav" aria-label="Account"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if user %}
+    <a href="/saved" class="ghost"
+       hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
+      Saved{% if saved_count %} · {{ saved_count }}{% endif %}
+    </a>
+    <a href="/cache" class="ghost"
+       hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
+    <a href="/account" class="ghost"
+       hx-get="/account" hx-target="#results" hx-push-url="true">{{ user.username }}</a>
+    <form action="/logout" method="post" hx-post="/logout">
+      <button type="submit" class="ghost">Sign out</button>
+    </form>
+  {% else %}
+    <a href="/login" class="ghost"
+       hx-get="/login" hx-target="#results" hx-push-url="true">Sign in</a>
+    <a href="/register" class="ghost"
+       hx-get="/register" hx-target="#results" hx-push-url="true">Create account</a>
+  {% endif %}
+</nav>

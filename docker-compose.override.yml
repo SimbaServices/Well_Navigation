@@ -1,0 +1,10 @@
+# Auto-loaded on this machine. On the server we start with
+# `docker compose -f docker-compose.yml up -d` so this file is ignored.
+services:
+  web:
+    command: uvicorn app:app --host 0.0.0.0 --port 5050 --reload
+    volumes:
+      - .:/app
+      - wellnav-data:/app/data
+    user: "0:0"
+    restart: "no"

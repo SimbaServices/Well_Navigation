@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__
+*.pyc
+data/*.db
+data/*.db-wal
+data/*.db-shm
+rrc_cookies.txt
+lease_cookies.txt
+*.html
+!templates/**/*.html
+.dockerignore
+docker-compose.override.yml
+cloud-init.yaml
+deploy

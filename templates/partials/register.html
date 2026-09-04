@@ -1,0 +1,28 @@
+<div class="auth-card">
+  <h2>Create account</h2>
+  <p class="muted">3–32 character username. Password at least 8 characters.</p>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  <form class="auth-form"
+        action="/register"
+        method="post"
+        hx-post="/register"
+        hx-target="#results"
+        hx-disabled-elt="find .primary">
+    <label>
+      Username
+      <input name="username" autocomplete="username" required value="{{ username or '' }}">
+    </label>
+    <label>
+      Password
+      <input name="password" type="password" autocomplete="new-password" required minlength="8">
+    </label>
+    <button type="submit" class="primary">Create account</button>
+  </form>
+  <p class="hint">
+    Already registered?
+    <a href="/login" class="text-link"
+       hx-get="/login" hx-target="#results" hx-push-url="true">Sign in</a>
+  </p>
+</div>

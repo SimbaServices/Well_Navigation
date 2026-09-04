@@ -1,0 +1,17 @@
+{% if user and recent %}
+  <div class="recent">
+    <p class="hint">Your recent searches</p>
+    <div class="recent-row">
+      {% for item in recent[:8] %}
+        <a href="{{ search_href(mode=item.mode, q=item.q, operator_number=item.operator_number, operator_name=item.operator_name) }}"
+           class="recent-chip"
+           hx-get="{{ search_href(mode=item.mode, q=item.q, operator_number=item.operator_number, operator_name=item.operator_name) }}"
+           hx-target="#results"
+           hx-push-url="true"
+           hx-indicator="#spinner">
+          {{ item.label or item.q }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

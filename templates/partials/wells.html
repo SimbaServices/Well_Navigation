@@ -1,0 +1,76 @@
+{% if error %}
+  <div class="banner error">{{ error }}</div>
+{% endif %}
+
+{% if wells %}
+  <div class="result-head">
+    <div>
+      <h2>Wells</h2>
+      <p class="muted">
+        {% if subtitle %}{{ subtitle }} · {% endif %}
+        {{ start }}–{{ end }} of {{ total }}
+        {% if from_cache %}<span class="pill">cached</span>{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="wells">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Well name</th>
+          <th>API</th>
+          <th>Lease</th>
+          <th>County</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for well in wells %}
+          <tr class="well-row">
+            <td class="save-cell">{% with variant='row' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
+            <td>
+              <a class="well-name-link"
+                 href="{{ well_href(well) }}"
+                 hx-get="{{ well_href(well) }}"
+                 hx-target="#map-panel"
+                 hx-push-url="true"
+                 hx-indicator="#spinner">
+                {{ well.well_name }}
+              </a>
+              {% if well.record_kind == "permit" %}
+                <span class="pill">permit</span>
+              {% endif %}
+            </td>
+            <td class="mono">{{ well.api_display }}</td>
+            <td>{{ well.lease_name }}</td>
+            <td>{{ well.county }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total > page_size %}
+    <div class="pager">
+      {% if offset > 0 %}
+        <a href="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=([offset - page_size, 0]|max), page_size=page_size) }}"
+           hx-get="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=([offset - page_size, 0]|max), page_size=page_size) }}"
+           hx-target="#results"
+           hx-push-url="true"
+           hx-indicator="#spinner">
+          Previous
+        </a>
+      {% endif %}
+      {% if offset + page_size < total %}
+        <a href="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=offset + page_size, page_size=page_size) }}"
+           hx-get="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=offset + page_size, page_size=page_size) }}"
+           hx-target="#results"
+           hx-push-url="true"
+           hx-indicator="#spinner">
+          Next
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% elif not error %}
+  <div class="empty">No wells returned for this query.</div>
+{% endif %}

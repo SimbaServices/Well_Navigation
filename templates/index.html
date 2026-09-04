@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Well Navigation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <div>
+        <h1>Well Navigation</h1>
+        <p>Local SQLite well tables · wellhead-first mapping</p>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      {% if counts %}{{ counts.wells }} wells · {{ counts.permits }} live permits{% else %}Texas RRC{% endif %}
+      {% include 'partials/account_nav.html' %}
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel search-panel">
+      <form id="search-form"
+            class="search-form"
+            action="/search"
+            method="get"
+            hx-get="/search"
+            hx-target="#results"
+            hx-push-url="true"
+            hx-indicator="#spinner"
+            hx-sync="this:abort"
+            hx-disabled-elt="find .primary">
+        <input type="hidden" name="offset" value="0">
+        <div class="modes" role="tablist">
+          <label class="mode">
+            <input type="radio" name="mode" value="name" checked>
+            <span>Well / lease name</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="api">
+            <span>API number</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="operator">
+            <span>Operator</span>
+          </label>
+        </div>
+
+        <div class="query-row">
+          <label class="sr-only" for="q">Search</label>
+          <div class="query-field">
+            <input id="q" name="q" type="search" autocomplete="off"
+                   placeholder="Search"
+                   hx-get="/operators"
+                   hx-trigger="input changed delay:400ms[this.closest('form').mode.value=='operator'&&this.value.trim().length>=2]"
+                   hx-target="#operator-suggest"
+                   hx-include="[name=mode]"
+                   hx-params="q,mode"
+                   hx-sync="this:abort">
+            <span class="ph ph-name">Lease or well name, e.g. UNIVERSITY 11</span>
+            <span class="ph ph-api">42-003-00290</span>
+            <span class="ph ph-operator">Operator name, e.g. OXY</span>
+          </div>
+          <button type="submit" class="primary">Search</button>
+        </div>
+        <div id="operator-suggest"></div>
+        <p class="hint hint-name">Name searches local well and lease names in SQLite.</p>
+        <p class="hint hint-api">Accepts 00300290, 42-003-00290, or 4200300290.</p>
+        <p class="hint hint-operator">Type an operator name. Pick from the list or press Search.</p>
+      </form>
+      <div id="recent-slot">
+        {% include 'partials/recent.html' %}
+      </div>
+
+      <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
+      <div id="results" class="results">
+        {% if results_html %}
+          {{ results_html | safe }}
+        {% else %}
+          <div class="empty">
+            Search the local SQLite well tables by name, county, 8- or 10-digit API,
+            or operator. Selecting a well pins the stored wellhead.
+            {% if not user %}
+              <span class="muted"> Sign in to save wells and cache your local lookups.</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section id="map-panel" class="panel map-panel" hx-on::after-swap="initWellMap()">
+      {% if map_html %}
+        {{ map_html | safe }}
+      {% else %}
+        <div class="map-placeholder">
+          <h2>Map</h2>
+          <p>Select a well to render configurable base layers and a wellhead pin. Route the pin into Apple Maps or Google Maps.</p>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script src="/static/js/map.js"></script>
+</body>
+</html>
