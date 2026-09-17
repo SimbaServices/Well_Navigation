@@ -1,6 +1,6 @@
 <div class="auth-card">
   <h2>Sign in</h2>
-  <p class="muted">Your saved wells and lookup cache stay on this server, keyed to your account.</p>
+  <p class="muted">Enter your work email and password to sign in.</p>
   {% if error %}
     <div class="banner error">{{ error }}</div>
   {% endif %}
@@ -8,23 +8,31 @@
         action="/login"
         method="post"
         hx-post="/login"
-        hx-target="#results"
-        hx-push-url="false"
+        hx-target="#auth-main"
+        hx-push-url="true"
         hx-disabled-elt="find .primary">
     <input type="hidden" name="next" value="{{ next_path or '/' }}">
     <label>
-      Username
-      <input name="username" autocomplete="username" required value="{{ username or '' }}">
+      Email
+      <input name="email" type="email" autocomplete="username" required value="{{ email or username or '' }}">
     </label>
     <label>
       Password
       <input name="password" type="password" autocomplete="current-password" required>
     </label>
-    <button type="submit" class="primary">Sign in</button>
+    <button type="submit" class="primary">
+      <span class="btn-idle">Sign in</span>
+      <span class="btn-busy"><i class="btn-spinner" aria-hidden="true"></i>Signing in…</span>
+    </button>
   </form>
+  <p class="hint">
+    Forgot your password?
+    <a href="/login/forgot" class="text-link"
+       hx-get="/login/forgot" hx-target="#auth-main" hx-push-url="true">Reset it with an email code</a>
+  </p>
   <p class="hint">
     Need an account?
     <a href="/register" class="text-link"
-       hx-get="/register" hx-target="#results" hx-push-url="true">Create one</a>
+       hx-get="/register" hx-target="#auth-main" hx-push-url="true">Create one</a>
   </p>
 </div>

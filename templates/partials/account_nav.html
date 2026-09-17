@@ -4,17 +4,18 @@
        hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
       Saved{% if saved_count %} · {{ saved_count }}{% endif %}
     </a>
-    <a href="/cache" class="ghost"
+    <a href="/cache" class="ghost hide-phone"
        hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
+    <a href="/org" class="ghost"
+       hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team</a>
+    {% if workspace and not workspace.complimentary and (not workspace.allowed or user.is_admin) %}
+    <a href="/billing" class="ghost"
+       hx-get="/billing" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Billing</a>
+    {% endif %}
     <a href="/account" class="ghost"
-       hx-get="/account" hx-target="#results" hx-push-url="true">{{ user.username }}</a>
+       hx-get="/account" hx-target="#results" hx-push-url="true">{{ user.email or user.username }}</a>
     <form action="/logout" method="post" hx-post="/logout">
       <button type="submit" class="ghost">Sign out</button>
     </form>
-  {% else %}
-    <a href="/login" class="ghost"
-       hx-get="/login" hx-target="#results" hx-push-url="true">Sign in</a>
-    <a href="/register" class="ghost"
-       hx-get="/register" hx-target="#results" hx-push-url="true">Create account</a>
   {% endif %}
 </nav>

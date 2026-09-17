@@ -3,15 +3,19 @@
     {% for op in operators %}
       <li>
         <form action="/search" method="get"
-              hx-get="/search" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
+              hx-get="/search"
+              hx-target="#results"
+              hx-include="#search-form"
+              hx-push-url="true"
+              hx-indicator="#spinner">
+          <input type="hidden" name="add_op_number" value="{{ op.number }}">
+          <input type="hidden" name="add_op_name" value="{{ op.name }}">
           <input type="hidden" name="mode" value="operator">
-          <input type="hidden" name="operator_number" value="{{ op.number }}">
-          <input type="hidden" name="operator_name" value="{{ op.name }}">
-          <input type="hidden" name="q" value="{{ op.name }}">
-          <input type="hidden" name="offset" value="0">
           <button type="submit" class="suggest-item">
             <strong>{{ op.name }}</strong>
-            <span class="muted">#{{ op.number }}</span>
+            {% if op.number and op.number != op.name %}
+              <span class="muted">#{{ op.number }}</span>
+            {% endif %}
           </button>
         </form>
       </li>

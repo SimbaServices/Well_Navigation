@@ -1,0 +1,11 @@
+Well Navigation is workplace software for oil and gas organizations (Apple Guideline 3.1.3(c) enterprise / 3.1.3(b) multiplatform). Employees sign in with their work email to search wells, pipelines, and waste-disposal sites.
+
+The iOS app does not sell subscriptions and does not collect payment. Organization admins buy seats on the website (https://wellnav.simba.services) in Safari. Stripe Checkout for MP Solutions never loads in the WKWebView. There are no In-App Purchases.
+
+Account deletion is in-app: Account → Delete account → password + type DELETE.
+
+The wrapper is not a general-purpose browser (no address bar; host allow-list). Field value beyond the website: offline USGS map tiles and pinned wells after the user taps Save this view, native splash, and an offline banner.
+
+Demo login (complimentary @simba.services, no payment required):
+Email: appreview@simba.services
+Password: see C:\Simba\wellnav-app-review-login.txt on the operator laptop (do not commit).

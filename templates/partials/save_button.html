@@ -16,8 +16,9 @@
     <input type="hidden" name="lease" value="{{ well.lease_name or '' }}">
     <input type="hidden" name="county" value="{{ well.county or '' }}">
     <input type="hidden" name="operator" value="{{ well.operator or '' }}">
+    <input type="hidden" name="state" value="{{ well.state or 'tx' }}">
     <input type="hidden" name="variant" value="{{ variant or 'row' }}">
-    {% if well.api in saved_apis %}
+    {% if (well.state|default('tx') ~ ':' ~ well.api) in saved_apis or well.api in saved_apis %}
       <button type="submit" class="save-btn on" title="Remove from saved wells" aria-pressed="true">★ Saved</button>
     {% else %}
       <button type="submit" class="save-btn" title="Save this well" aria-pressed="false">☆ Save</button>

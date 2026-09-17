@@ -6,13 +6,27 @@
   {% for lease in leases %}
     <li>
       <form action="/search" method="get"
-            hx-get="/search" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
+            hx-get="/search" hx-target="#results" hx-include="#search-form"
+            hx-push-url="true" hx-indicator="#spinner">
         <input type="hidden" name="mode" value="name">
         <input type="hidden" name="q" value="{{ lease.name }}">
         <input type="hidden" name="lease_no" value="{{ lease.lease_no }}">
         <input type="hidden" name="district" value="{{ lease.district }}">
         <input type="hidden" name="lease_type" value="{{ 'O' if lease.kind == 'Oil' else 'G' if lease.kind == 'Gas' else '' }}">
         <input type="hidden" name="offset" value="0">
+        {% set f = filters if filters is defined and filters else {} %}
+        {% for op in f.operators|default([]) %}
+          {% if op.active %}<input type="hidden" name="op" value="{{ op.number }}">{% endif %}
+          <input type="hidden" name="opn" value="{{ op.number }}|{{ op.name }}">
+        {% endfor %}
+        {% if f.name %}
+          <input type="hidden" name="name" value="{{ f.name }}">
+          <input type="hidden" name="use_name" value="{{ '1' if f.name_active else '0' }}">
+        {% endif %}
+        {% if f.api %}
+          <input type="hidden" name="api" value="{{ f.api }}">
+          <input type="hidden" name="use_api" value="{{ '1' if f.api_active else '0' }}">
+        {% endif %}
         <button type="submit" class="lease-item">
           <strong>{{ lease.name }}</strong>
           <span class="muted">{{ lease.kind or "Lease" }} {{ lease.lease_no }}{% if lease.district %} · Dist {{ lease.district }}{% endif %}</span>

@@ -1,0 +1,29 @@
+<div class="auth-card">
+  <h2>Sign in with an email code</h2>
+  <p class="muted">If you already have an account and forgot your password, enter the email on the account. We will send a 6-digit code that expires in 10 minutes.</p>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  <form class="auth-form"
+        action="/login/forgot"
+        method="post"
+        hx-post="/login/forgot"
+        hx-target="#auth-main"
+        hx-push-url="true"
+        hx-disabled-elt="find .primary">
+    <input type="hidden" name="next" value="{{ next_path or '/' }}">
+    <label>
+      Email
+      <input name="email" type="email" autocomplete="username" required value="{{ email or username or '' }}">
+    </label>
+    <button type="submit" class="primary">
+      <span class="btn-idle">Email me a code</span>
+      <span class="btn-busy"><i class="btn-spinner" aria-hidden="true"></i>Sending code…</span>
+    </button>
+  </form>
+  <p class="hint">
+    Remember your password?
+    <a href="/login" class="text-link"
+       hx-get="/login" hx-target="#auth-main" hx-push-url="true">Sign in</a>
+  </p>
+</div>

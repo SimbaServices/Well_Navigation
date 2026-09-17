@@ -75,6 +75,8 @@ def migrate_as_drilled(state: str = "tx", limit: int = 400, request_gis: bool = 
                     lifetime_days=row["lifetime_days"] or DEFAULT_PERMIT_LIFETIME_DAYS,
                 )
                 record["lease_name"] = row["lease_name"] or ""
+                record["lease_no"] = row["lease_no"] or ""
+                record["district"] = row["district"] or ""
                 record["operator"] = row["operator"] or ""
                 record["operator_number"] = row["operator_number"] or ""
                 record["migrated_from_permit"] = 1

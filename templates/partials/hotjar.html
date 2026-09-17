@@ -1,0 +1,58 @@
+{% if hotjar_id and not store_client %}
+<script>
+  (function(h,o,t,j,a,r){
+    h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+    h._hjSettings={hjid:{{ hotjar_id }},hjsv:6};
+    a=o.getElementsByTagName('head')[0];
+    r=o.createElement('script'); r.async=1;
+    r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+    a.appendChild(r);
+  })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+</script>
+{% endif %}
+{% if clarity_id and not store_client %}
+<script>
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window,document,"clarity","script","{{ clarity_id }}");
+</script>
+{% endif %}
+{% if contentsquare_id and not store_client %}
+<script>
+  (function () {
+    window._uxa = window._uxa || [];
+    if (typeof CS_CONF === "undefined") {
+      window._uxa.push([
+        "setPath",
+        window.location.pathname + window.location.hash.replace("#", "?__")
+      ]);
+      var mt = document.createElement("script");
+      mt.type = "text/javascript";
+      mt.async = true;
+      mt.src = "https://t.contentsquare.net/uxa/{{ contentsquare_id }}.js";
+      document.getElementsByTagName("head")[0].appendChild(mt);
+    } else {
+      window._uxa.push([
+        "trackPageview",
+        window.location.pathname + window.location.hash.replace("#", "?__")
+      ]);
+    }
+    document.addEventListener("htmx:pushedIntoHistory", function () {
+      window._uxa = window._uxa || [];
+      window._uxa.push([
+        "trackPageview",
+        window.location.pathname + window.location.hash.replace("#", "?__")
+      ]);
+    });
+    document.addEventListener("htmx:historyRestore", function () {
+      window._uxa = window._uxa || [];
+      window._uxa.push([
+        "trackPageview",
+        window.location.pathname + window.location.hash.replace("#", "?__")
+      ]);
+    });
+  })();
+</script>
+{% endif %}

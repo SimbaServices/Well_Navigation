@@ -1,0 +1,15 @@
+<button type="button"
+        class="map-toggle"
+        data-api="{{ well.api }}"
+        data-name="{{ well.well_name or '' }}"
+        data-lease="{{ well.lease_name or '' }}"
+        data-county="{{ well.county or '' }}"
+        data-operator="{{ well.operator or '' }}"
+        data-lat="{{ well.wellhead_lat or '' }}"
+        data-lon="{{ well.wellhead_lon or '' }}"
+        data-toe-lat="{{ well.toe_lat or '' }}"
+        data-toe-lon="{{ well.toe_lon or '' }}"
+        data-status="{{ well.status_label or '' }}"
+        onclick="toggleWellOnMap && toggleWellOnMap(this)">
+  Map
+</button>

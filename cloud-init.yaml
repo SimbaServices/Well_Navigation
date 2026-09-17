@@ -3,6 +3,11 @@
 # Paste this into the Cloud config box when creating the server.
 # After Graphs CPU usage drops to zero:
 #   ssh -p 2222 wellnav@<ip_address>
+#
+# Cursor peers in through Remote-SSH, then attaches to the Docker
+# container (see .devcontainer/devcontainer.json):
+#   Connect to Host → wellnav → open ~/Well_Navigation
+#   → Dev Containers: Reopen in Container
 
 timezone: America/Chicago
 
@@ -20,6 +25,10 @@ packages:
   - ufw
   - git
   - curl
+  - wget
+  - ca-certificates
+  - rsync
+  - unzip
   - nginx
   - docker.io
   - docker-compose-v2
@@ -34,15 +43,33 @@ write_files:
       Port 2222
       KbdInteractiveAuthentication no
       ChallengeResponseAuthentication no
-      MaxAuthTries 2
-      AllowTcpForwarding no
+      MaxAuthTries 3
+      AllowTcpForwarding yes
+      AllowAgentForwarding yes
       X11Forwarding no
-      AllowAgentForwarding no
+      ClientAliveInterval 60
+      ClientAliveCountMax 3
       AuthorizedKeysFile .ssh/authorized_keys
       AllowUsers wellnav
 
+  - path: /home/wellnav/.gitconfig
+    owner: wellnav:wellnav
+    permissions: "0644"
+    content: |
+      [user]
+        name = Sam Parker
+        email = samwayneparker@gmail.com
+
+  - path: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh, 2222
+      banaction = iptables-multiport
+
 runcmd:
-  - printf "[sshd]\nenabled = true\nport = ssh, 2222\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+  - mkdir -p /home/wellnav/Well_Navigation
+  - chown -R wellnav:wellnav /home/wellnav
   - systemctl enable fail2ban
   - systemctl enable docker
   - ufw allow 2222/tcp

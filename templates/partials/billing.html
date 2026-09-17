@@ -1,0 +1,82 @@
+<div class="account-card billing-card">
+  {% set ws = workspace or {} %}
+  <h2>{% if success %}You're set{% else %}Workspace billing{% endif %}</h2>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  {% if success and ws.allowed %}
+    <p>Seats are active. You can search wells, pipelines, and waste sites on the web and in the iOS / Play Store apps.</p>
+    <div class="account-actions">
+      <a href="/" class="primary">Open workspace</a>
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true">Team and seats</a>
+    </div>
+  {% elif ws.complimentary %}
+    <p>You can search wells, pipelines, and waste sites on the web and in the iOS / Play Store apps.</p>
+    <div class="account-actions">
+      <a href="/" class="primary">Open workspace</a>
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true">Team</a>
+    </div>
+  {% elif ws.reason == "no_seat" %}
+    <p>Your organization <strong>{{ ws.org_name }}</strong> has {{ ws.seat_count }} seat{{ "s" if ws.seat_count != 1 else "" }} for {{ ws.member_count }} people. You do not have a seat yet.</p>
+    <p class="muted">Ask an admin to add a seat or remove someone who no longer needs access. Coworkers sign up with their <strong>@{{ ws.org.domain if ws.org else "company.com" }}</strong> email.</p>
+    <div class="account-actions">
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true">View team</a>
+    </div>
+  {% elif ws.can_manage %}
+    {% if store_client %}
+      <p>Well Navigation is workplace software for your organization. This app does not sell subscriptions, collect cards, or use App Store or Play Store billing.</p>
+      {% if ws.paid %}
+        <p><strong>{{ ws.seated_count }}</strong> of <strong>{{ ws.seat_count }}</strong> seats in use
+          {% if ws.period_end %} · renews {{ ws.period_end }}{% endif %}
+        </p>
+      {% endif %}
+      <p class="muted">Organization admins buy and change seats on the website in Safari or Chrome.</p>
+      <div class="account-actions">
+        <a class="primary" href="/login?next=/billing&amp;external_browser=1">Open the website</a>
+      </div>
+    {% else %}
+    <p>Well Navigation is a workplace seat subscription. {{ ws.price_label }}. It is sold to organizations on the website — not as an App Store or Play Store purchase.</p>
+    {% if ws.paid %}
+      <p><strong>{{ ws.seated_count }}</strong> of <strong>{{ ws.seat_count }}</strong> seats in use
+        {% if ws.period_end %} · renews {{ ws.period_end }}{% endif %}
+        {% if ws.status == "past_due" %} · payment past due{% endif %}
+      </p>
+    {% else %}
+      <p>Start a workspace for <strong>{{ ws.org_name }}</strong>. People with email on this domain share these seats.</p>
+    {% endif %}
+    {% if not ws.stripe_ready %}
+      <p class="muted">Checkout is not connected on this server yet. Add a Stripe price, or email wellnav@simba.services.</p>
+    {% endif %}
+    <form class="seat-form" action="{{ '/billing/seats' if ws.org and ws.org.stripe_subscription_item_id else '/billing/checkout' }}" method="post"
+          hx-post="{{ '/billing/seats' if ws.org and ws.org.stripe_subscription_item_id else '/billing/checkout' }}"
+          hx-target="#results">
+      <label>Seats
+        <input type="number" name="seats" min="1" max="200" value="{{ ws.suggested_seats }}" required>
+      </label>
+      <button type="submit" class="primary" {% if not ws.stripe_ready %}disabled{% endif %}>
+        {{ "Update seats" if ws.org and ws.org.stripe_subscription_item_id else "Continue to checkout" }}
+      </button>
+    </form>
+    {% if ws.org and ws.org.stripe_customer_id %}
+      <form action="/billing/portal" method="post" hx-post="/billing/portal">
+        <button type="submit" class="ghost">Manage payment method</button>
+      </form>
+    {% endif %}
+    <p class="muted">Checkout opens Stripe in this browser. The iOS and Play Store apps do not take payment.</p>
+    {% endif %}
+  {% else %}
+    <p>Your organization needs an active seat subscription before you can search.</p>
+    <p class="muted">Ask an admin on <strong>{{ ws.org_name }}</strong> to start billing.</p>
+    <div class="account-actions">
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true">View team</a>
+    </div>
+  {% endif %}
+  <div class="account-actions">
+    <a href="/account" class="ghost"
+       hx-get="/account" hx-target="#results" hx-push-url="true">Account</a>
+  </div>
+</div>

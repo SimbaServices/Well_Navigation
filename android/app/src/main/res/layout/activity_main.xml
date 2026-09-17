@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/wellnav_bg">
+
+    <android.webkit.WebView
+        android:id="@+id/web"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/offline_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/wellnav_banner"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="@string/offline_banner"
+        android:textColor="@color/wellnav_accent"
+        android:textSize="13sp"
+        android:visibility="gone" />
+</FrameLayout>

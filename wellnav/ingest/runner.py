@@ -17,7 +17,7 @@ from pathlib import Path
 
 from wellnav.db import ROOT, connect, get_meta, init_schema, session, set_cursor
 from wellnav.ingest.classify import utcnow
-from wellnav.ingest.persist import upsert_permits, upsert_wells
+from wellnav.ingest.persist import update_identities, upsert_permits, upsert_wells
 from wellnav.ingest.worker import run_partition
 from wellnav.states import DEFAULT_PERMIT_LIFETIME_DAYS, TX_COUNTIES
 
@@ -74,12 +74,18 @@ def load_texas(
     workers: int = 6,
     counties: list[str] | None = None,
     permit_only: bool = False,
+    identity_only: bool = False,
     delay: float = 0.15,
     state: str = "tx",
     max_retries: int = DEFAULT_MAX_RETRIES,
 ) -> dict:
     parts = _partitions(counties)
-    kind = "permit_refresh" if permit_only else "full_load"
+    if identity_only:
+        kind = "identity_load"
+    elif permit_only:
+        kind = "permit_refresh"
+    else:
+        kind = "full_load"
     now = utcnow()
     conn = connect()
     init_schema(conn)
@@ -112,6 +118,7 @@ def load_texas(
             "lifetime_days": lifetime,
             "delay": delay,
             "permit_only": permit_only,
+            "identity_only": identity_only,
             "job_id": job_id,
             "attempt": 1,
             "not_before": 0.0,
@@ -135,7 +142,9 @@ def load_texas(
 
     _log(
         f"load-texas job {job_id}: {len(parts)} county partitions, "
-        f"{worker_count} subprocesses, {delay:.2f}s GIS spacing, max_retries={max_retries}"
+        f"{worker_count} subprocesses, {delay:.2f}s spacing, max_retries={max_retries}"
+        + (", identity-only" if identity_only else "")
+        + (", permit-only" if permit_only else "")
     )
 
     with ProcessPoolExecutor(
@@ -205,7 +214,9 @@ def load_texas(
                 job_id,
             ),
         )
-        if permit_only:
+        if identity_only:
+            set_cursor(conn, "tx_identity_refreshed_at", finished, finished)
+        elif permit_only:
             set_cursor(conn, "tx_permits_refreshed_at", finished, finished)
         else:
             set_cursor(conn, "tx_full_load_finished_at", finished, finished)
@@ -232,7 +243,8 @@ def _handle_result(
         _commit_partition(job_id, state, result, totals)
         _log(
             f"  ok {code} {name}: {result.get('default_features', 0)} wells-layer, "
-            f"{result.get('surface_features', 0)} surface-layer"
+            f"{result.get('surface_features', 0)} surface-layer, "
+            f"{result.get('identities', 0)} identities"
         )
         return
 
@@ -296,8 +308,12 @@ def _mark_status(job_id: int, county_code: str, status: str, error: str | None =
 def _commit_partition(job_id: int, state: str, result: dict, totals: dict) -> None:
     now = utcnow()
     with session() as conn:
-        wells = upsert_wells(conn, state, result.get("wells") or [])
-        permits = upsert_permits(conn, state, result.get("permits") or [])
+        if result.get("identity_only"):
+            wells = update_identities(conn, state, result.get("identity_map") or {})
+            permits = 0
+        else:
+            wells = upsert_wells(conn, state, result.get("wells") or [])
+            permits = upsert_permits(conn, state, result.get("permits") or [])
         totals["wells"] += wells
         totals["permits"] += permits
         conn.execute(

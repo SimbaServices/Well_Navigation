@@ -1,0 +1,36 @@
+{% if hits %}
+  <ul class="suggest">
+    {% for hit in hits %}
+      <li>
+        <form action="/pipelines/search" method="get"
+              hx-get="/pipelines/search"
+              hx-target="#results"
+              hx-include="#search-form"
+              hx-push-url="true"
+              hx-indicator="#spinner">
+          <input type="hidden" name="scope" value="pipelines">
+          <input type="hidden" name="pipe_mode" value="{{ kind }}">
+          <input type="hidden" name="commit" value="1">
+          {% if hit.p5 %}<input type="hidden" name="p5" value="{{ hit.p5 }}">{% endif %}
+          {% if kind == 'name' and hit.system %}
+            <input type="hidden" name="system" value="{{ hit.system }}">
+          {% endif %}
+          {% if not hit.p5 and hit.operator %}
+            <input type="hidden" name="operator" value="{{ hit.operator }}">
+          {% endif %}
+          <button type="submit" class="suggest-item">
+            {% if kind == 'name' %}
+              <strong>{{ hit.system }}</strong>
+              <span class="muted">{{ hit.operator }}{% if hit.p5 %} · P-5 {{ hit.p5 }}{% endif %} · {{ hit.segments }} segments</span>
+            {% else %}
+              <strong>{{ hit.operator }}</strong>
+              <span class="muted">{% if hit.p5 %}P-5 {{ hit.p5 }} · {% endif %}{{ hit.systems }} systems · {{ hit.segments }} segments</span>
+            {% endif %}
+          </button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% elif query %}
+  <p class="hint">No pipelines match “{{ query }}”.</p>
+{% endif %}

@@ -1,0 +1,18 @@
+{
+  "name": "Well Navigation",
+  "short_name": "WellNav",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#12160f",
+  "theme_color": "#12160f",
+  "description": "Well, pipeline, and waste-site navigation for Texas, New Mexico, Oklahoma, and Louisiana.",
+  "icons": [
+    {
+      "src": "/static/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

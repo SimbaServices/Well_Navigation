@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UX session · Well Navigation</title>
+  <link rel="stylesheet" href="/static/css/app.css?v=offline1">
+  <script src="/static/vendor/rrweb.min.js"></script>
+  <style>
+    .ux-replay { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; min-height: 100dvh; }
+    #ux-player { flex: 1; min-height: 24rem; background: #0b0e09; border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+    .replayer-wrapper { margin: 0 auto; }
+  </style>
+</head>
+<body class="gate">
+  <main class="ux-replay">
+    <p class="muted">{{ recording.email }} · {{ recording.started_at }}</p>
+    <div class="account-actions">
+      <button type="button" class="primary" id="ux-play">Play</button>
+      <a class="ghost" href="/ux/recordings/{{ recording.id }}/file">Download</a>
+      <a class="ghost" href="/account">Account</a>
+    </div>
+    <div id="ux-player"></div>
+  </main>
+  <script>
+    (function () {
+      var id = {{ recording.id | tojson }};
+      fetch("/ux/recordings/" + id + "/file", { credentials: "same-origin" })
+        .then(function (response) { return response.text(); })
+        .then(function (text) {
+          var events = [];
+          text.split(/\n+/).forEach(function (line) {
+            if (!line.trim()) return;
+            var parsed = JSON.parse(line);
+            if (Array.isArray(parsed)) events = events.concat(parsed);
+            else events.push(parsed);
+          });
+          if (events.length < 2) throw new Error("empty");
+          var player = new rrweb.Replayer(events, { root: document.getElementById("ux-player"), skipInactive: true });
+          document.getElementById("ux-play").addEventListener("click", function () { player.play(); });
+          player.play();
+        })
+        .catch(function () {
+          document.getElementById("ux-player").textContent = "Could not play this session.";
+        });
+    })();
+  </script>
+</body>
+</html>

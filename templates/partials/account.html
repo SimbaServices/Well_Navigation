@@ -1,25 +1,53 @@
 <div class="account-card">
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
   {% if user %}
-    <p class="muted">Signed in as <strong>{{ user.username }}</strong></p>
+    <p class="muted">Signed in as <strong>{{ user.email or user.username }}</strong>
+      {% if user.is_admin %} · admin{% endif %}
+    </p>
+    {% if org %}
+      <p class="muted">Organization <strong>{{ workspace.org_name if workspace else org.name }}</strong>
+        {% if workspace and not workspace.complimentary %}
+          {% if workspace.paid %} · {{ workspace.seated_count }}/{{ workspace.seat_count }} seats
+          {% else %} · billing required
+          {% endif %}
+        {% endif %}
+      </p>
+    {% endif %}
     <p class="muted">{{ saved_count }} saved well{{ "s" if saved_count != 1 else "" }}
       {% if cache_stats %} · {{ cache_stats.entries }} cached lookups · {{ cache_stats.hits }} hits{% endif %}
     </p>
+    {% if user.last_login_at or user.last_activity_at %}
+    <p class="muted">
+      {% if user.last_login_at %}Last login {{ user.last_login_at }}{% endif %}
+      {% if user.last_login_at and user.last_activity_at %} · {% endif %}
+      {% if user.last_activity_at %}Last activity {{ user.last_activity_at }}{% endif %}
+    </p>
+    {% endif %}
     <div class="account-actions">
       <a href="/saved" class="ghost"
          hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Saved wells</a>
       <a href="/cache" class="ghost"
-         hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
+         hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">History</a>
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team and seats</a>
+      {% if not workspace or not workspace.complimentary %}
+        <a href="/billing" class="ghost"
+           hx-get="/billing" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Billing</a>
+      {% endif %}
       <form action="/logout" method="post" hx-post="/logout">
         <button type="submit" class="ghost">Sign out</button>
       </form>
+      <a href="/account/delete" class="ghost danger-text"
+         hx-get="/account/delete" hx-target="#results" hx-push-url="true">Delete account</a>
+      <a href="/privacy" class="ghost">Privacy</a>
+      <a href="/terms" class="ghost">Terms</a>
     </div>
-  {% else %}
-    <p class="muted">Save wells and keep a private cache of your local SQLite lookups.</p>
-    <div class="account-actions">
-      <a href="/login" class="ghost"
-         hx-get="/login" hx-target="#results" hx-push-url="true">Sign in</a>
-      <a href="/register" class="ghost"
-         hx-get="/register" hx-target="#results" hx-push-url="true">Create account</a>
-    </div>
+    {% if can_record_ux %}
+    <h3>UX recordings</h3>
+    <p class="muted">Simba Services only. Every signed-in workspace session is saved on the server. Download here or run <code>deploy\pull-recordings.ps1</code>.</p>
+    {% include 'partials/ux_recordings.html' %}
+    {% endif %}
   {% endif %}
 </div>

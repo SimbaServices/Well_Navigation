@@ -1,6 +1,27 @@
+{% if clear_query %}<span id="clear-query" hidden></span>{% endif %}
 {% if error %}
   <div class="banner error">{{ error }}</div>
 {% endif %}
+
+{% set f = filters if filters is defined and filters else {} %}
+{% set sort = sort|default('name') %}
+{% set dir = dir|default('asc') %}
+{% set pick_key = filter_query(f, mode=mode|default(''), state=state|default('tx'), lease_no=lease_no|default(''), district=district|default('')) or 'wells' %}
+{% macro page_href(new_offset) -%}
+{{- filter_href(f, mode=mode, state=state|default('tx'), lease_no=lease_no, district=district, lease_type=lease_type, offset=new_offset, page_size=page_size, sort=sort, dir=dir) -}}
+{%- endmacro %}
+{% macro col(label, key, extra='') -%}
+<th scope="col" data-sort="{{ key }}" class="{{ extra }}" aria-sort="{{ 'ascending' if sort == key and dir == 'asc' else 'descending' if sort == key else 'none' }}">
+  <a class="sort-link{% if sort == key %} is-active{% endif %}"
+     href="{{ sort_href(f, sort, dir, key, mode=mode, state=state|default('tx'), lease_no=lease_no, district=district, lease_type=lease_type, page_size=page_size) }}"
+     hx-get="{{ sort_href(f, sort, dir, key, mode=mode, state=state|default('tx'), lease_no=lease_no, district=district, lease_type=lease_type, page_size=page_size) }}"
+     hx-target="#results"
+     hx-push-url="true"
+     hx-indicator="#spinner">
+    {{ label }}{% if sort == key %}<span class="sort-ind" aria-hidden="true">{{ "▲" if dir == "asc" else "▼" }}</span>{% endif %}
+  </a>
+</th>
+{%- endmacro %}
 
 {% if wells %}
   <div class="result-head">
@@ -10,40 +31,67 @@
         {% if subtitle %}{{ subtitle }} · {% endif %}
         {{ start }}–{{ end }} of {{ total }}
         {% if from_cache %}<span class="pill">cached</span>{% endif %}
+        <span id="pick-count" class="pick-count"></span>
       </p>
+      <p id="save-status" class="save-status" aria-live="polite"></p>
+    </div>
+    <div class="results-toolbar result-tools">
+      <button type="button" class="ghost" data-save-action="selected" disabled>Save selected</button>
+      <button type="button" class="ghost" data-map-action="selected">Map selected</button>
+      <button type="button" class="ghost" data-map-action="page">Map this page</button>
+      <button type="button" class="ghost" data-map-action="clear">Clear map</button>
     </div>
   </div>
   <div class="table-wrap">
-    <table class="wells">
+    <table class="wells" data-results-table data-pick-key="{{ pick_key }}">
       <thead>
         <tr>
-          <th></th>
-          <th>Well name</th>
-          <th>API</th>
-          <th>Lease</th>
-          <th>County</th>
+          <th class="pick-col">
+            <input type="checkbox" class="well-pick-all" title="Select this page" aria-label="Select this page">
+          </th>
+          <th class="map-col">Pin</th>
+          <th class="save-col">Save</th>
+          {{ col("Well name", "name") }}
+          {{ col("API", "api") }}
+          {{ col("Status", "status", "hide-phone") }}
+          {{ col("Operator", "operator", "hide-phone") }}
+          {{ col("Lease", "lease", "hide-phone") }}
+          {{ col("County", "county") }}
         </tr>
       </thead>
       <tbody>
         {% for well in wells %}
-          <tr class="well-row">
+          <tr class="well-row{% if (well.state|default('tx') ~ ':' ~ well.api) in saved_apis|default([]) or well.api in saved_apis|default([]) %} is-saved{% endif %}"
+              data-api="{{ well.api }}"
+              data-state="{{ well.state or 'tx' }}"
+              data-name="{{ well.well_name or '' }}"
+              data-well-no="{{ well.well_no or '' }}"
+              data-lease="{{ well.lease_name or '' }}"
+              data-county="{{ well.county or '' }}"
+              data-operator="{{ well.operator or '' }}"
+              data-lat="{{ well.wellhead_lat if well.wellhead_lat is not none else '' }}"
+              data-lon="{{ well.wellhead_lon if well.wellhead_lon is not none else '' }}"
+              data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
+              data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
+              data-status="{{ well.status_label or '' }}">
+            <td class="pick-col">
+              <input type="checkbox" class="well-pick" aria-label="Select {{ well.well_name }}">
+            </td>
+            <td class="map-col">
+              <button type="button" class="map-toggle" title="Add to map">Pin</button>
+            </td>
             <td class="save-cell">{% with variant='row' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
             <td>
-              <a class="well-name-link"
-                 href="{{ well_href(well) }}"
-                 hx-get="{{ well_href(well) }}"
-                 hx-target="#map-panel"
-                 hx-push-url="true"
-                 hx-indicator="#spinner">
-                {{ well.well_name }}
-              </a>
+              <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
               {% if well.record_kind == "permit" %}
                 <span class="pill">permit</span>
               {% endif %}
             </td>
             <td class="mono">{{ well.api_display }}</td>
-            <td>{{ well.lease_name }}</td>
-            <td>{{ well.county }}</td>
+            <td class="col-status hide-phone">{{ well.status_label or well.symbol or "" }}</td>
+            <td class="col-operator hide-phone">{{ well.operator }}</td>
+            <td class="hide-phone">{{ well.lease_name }}</td>
+            <td>{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -52,8 +100,8 @@
   {% if total > page_size %}
     <div class="pager">
       {% if offset > 0 %}
-        <a href="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=([offset - page_size, 0]|max), page_size=page_size) }}"
-           hx-get="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=([offset - page_size, 0]|max), page_size=page_size) }}"
+        <a href="{{ page_href([offset - page_size, 0]|max) }}"
+           hx-get="{{ page_href([offset - page_size, 0]|max) }}"
            hx-target="#results"
            hx-push-url="true"
            hx-indicator="#spinner">
@@ -61,8 +109,8 @@
         </a>
       {% endif %}
       {% if offset + page_size < total %}
-        <a href="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=offset + page_size, page_size=page_size) }}"
-           hx-get="{{ search_href(mode=mode, q=query, operator_number=operator_number, operator_name=operator_name, lease_no=lease_no, district=district, lease_type=lease_type, offset=offset + page_size, page_size=page_size) }}"
+        <a href="{{ page_href(offset + page_size) }}"
+           hx-get="{{ page_href(offset + page_size) }}"
            hx-target="#results"
            hx-push-url="true"
            hx-indicator="#spinner">

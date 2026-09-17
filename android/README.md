@@ -1,0 +1,53 @@
+# Well Navigation Android / Play Store wrapper
+
+Same idea as the iOS app: a `WebView` pointed at `https://wellnav.simba.services`, not a general-purpose browser. There is no address bar. Navigation stays on that host, plus `mailto:` / `tel:` / Google Maps.
+
+Stripe Checkout, the Customer Portal, and any URL with `?external_browser=1` open in **Chrome** (or the default browser). The WebView never loads `*.stripe.com`. The wrapper identifies itself as `WellNavigation/1.0 (Android; store)` so the website hides purchase forms.
+
+Offline maps are handled by the **website**, not by Google Maps SDK:
+
+1. Sign in once while online.
+2. Pin wells and tap **Save this view** on the Map tab (USGS tiles + last pipeline/waste overlay).
+3. After that, losing signal still shows pinned wells and the saved USGS tiles.
+4. Esri imagery/streets/topo stay online-only (their terms do not allow us to cache them).
+5. Turn-by-turn still opens the Google Maps app.
+
+## Open in Android Studio
+
+1. Android Studio (Koala / 2024.1 or newer) → Open → this `android/` folder.
+2. Let Gradle sync. Application id is `services.simba.wellnav`.
+3. Set your Play signing key in Gradle or Play App Signing.
+4. Build a signed AAB (`Build` → `Generate Signed App Bundle`).
+
+## Suggested listing copy
+
+**Short description:** Well and Pipeline Search
+
+**Full description:**
+Well Navigation is workplace software for oil and gas organizations. Employees sign in with their work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
+
+This app does not sell subscriptions and does not use Google Play Billing. Organization admins buy seats on the website in Chrome. In the field you can pin wells, save a USGS map view for offline use, and open Google Maps for turn-by-turn.
+
+## Play Console
+
+- Privacy policy: `https://wellnav.simba.services/privacy`
+- Terms: `https://wellnav.simba.services/terms`
+- **Billing:** no Play Billing / no in-app products. Organization seats are a workplace subscription sold on the website (Google Play Payments policy enterprise / workplace exception). `@simba.services` accounts are complimentary.
+- Account deletion: Account → Delete account (same as iOS). Do not add Google Sign-In unless you also add it on the web.
+- Data safety: account email and user ID (app functionality, linked, not sold); other user content (saved wells); IP address in server logs. No advertising ID. No location. Approximate/precise location: not collected.
+- High-res icon: `android/store/icon-512.png` (also `static/app-icon.png` at 1024). Feature graphic: `android/store/feature-graphic.png`.
+- Content rating: IARC questionnaire — business utility, no user-generated social, no sharing location.
+
+## Review notes (paste into Play Console)
+
+Well Navigation is workplace software sold to oil and gas organizations for their employees. The Play app does not sell digital goods and does not use Google Play Billing.
+
+Organization admins buy seats on https://wellnav.simba.services in the system browser. Stripe Checkout for MP Solutions is blocked inside the WebView. This is enterprise / workplace software, not a consumer subscription.
+
+The app is not a general-purpose browser (no address bar; host allow-list). Offline USGS tiles and pinned wells remain on device after the user taps Save this view.
+
+Account deletion: Account → Delete account.
+
+## What this project cannot do from this repo alone
+
+A Play Console upload requires a release keystore and your Google Play developer account. This repo ships the Android Studio project and launcher icons.

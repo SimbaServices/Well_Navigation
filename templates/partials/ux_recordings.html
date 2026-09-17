@@ -1,0 +1,27 @@
+{% if recordings %}
+  <table class="member-table">
+    <thead>
+      <tr>
+        <th>Started</th>
+        <th>Who</th>
+        <th>Size</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in recordings %}
+        <tr>
+          <td>{{ item.started_at }}</td>
+          <td>{{ item.email }}</td>
+          <td class="muted">{% if item.bytes %}{{ "%.1f"|format(item.bytes / 1048576) }} MB{% else %}empty{% endif %}</td>
+          <td class="member-actions">
+            <a class="ghost" href="/ux/recordings/{{ item.id }}">Watch</a>
+            <a class="ghost" href="/ux/recordings/{{ item.id }}/file">Download</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No sessions on the server yet. Sign in on the workspace, then pull files with <code>deploy\\pull-recordings.ps1</code>.</p>
+{% endif %}

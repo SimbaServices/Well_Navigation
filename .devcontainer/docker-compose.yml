@@ -1,0 +1,8 @@
+# Overlay when Cursor attaches to the hosted container.
+# Inherits .:/app and the live wellnav-data volume from docker-compose.yml,
+# so the IDE is looking at the same code and SQLite as nginx ??? :5050.
+services:
+  web:
+    command: uvicorn app:app --host 0.0.0.0 --port 5050 --reload
+    user: "1000:1000"
+    restart: unless-stopped

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12160f">
+  <title>Seats updated · Well Navigation</title>
+  <link rel="stylesheet" href="/static/css/app.css?v=ios3">
+  <link rel="apple-touch-icon" href="/static/app-icon.png">
+  {% include 'partials/hotjar.html' %}
+</head>
+<body class="gate legal-page">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <div>
+        <h1>Well Navigation</h1>
+        <p>Workspace billing</p>
+      </div>
+    </div>
+  </header>
+  <main class="gate-main legal-main">
+    <article class="legal-card">
+      <h2>{% if paid %}You're set{% else %}Return to the app{% endif %}</h2>
+      {% if paid %}
+        <p>Seat billing is handled on this website. If payment succeeded, your organization seats are active.</p>
+      {% else %}
+        <p>Open the Well Navigation iOS or Play Store app to continue. Search uses the signed-in workspace on your device.</p>
+      {% endif %}
+      <p class="muted">This page is not an App Store or Play Store purchase. Cards are collected by Stripe in this browser.</p>
+      <div class="account-actions">
+        <a href="/login?next=/" class="primary">Sign in on the website</a>
+        <a href="/privacy" class="ghost">Privacy</a>
+        <a href="/terms" class="ghost">Terms</a>
+      </div>
+    </article>
+  </main>
+  {% include 'partials/ux_capture.html' %}
+</body>
+</html>

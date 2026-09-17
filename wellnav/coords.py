@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from pyproj import CRS, Transformer
@@ -26,6 +27,7 @@ RRC_LAMBERT_WKT = (
 
 CRS_CATALOG: dict[str, dict] = {
     "wgs84": {"crs": "EPSG:4326", "label": "WGS 84 geographic"},
+    "web_mercator": {"crs": "EPSG:3857", "label": "Web Mercator"},
     "nad83": {"crs": "EPSG:4269", "label": "NAD83 geographic"},
     "nad27": {"crs": "EPSG:4267", "label": "NAD27 geographic"},
     "rrc_lambert_nad27_ft": {"crs": RRC_LAMBERT_WKT, "label": "RRC statewide Lambert (NAD27, US ft)"},
@@ -154,3 +156,20 @@ def convert_reported(x: float, y: float, preferred: str | None = None) -> Conver
 
 def crs_choices() -> list[tuple[str, str]]:
     return [(key, meta["label"]) for key, meta in CRS_CATALOG.items()]
+
+
+def transform_lonlat_nad27(lons: Sequence[float], lats: Sequence[float]) -> tuple[list[float], list[float]]:
+    """Batch-convert NAD27 geographic coordinates to WGS84 lon/lat."""
+    transformer = _transformer("nad27")
+    xs, ys = transformer.transform(list(lons), list(lats))
+    return list(xs), list(ys)
+
+
+def transform_line_nad27(points: Sequence[Sequence[float]]) -> list[list[float]]:
+    """Convert a polyline of NAD27 (lon, lat) vertices to WGS84."""
+    if not points:
+        return []
+    lons = [float(pt[0]) for pt in points]
+    lats = [float(pt[1]) for pt in points]
+    xs, ys = transform_lonlat_nad27(lons, lats)
+    return [[x, y] for x, y in zip(xs, ys)]

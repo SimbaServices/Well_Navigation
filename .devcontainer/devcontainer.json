@@ -1,0 +1,33 @@
+{
+  "name": "Well Navigation",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
+  "service": "web",
+  "runServices": ["web"],
+  "workspaceFolder": "/app",
+  "remoteUser": "wellnav",
+  "updateRemoteUserUID": false,
+  "overrideCommand": false,
+  "shutdownAction": "none",
+  "forwardPorts": [5050],
+  "portsAttributes": {
+    "5050": {
+      "label": "wellnav",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-python.python",
+        "anysphere.cursorpyright"
+      ]
+    }
+  }
+}

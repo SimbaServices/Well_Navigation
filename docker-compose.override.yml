@@ -1,10 +1,17 @@
-# Auto-loaded on this machine. On the server we start with
-# `docker compose -f docker-compose.yml up -d` so this file is ignored.
+# Auto-loaded only by a bare `docker compose up` on a machine that also
+# has docker-compose.yml. On the Hetzner host always use:
+#   docker compose -f docker-compose.yml up -d
+#
+# This overlay does not remount volumes. /app and /app/data stay the live
+# host bind + well_navigation_wellnav-data from docker-compose.yml.
+#
+# Do not `docker compose up` against Docker Desktop: that would create a
+# second empty wellnav stack. From Windows, either:
+#   ssh wellnav → open ~/Well_Navigation → Reopen in Container
+# or:
+#   powershell -File deploy/use-wellnav-docker.ps1
 services:
   web:
     command: uvicorn app:app --host 0.0.0.0 --port 5050 --reload
-    volumes:
-      - .:/app
-      - wellnav-data:/app/data
     user: "0:0"
     restart: "no"

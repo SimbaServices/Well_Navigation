@@ -1,10 +1,15 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
         curl \
+        git \
         libproj-dev \
+        openssh-client \
+        procps \
         proj-bin \
         proj-data \
+        wget \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

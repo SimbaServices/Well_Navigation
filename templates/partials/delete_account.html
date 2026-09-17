@@ -1,0 +1,25 @@
+<div class="account-card">
+  <h2>Delete account</h2>
+  <p>This permanently deletes your Well Navigation account, saved wells, and search history. Organization records that other people still use are kept. This cannot be undone.</p>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  <form class="auth-form" action="/account/delete" method="post"
+        hx-post="/account/delete" hx-target="#results" hx-indicator="#spinner">
+    <label>
+      Password
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <label>
+      Type DELETE to confirm
+      <input type="text" name="confirm" autocomplete="off" required placeholder="DELETE">
+    </label>
+    <button type="submit" class="primary danger-btn">Delete my account</button>
+  </form>
+  <div class="account-actions">
+    <a href="/account" class="ghost"
+       hx-get="/account" hx-target="#results" hx-push-url="true">Cancel</a>
+    <a href="/privacy" class="ghost">Privacy policy</a>
+    <a href="/terms" class="ghost">Terms</a>
+  </div>
+</div>

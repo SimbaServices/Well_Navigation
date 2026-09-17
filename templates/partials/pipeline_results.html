@@ -1,0 +1,95 @@
+{% if error %}
+  <div class="banner error">{{ error }}</div>
+{% endif %}
+
+{% set owner = focus if focus else {} %}
+<div class="pipeline-results"
+     {% if auto_map and (p5 or system or owner.operator) %}data-auto-map="1"{% endif %}
+     {% if p5 %}data-p5="{{ p5 }}"{% endif %}
+     {% if system %}data-system="{{ system }}"{% endif %}
+     {% if owner.operator %}data-operator="{{ owner.operator }}"{% endif %}
+     {% if owner.minx is not none %}data-west="{{ owner.minx }}" data-south="{{ owner.miny }}" data-east="{{ owner.maxx }}" data-north="{{ owner.maxy }}"{% endif %}>
+  <div class="result-head">
+    <div>
+      <h2>{% if kind == 'systems' %}Pipelines{% else %}Pipeline operators{% endif %}</h2>
+      <p class="muted">
+        {% if subtitle %}{{ subtitle }} · {% endif %}
+        {{ rows|length }} match{{ '' if rows|length == 1 else 'es' }}
+      </p>
+    </div>
+  </div>
+
+  {% if rows %}
+    <div class="table-wrap">
+      <table class="wells pipeline-table">
+        <thead>
+          <tr>
+            <th></th>
+            {% if kind == 'systems' %}
+              <th>Pipeline / system</th>
+              <th>Operator</th>
+              <th>P-5</th>
+              <th>Permits</th>
+              <th>Segments</th>
+            {% else %}
+              <th>Operator</th>
+              <th>P-5</th>
+              <th>Systems</th>
+              <th>Permits</th>
+              <th>Segments</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr class="pipeline-row"
+                data-p5="{{ row.p5 or '' }}"
+                data-system="{{ row.system or '' }}"
+                data-operator="{{ row.operator or '' }}"
+                data-west="{{ row.minx }}"
+                data-south="{{ row.miny }}"
+                data-east="{{ row.maxx }}"
+                data-north="{{ row.maxy }}">
+              <td class="map-col">
+                <button type="button" class="ghost pipeline-map-btn">Show on map</button>
+              </td>
+              {% if kind == 'systems' %}
+                <td>
+                  <button type="button" class="well-name-link pipeline-map-btn">{{ row.system }}</button>
+                </td>
+                <td>{{ row.operator }}</td>
+                <td class="mono">{{ row.p5 or '—' }}</td>
+                <td class="mono">{{ row.t4_permits }}</td>
+                <td class="mono">{{ row.segments }}</td>
+              {% else %}
+                <td>
+                  <form action="/pipelines/search" method="get"
+                        hx-get="/pipelines/search"
+                        hx-target="#results"
+                        hx-include="#search-form"
+                        hx-push-url="true"
+                        hx-indicator="#spinner">
+                    <input type="hidden" name="scope" value="pipelines">
+                    <input type="hidden" name="pipe_mode" value="operator">
+                    <input type="hidden" name="commit" value="1">
+                    {% if row.p5 %}<input type="hidden" name="p5" value="{{ row.p5 }}">{% endif %}
+                    {% if not row.p5 and row.operator %}
+                      <input type="hidden" name="operator" value="{{ row.operator }}">
+                    {% endif %}
+                    <button type="submit" class="well-name-link">{{ row.operator }}</button>
+                  </form>
+                </td>
+                <td class="mono">{{ row.p5 or '—' }}</td>
+                <td class="mono">{{ row.systems }}</td>
+                <td class="mono">{{ row.t4_permits }}</td>
+                <td class="mono">{{ row.segments }}</td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% elif not error %}
+    <div class="empty">Search pipeline operators or pipeline / system names from the overlay.</div>
+  {% endif %}
+</div>

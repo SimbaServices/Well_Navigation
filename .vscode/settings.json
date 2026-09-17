@@ -1,0 +1,10 @@
+{
+  "python.defaultInterpreterPath": "/usr/local/bin/python",
+  "remote.autoForwardPorts": true,
+  "remote.portsAttributes": {
+    "5050": {
+      "label": "wellnav",
+      "onAutoForward": "notify"
+    }
+  }
+}

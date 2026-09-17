@@ -1,0 +1,106 @@
+{% set f = filters if filters is defined and filters else {} %}
+{% set ops = f.operators|default([]) %}
+{% set name_text = f.name|default('') %}
+{% set api_text = f.api|default('') %}
+{% set name_on = f.name_active|default(false) %}
+{% set api_on = f.api_active|default(false) %}
+
+<input type="hidden" name="sort" value="{{ sort|default('name') }}">
+<input type="hidden" name="dir" value="{{ dir|default('asc') }}">
+{% if lease_no is defined and lease_no %}
+  <input type="hidden" name="lease_no" value="{{ lease_no }}">
+{% endif %}
+{% if district is defined and district %}
+  <input type="hidden" name="district" value="{{ district }}">
+{% endif %}
+{% if lease_type is defined and lease_type %}
+  <input type="hidden" name="lease_type" value="{{ lease_type }}">
+{% endif %}
+
+{% if ops or name_text or api_text %}
+  <div class="filters filter-bar">
+    <p class="filter-label">Active filters</p>
+    <div class="filter-chips">
+      {% for op in ops %}
+        <div class="filter-chip{% if not op.active %} inactive off{% endif %}">
+          <label>
+            <input type="checkbox" name="op" value="{{ op.number }}"
+                   {% if op.active %}checked{% endif %}
+                   hx-get="/search"
+                   hx-include="#search-form"
+                   hx-target="#results"
+                   hx-push-url="true"
+                   hx-indicator="#spinner"
+                   hx-trigger="change">
+            <span>{{ op.name }}</span>
+          </label>
+          <input type="hidden" name="opn" value="{{ op.number }}|{{ op.name }}">
+          <button type="submit" class="filter-remove chip-x" name="remove_op" value="{{ op.number }}"
+                  aria-label="Remove {{ op.name }} filter"
+                  hx-get="/search"
+                  hx-include="#search-form"
+                  hx-target="#results"
+                  hx-push-url="true"
+                  hx-indicator="#spinner">×</button>
+        </div>
+      {% endfor %}
+
+      {% if name_text %}
+        <div class="filter-chip{% if not name_on %} inactive off{% endif %}">
+          <label>
+            <input type="checkbox" name="use_name" value="1"
+                   {% if name_on %}checked{% endif %}
+                   hx-get="/search"
+                   hx-include="#search-form"
+                   hx-target="#results"
+                   hx-push-url="true"
+                   hx-indicator="#spinner"
+                   hx-trigger="change">
+            <span>Name {{ name_text }}</span>
+          </label>
+          <input type="hidden" name="name" value="{{ name_text }}">
+          <button type="submit" class="filter-remove chip-x" name="remove_name" value="1"
+                  aria-label="Remove name filter"
+                  hx-get="/search"
+                  hx-include="#search-form"
+                  hx-target="#results"
+                  hx-push-url="true"
+                  hx-indicator="#spinner">×</button>
+        </div>
+      {% endif %}
+
+      {% if api_text %}
+        <div class="filter-chip{% if not api_on %} inactive off{% endif %}">
+          <label>
+            <input type="checkbox" name="use_api" value="1"
+                   {% if api_on %}checked{% endif %}
+                   hx-get="/search"
+                   hx-include="#search-form"
+                   hx-target="#results"
+                   hx-push-url="true"
+                   hx-indicator="#spinner"
+                   hx-trigger="change">
+            <span>API {{ api_text }}</span>
+          </label>
+          <input type="hidden" name="api" value="{{ api_text }}">
+          <button type="submit" class="filter-remove chip-x" name="remove_api" value="1"
+                  aria-label="Remove API filter"
+                  hx-get="/search"
+                  hx-include="#search-form"
+                  hx-target="#results"
+                  hx-push-url="true"
+                  hx-indicator="#spinner">×</button>
+        </div>
+      {% endif %}
+
+      <button type="submit" class="clear-all clear-filters ghost" name="clear_filters" value="1"
+              hx-get="/search"
+              hx-include="#search-form"
+              hx-target="#results"
+              hx-push-url="true"
+              hx-indicator="#spinner">
+        Clear all filters
+      </button>
+    </div>
+  </div>
+{% endif %}

@@ -1,0 +1,58 @@
+<div class="auth-card">
+  <h2>Enter your code</h2>
+  <p class="muted">
+    We emailed a 6-digit code to {{ phone_hint }}. It expires in {{ expires_minutes }} minutes.
+    {% if purpose == "register" %}
+      Enter it to finish creating your account.
+    {% elif purpose == "recovery" %}
+      Enter it to recover your account and set a new password.
+    {% else %}
+      Enter it to finish signing in.
+    {% endif %}
+  </p>
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+  <form class="auth-form"
+        action="{{ verify_action }}"
+        method="post"
+        hx-post="{{ verify_action }}"
+        hx-target="#auth-main"
+        hx-push-url="false"
+        hx-disabled-elt="find .primary">
+    <input type="hidden" name="next" value="{{ next_path or '/' }}">
+    <label>
+      6-digit code
+      <input class="otp-input" name="code" inputmode="numeric" autocomplete="one-time-code"
+             pattern="[0-9]{6}" maxlength="6" minlength="6" required placeholder="000000">
+    </label>
+    <button type="submit" class="primary">
+      <span class="btn-idle">Verify</span>
+      <span class="btn-busy"><i class="btn-spinner" aria-hidden="true"></i>Verifying…</span>
+    </button>
+  </form>
+  <form class="auth-form"
+        action="{{ resend_action }}"
+        method="post"
+        hx-post="{{ resend_action }}"
+        hx-target="#auth-main"
+        hx-disabled-elt="find .ghost">
+    <input type="hidden" name="next" value="{{ next_path or '/' }}">
+    <button type="submit" class="ghost">
+      <span class="btn-idle">Send a new code</span>
+      <span class="btn-busy"><i class="btn-spinner" aria-hidden="true"></i>Sending code…</span>
+    </button>
+  </form>
+  <p class="hint">
+    {% if purpose == "register" %}
+      <a href="/register" class="text-link"
+         hx-get="/register" hx-target="#auth-main" hx-push-url="true">Start over</a>
+    {% elif purpose == "recovery" %}
+      <a href="/login/forgot" class="text-link"
+         hx-get="/login/forgot" hx-target="#auth-main" hx-push-url="true">Start over</a>
+    {% else %}
+      <a href="/login" class="text-link"
+         hx-get="/login" hx-target="#auth-main" hx-push-url="true">Back to sign in</a>
+    {% endif %}
+  </p>
+</div>

@@ -1,0 +1,5 @@
+<resources>
+    <color name="wellnav_bg">#12160F</color>
+    <color name="wellnav_banner">#3D2E0A</color>
+    <color name="wellnav_accent">#D4A017</color>
+</resources>

@@ -1,0 +1,18 @@
+{% set total = (added or 0) + (kept or 0) %}
+{% if total %}
+<span data-apis="{{ (apis or [])|join(',') }}">
+  {% if added and kept %}
+    Saved {{ added }} new well{{ "s" if added != 1 else "" }}. {{ kept }} already on your account.
+  {% elif added %}
+    Saved {{ added }} well{{ "s" if added != 1 else "" }} to your account.
+  {% else %}
+    {{ kept }} selected well{{ "s are" if kept != 1 else " is" }} already on your account.
+  {% endif %}
+  <a href="/saved" class="text-link"
+     hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">View saved</a>
+</span>
+{% elif skipped %}
+<span>Could not save those wells.</span>
+{% else %}
+<span>Select one or more wells first.</span>
+{% endif %}

@@ -10,6 +10,45 @@ from wellnav.parsers import format_api
 from wellnav.states import DEFAULT_PERMIT_LIFETIME_DAYS, PERMIT_SYMNUMS, TX_COUNTY_NAME
 
 
+GIS_OPERATOR_FIELDS = (
+    "OPERATOR", "OPERATOR_NAME", "OPER_NM", "OPNAME", "GIS_OPERATOR", "OPERATOR_NM",
+)
+GIS_OPERATOR_NO_FIELDS = (
+    "OPERATOR_NUMBER", "OPERATOR_NO", "OPER_NO", "OPNUM", "GIS_OPERATOR_NUMBER",
+)
+GIS_LEASE_NAME_FIELDS = (
+    "LEASE_NAME", "LEASE", "LEASE_NM", "GIS_LEASE_NAME", "GIS_LEASE",
+)
+GIS_LEASE_NO_FIELDS = (
+    "LEASE_NO", "LEASE_NUMBER", "LEASE_ID", "GIS_LEASE_NO", "LEASE_NUM",
+)
+GIS_DISTRICT_FIELDS = ("DISTRICT", "DIST", "DIST_CODE", "GIS_DISTRICT")
+GIS_FIELD_FIELDS = ("FIELD", "FIELD_NAME", "GIS_FIELD")
+
+
+def _first_attr(attrs: dict, names: tuple[str, ...]) -> str:
+    for name in names:
+        value = attrs.get(name)
+        if value not in (None, ""):
+            return str(value).strip()
+    return ""
+
+
+def identity_from_gis(*attr_sets: dict) -> dict:
+    """Pull operator/lease/district only when GIS already sent those fields."""
+    merged: dict = {}
+    for attrs in attr_sets:
+        merged.update(attrs or {})
+    return {
+        "operator": _first_attr(merged, GIS_OPERATOR_FIELDS),
+        "operator_number": _first_attr(merged, GIS_OPERATOR_NO_FIELDS),
+        "lease_name": _first_attr(merged, GIS_LEASE_NAME_FIELDS),
+        "lease_no": _first_attr(merged, GIS_LEASE_NO_FIELDS),
+        "district": _first_attr(merged, GIS_DISTRICT_FIELDS),
+        "field": _first_attr(merged, GIS_FIELD_FIELDS),
+    }
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -31,6 +70,7 @@ def merge_county_features(
     county_name: str,
     lifetime_days: int = DEFAULT_PERMIT_LIFETIME_DAYS,
     now: str | None = None,
+    identities: dict[str, dict] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     now = now or utcnow()
     expires = (
@@ -64,6 +104,7 @@ def merge_county_features(
             now=now,
             expires_at=expires,
             lifetime_days=lifetime_days,
+            identity=(identities or {}).get(api8),
         )
         if record["bucket"] == "permit":
             permits.append(record)
@@ -82,6 +123,7 @@ def build_record(
     now: str,
     expires_at: str,
     lifetime_days: int,
+    identity: dict | None = None,
 ) -> dict:
     default_attrs = _attrs(default_feat) if default_feat else {}
     surface_attrs = _attrs(surface_feat) if surface_feat else {}
@@ -112,7 +154,19 @@ def build_record(
         wellhead = _serialize_point(to_wgs84(float(lon83), float(lat83), "nad83"))
 
     county = county_name or TX_COUNTY_NAME.get(county_code, "")
-    well_name = f"{county} #{well_no}".strip(" #") if well_no else format_api(api8)
+    gis_ident = identity_from_gis(default_attrs, surface_attrs)
+    ident = identity or {}
+    lease_name = (ident.get("lease_name") or gis_ident["lease_name"] or "").strip()
+    lease_no = (ident.get("lease_no") or gis_ident["lease_no"] or "").strip()
+    district = (ident.get("district") or gis_ident["district"] or "").strip()
+    operator = (ident.get("operator") or gis_ident["operator"] or "").strip()
+    operator_number = (ident.get("operator_number") or gis_ident["operator_number"] or "").strip()
+    field = (ident.get("field") or gis_ident["field"] or "").strip()
+    well_no = (ident.get("well_no") or well_no or "").strip()
+    if lease_name:
+        well_name = f"{lease_name} #{well_no}".strip(" #")
+    else:
+        well_name = f"{county} #{well_no}".strip(" #") if well_no else format_api(api8)
 
     return {
         "bucket": bucket,
@@ -122,14 +176,14 @@ def build_record(
         "status": status,
         "well_name": well_name,
         "well_no": well_no,
-        "lease_name": "",
-        "lease_no": "",
+        "lease_name": lease_name,
+        "lease_no": lease_no,
         "county": county,
         "county_code": county_code,
-        "district": "",
-        "operator": "",
-        "operator_number": "",
-        "field": "",
+        "district": district,
+        "operator": operator,
+        "operator_number": operator_number,
+        "field": field,
         "well_type": symbol or "",
         "symbol": symbol,
         "symnum": symnum_i,

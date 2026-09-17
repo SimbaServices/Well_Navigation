@@ -2,30 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12160f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/static/app-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/static/css/app.css?v=offline1">
+  <script src="/static/vendor/htmx.min.js"></script>
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
+  <script src="/static/js/sw-register.js?v=1"></script>
+  {% include 'partials/hotjar.html' %}
 </head>
 <body>
+  <div id="net-banner" class="net-banner" hidden>
+    Offline — pinned wells and saved USGS tiles still work. Search needs a connection.
+  </div>
   <header class="topbar">
     <div class="brand">
       <span class="mark">◆</span>
       <div>
         <h1>Well Navigation</h1>
-        <p>Local SQLite well tables · wellhead-first mapping</p>
+        <p>Texas · New Mexico · Oklahoma · Louisiana</p>
       </div>
     </div>
     <div class="topbar-meta">
-      {% if counts %}{{ counts.wells }} wells · {{ counts.permits }} live permits{% else %}Texas RRC{% endif %}
+      <span class="census hide-phone">{% if counts %}{{ "{:,}".format(counts.wells) }} wells · {{ "{:,}".format(counts.live_permits if counts.live_permits is defined else counts.permits) }} live permits{% else %}Texas RRC{% endif %}</span>
       {% include 'partials/account_nav.html' %}
     </div>
   </header>
 
-  <main class="layout">
-    <section class="panel search-panel">
+  <main class="workspace" data-pane="{{ 'map' if map_html else 'search' }}">
+    <div class="workspace-tabs" role="tablist" aria-label="Search and map">
+      <button type="button" class="workspace-tab" id="tab-search" role="tab"
+              aria-controls="search-panel" aria-selected="true" data-pane="search">
+        Search
+      </button>
+      <button type="button" class="workspace-tab" id="tab-map" role="tab"
+              aria-controls="map-panel" aria-selected="false" data-pane="map" tabindex="-1">
+        Map <span id="map-tab-count" class="tab-count" hidden></span>
+      </button>
+    </div>
+    <div class="layout workspace-panes">
+    <section id="search-panel" class="panel search-panel" role="tabpanel" aria-labelledby="tab-search">
       <form id="search-form"
             class="search-form"
             action="/search"
@@ -37,7 +58,43 @@
             hx-sync="this:abort"
             hx-disabled-elt="find .primary">
         <input type="hidden" name="offset" value="0">
-        <div class="modes" role="tablist">
+        <div class="scopes" role="tablist" aria-label="Search context">
+          <label class="mode">
+            <input type="radio" name="scope" value="wells" checked>
+            <span>Wells</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="scope" value="pipelines">
+            <span>Pipelines</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="scope" value="disposal">
+            <span>Waste sites</span>
+          </label>
+        </div>
+        <div class="scopes states" role="tablist" aria-label="State">
+          <label class="mode">
+            <input type="radio" name="state" value="tx"{% if state|default('tx') == 'tx' %} checked{% endif %}>
+            <span>Texas</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="state" value="nm"{% if state|default('tx') == 'nm' %} checked{% endif %}>
+            <span>New Mexico</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="state" value="ok"{% if state|default('tx') == 'ok' %} checked{% endif %}>
+            <span>Oklahoma</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="state" value="la"{% if state|default('tx') == 'la' %} checked{% endif %}>
+            <span>Louisiana</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="state" value="all"{% if state|default('tx') == 'all' %} checked{% endif %}>
+            <span>All</span>
+          </label>
+        </div>
+        <div class="modes modes-wells" role="tablist">
           <label class="mode">
             <input type="radio" name="mode" value="name" checked>
             <span>Well / lease name</span>
@@ -51,6 +108,30 @@
             <span>Operator</span>
           </label>
         </div>
+        <div class="modes modes-pipelines" role="tablist">
+          <label class="mode">
+            <input type="radio" name="pipe_mode" value="operator" checked>
+            <span>Operator</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="pipe_mode" value="name">
+            <span>Pipeline name</span>
+          </label>
+        </div>
+        <div class="modes modes-disposal" role="tablist">
+          <label class="mode">
+            <input type="radio" name="disp_mode" value="name" checked>
+            <span>Facility</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="disp_mode" value="operator">
+            <span>Operator</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="disp_mode" value="permit">
+            <span>Permit</span>
+          </label>
+        </div>
 
         <div class="query-row">
           <label class="sr-only" for="q">Search</label>
@@ -60,23 +141,33 @@
                    hx-get="/operators"
                    hx-trigger="input changed delay:400ms[this.closest('form').mode.value=='operator'&&this.value.trim().length>=2]"
                    hx-target="#operator-suggest"
-                   hx-include="[name=mode]"
-                   hx-params="q,mode"
+                   hx-include="[name=mode],[name=state]"
+                   hx-params="q,mode,state"
                    hx-sync="this:abort">
             <span class="ph ph-name">Lease or well name, e.g. UNIVERSITY 11</span>
-            <span class="ph ph-api">42-003-00290</span>
-            <span class="ph ph-operator">Operator name, e.g. OXY</span>
+            <span class="ph ph-api">42-003-00290 · 30-045-08708 · 35-001-00002</span>
+            <span class="ph ph-operator">Operator name — adds a filter, e.g. OXY</span>
+            <span class="ph ph-pipe-op">Pipeline operator or P-5, e.g. ENTERPRISE</span>
+            <span class="ph ph-pipe-name">Pipeline or system name, e.g. BASIN</span>
+            <span class="ph ph-disp-name">Facility name, e.g. SOUTH TEXAS DISPOSAL</span>
+            <span class="ph ph-disp-op">Waste facility operator, e.g. R360</span>
+            <span class="ph ph-disp-permit">Permit number, e.g. STF-0006</span>
           </div>
-          <button type="submit" class="primary">Search</button>
+          <button type="submit" class="primary" name="commit" value="1">Search</button>
         </div>
-        <div id="operator-suggest"></div>
-        <p class="hint hint-name">Name searches local well and lease names in SQLite.</p>
-        <p class="hint hint-api">Accepts 00300290, 42-003-00290, or 4200300290.</p>
-        <p class="hint hint-operator">Type an operator name. Pick from the list or press Search.</p>
+        <div id="active-filters">
+          {% include 'partials/filters.html' %}
+        </div>
       </form>
-      <div id="recent-slot">
-        {% include 'partials/recent.html' %}
-      </div>
+      <div id="operator-suggest"></div>
+      <p class="hint hint-name">Add an operator filter, then search by well name to narrow those wells.</p>
+      <p class="hint hint-api">Add an operator filter, then search by API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
+      <p class="hint hint-operator">Add an operator filter. Pick another to add more, then search by well name to narrow those wells.</p>
+      <p class="hint hint-pipe-op">Search Texas T-4, New Mexico EIA/BLM ROW, Oklahoma EIA, or Louisiana EIA/BSEE lines.</p>
+      <p class="hint hint-pipe-name">Search by pipeline or system name. Click a match to zoom the overlay to those lines.</p>
+      <p class="hint hint-disp-name">Search commercial waste, UIC, and salt-water disposal sites, then route in Apple or Google Maps.</p>
+      <p class="hint hint-disp-op">Search by the RRC-permitted operator that runs the waste facility.</p>
+      <p class="hint hint-disp-permit">Search by surface waste permit number (STF, R9, WP, and similar).</p>
 
       <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
       <div id="results" class="results">
@@ -84,11 +175,8 @@
           {{ results_html | safe }}
         {% else %}
           <div class="empty">
-            Search the local SQLite well tables by name, county, 8- or 10-digit API,
-            or operator. Selecting a well pins the stored wellhead.
-            {% if not user %}
-              <span class="muted"> Sign in to save wells and cache your local lookups.</span>
-            {% endif %}
+            Search wells, pipelines, and waste sites in Texas, New Mexico,
+            Oklahoma, and Louisiana. Pick a state or All, then search.
           </div>
         {% endif %}
       </div>
@@ -98,14 +186,64 @@
       {% if map_html %}
         {{ map_html | safe }}
       {% else %}
-        <div class="map-placeholder">
-          <h2>Map</h2>
-          <p>Select a well to render configurable base layers and a wellhead pin. Route the pin into Apple Maps or Google Maps.</p>
+        <div class="map-chrome">
+          <div class="map-head">
+            <div>
+              <h2 id="map-title">Map</h2>
+                  <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
+            </div>
+            <div class="map-actions">
+              <label class="basemap-picker">
+                Base layer
+                <select id="basemap-select" hx-on:change="setBasemap(this.value)">
+                  <option value="imagery">Esri Imagery</option>
+                  <option value="streets">Esri Streets</option>
+                  <option value="topo">Esri Topo</option>
+                  <option value="osm">OpenStreetMap</option>
+                  <option value="usgs">USGS Topo (works offline)</option>
+                </select>
+              </label>
+              <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+              <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
+              <div class="offline-pack">
+                <button type="button" class="ghost" id="offline-save">Save this view</button>
+                <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
+                <p id="offline-status" class="muted"></p>
+              </div>
+            </div>
+          </div>
+          <div id="well-map" class="well-map"></div>
+          <div id="pipeline-legend" class="pipeline-legend">
+            <span><i class="swatch gas"></i>Gas</span>
+            <span><i class="swatch crude"></i>Crude</span>
+            <span><i class="swatch hvl"></i>HVL</span>
+            <span><i class="swatch product"></i>Product</span>
+            <span><i class="swatch other"></i>Other</span>
+            <span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>
+          </div>
+          <p id="pipeline-status" class="muted pipeline-status"></p>
+          <div id="pipeline-owners" class="pipeline-owners" hidden></div>
+          <div id="disposal-legend" class="pipeline-legend disposal-legend" hidden>
+            <span><i class="swatch disposal"></i>Commercial waste disposal</span>
+            <span class="muted">TX commercial · NM SWD · OK UIC · LA injection</span>
+          </div>
+          <p id="disposal-status" class="muted pipeline-status"></p>
+          <ul id="mapped-list" class="mapped-list"></ul>
+          <div class="map-footer">
+            <div id="map-coords" class="coord-bar"></div>
+            <div id="nav-links" class="route-row"></div>
+          </div>
         </div>
       {% endif %}
     </section>
+    </div>
   </main>
+  <footer class="site-footer">
+    {% include 'partials/legal_footer.html' %}
+  </footer>
 
-  <script src="/static/js/map.js"></script>
+  <script src="/static/js/offline-map.js?v=1"></script>
+  <script src="/static/js/map.js?v=offline1"></script>
+  {% include 'partials/ux_capture.html' %}
 </body>
 </html>

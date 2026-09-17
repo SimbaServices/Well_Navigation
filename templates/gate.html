@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12160f">
+  <title>Well Navigation · Sign in</title>
+  <link rel="stylesheet" href="/static/css/app.css?v=offline1">
+  <link rel="apple-touch-icon" href="/static/app-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/static/vendor/htmx.min.js"></script>
+  {% include 'partials/hotjar.html' %}
+  <script>
+    document.addEventListener("submit", function (event) {
+      var form = event.target;
+      if (!form || !form.classList || !form.classList.contains("auth-form")) return;
+      form.classList.add("is-busy");
+      form.querySelectorAll("button").forEach(function (button) {
+        button.disabled = true;
+      });
+    }, true);
+  </script>
+</head>
+<body class="gate">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <div>
+        <h1>Well Navigation</h1>
+        <p>Sign in to search wells, pipelines, and waste sites in TX, NM, OK, and LA</p>
+      </div>
+    </div>
+    {% if counts %}
+      <div class="topbar-meta">{{ "{:,}".format(counts.wells) }} wells · {{ "{:,}".format(counts.live_permits if counts.live_permits is defined else counts.permits) }} live permits</div>
+    {% endif %}
+  </header>
+  <main id="auth-main" class="gate-main">
+    {{ auth_html | safe }}
+  </main>
+  <footer class="site-footer">
+    {% include 'partials/legal_footer.html' %}
+  </footer>
+  {% include 'partials/ux_capture.html' %}
+</body>
+</html>

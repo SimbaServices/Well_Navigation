@@ -1,4 +1,4 @@
-"""Attach lease/operator identity. County-wide wellbore search exceeds RRC's cap."""
+"""Per-API identity backfill. Full loads now pull lease/operator by county in the worker."""
 
 from __future__ import annotations
 

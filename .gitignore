@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .venv/
+.env
 rrc_cookies.txt
 lease_cookies.txt
 lease_form.html
@@ -14,3 +15,14 @@ data/*.db-shm
 data/*.log
 data/.session_secret
 data/ingest_scratch/
+data/ux-recordings/
+ux-recordings/
+data/pipelines/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+
+# Contentsquare wizard (generated)
+.cs-wizard/

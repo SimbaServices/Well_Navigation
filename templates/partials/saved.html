@@ -3,42 +3,66 @@
     <h2>Saved wells</h2>
     <p class="muted">{{ wells|length }} well{{ "s" if wells|length != 1 else "" }} on your account</p>
   </div>
+  {% if wells %}
+    <div class="results-toolbar result-tools">
+      <button type="button" class="ghost" data-map-action="selected">Map selected</button>
+      <button type="button" class="ghost" data-map-action="page">Map this page</button>
+      <button type="button" class="ghost" data-map-action="clear">Clear map</button>
+    </div>
+  {% endif %}
 </div>
 
 {% if wells %}
   <div class="table-wrap">
-    <table class="wells">
+    <table class="wells" data-results-table data-pick-key="saved">
       <thead>
         <tr>
-          <th></th>
+          <th class="pick-col">
+            <input type="checkbox" class="well-pick-all" title="Select all saved" aria-label="Select all saved">
+          </th>
+          <th class="map-col">Pin</th>
           <th>Well name</th>
           <th>API</th>
+          <th>Status</th>
+          <th class="col-operator">Operator</th>
           <th>Lease</th>
           <th>County</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for well in wells %}
-          <tr class="well-row">
-            <td class="save-cell">{% with variant='saved' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
+          <tr class="well-row"
+              data-api="{{ well.api }}"
+              data-name="{{ well.well_name or '' }}"
+              data-lease="{{ well.lease_name or '' }}"
+              data-county="{{ well.county or '' }}"
+              data-operator="{{ well.operator or '' }}"
+              data-lat="{{ well.wellhead_lat if well.wellhead_lat is not none else '' }}"
+              data-lon="{{ well.wellhead_lon if well.wellhead_lon is not none else '' }}"
+              data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
+              data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
+              data-status="{{ well.status_label or '' }}">
+            <td class="pick-col">
+              <input type="checkbox" class="well-pick" aria-label="Select {{ well.well_name }}">
+            </td>
+            <td class="map-col">
+              <button type="button" class="map-toggle" title="Add to map">Pin</button>
+            </td>
             <td>
-              <a class="well-name-link"
-                 href="{{ well_href(well) }}"
-                 hx-get="{{ well_href(well) }}"
-                 hx-target="#map-panel"
-                 hx-push-url="true"
-                 hx-indicator="#spinner">
-                {{ well.well_name }}
-              </a>
+              <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
             </td>
             <td class="mono">{{ well.api_display }}</td>
+            <td class="col-status">{{ well.status_label or well.symbol or "" }}</td>
+            <td class="col-operator">{{ well.operator }}</td>
             <td>{{ well.lease_name }}</td>
             <td>{{ well.county }}</td>
+            <td class="save-cell">{% with variant='saved' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 {% else %}
-  <div class="empty">No saved wells yet. Open a well and press Save.</div>
+  <div class="empty">No saved wells yet. Select wells in search results and press Save selected, or press ☆ Save on a row.</div>
 {% endif %}

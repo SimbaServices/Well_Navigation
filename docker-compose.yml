@@ -1,4 +1,17 @@
-# Hosted defaults. Local `docker compose up` also loads docker-compose.override.yml.
+# Live host layout. Code and SQLite are the Hetzner paths, not a laptop folder.
+# Cursor Remote-SSH → Reopen in Container, or `docker context use wellnav`
+# from Windows, both attach to this same stack.
+#
+# Code: /home/wellnav/Well_Navigation bind-mounted at /app (absolute on purpose
+# so a Windows Docker Desktop compose cannot hide the live checkout).
+# SQLite: named volume well_navigation_wellnav-data at /app/data
+# (wellnav.db, pipelines.db, disposal.db). That overlay is required — without it, /app/data
+# would be the repo data/ folder from the bind mount.
+#
+# Production: docker compose -f docker-compose.yml up -d
+# Do not let docker-compose.override.yml load on this host.
+name: wellnav
+
 services:
   web:
     build: .
@@ -8,9 +21,33 @@ services:
     ports:
       - "127.0.0.1:5050:5050"
     volumes:
+      - /home/wellnav/Well_Navigation:/app
       - wellnav-data:/app/data
     environment:
       TZ: America/Chicago
+      # After deploy/setup-https.sh, set WELLNAV_HTTPS=1 in .env
+      WELLNAV_HTTPS: ${WELLNAV_HTTPS:-0}
+      WELLNAV_PUBLIC_URL: ${WELLNAV_PUBLIC_URL:-https://wellnav.simba.services}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      WELLNAV_SMTP_HOST: ${WELLNAV_SMTP_HOST:-mail.simba.services}
+      WELLNAV_SMTP_PORT: ${WELLNAV_SMTP_PORT:-587}
+      WELLNAV_SMTP_USER: ${WELLNAV_SMTP_USER:-}
+      WELLNAV_SMTP_PASSWORD: ${WELLNAV_SMTP_PASSWORD:-}
+      WELLNAV_SMTP_FROM: ${WELLNAV_SMTP_FROM:-}
+      # Stripe seat billing. Price lookup key wellnav_seat_monthly is $15 / seat / month.
+      # Webhook URL: https://wellnav.simba.services/billing/webhook
+      # @simba.services accounts never pay. Enforcement starts once the secret can resolve a price.
+      WELLNAV_STRIPE_SECRET: ${WELLNAV_STRIPE_SECRET:-}
+      WELLNAV_STRIPE_WEBHOOK_SECRET: ${WELLNAV_STRIPE_WEBHOOK_SECRET:-}
+      WELLNAV_STRIPE_PRICE_ID: ${WELLNAV_STRIPE_PRICE_ID:-}
+      WELLNAV_STRIPE_PRICE_LOOKUP_KEY: ${WELLNAV_STRIPE_PRICE_LOOKUP_KEY:-wellnav_seat_monthly}
+      WELLNAV_SEAT_PRICE_CENTS: ${WELLNAV_SEAT_PRICE_CENTS:-1500}
+      WELLNAV_REQUIRE_BILLING: ${WELLNAV_REQUIRE_BILLING:-}
+      WELLNAV_HOTJAR_ID: ${WELLNAV_HOTJAR_ID:-}
+      WELLNAV_CLARITY_ID: ${WELLNAV_CLARITY_ID:-}
+      WELLNAV_CONTENTSQUARE_ID: ${WELLNAV_CONTENTSQUARE_ID:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/healthz')"]
@@ -21,3 +58,7 @@ services:
 
 volumes:
   wellnav-data:
+    # Live Hetzner volume created under project well_navigation.
+    # external: true keeps compose from minting a second empty volume.
+    name: well_navigation_wellnav-data
+    external: true

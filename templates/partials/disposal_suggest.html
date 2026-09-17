@@ -1,0 +1,27 @@
+{% if hits %}
+  <ul class="suggest">
+    {% for hit in hits %}
+      <li>
+        <form action="/disposal/search" method="get"
+              hx-get="/disposal/search"
+              hx-target="#results"
+              hx-include="#search-form"
+              hx-push-url="true"
+              hx-indicator="#spinner">
+          <input type="hidden" name="scope" value="disposal">
+          <input type="hidden" name="disp_mode" value="{{ kind }}">
+          <input type="hidden" name="commit" value="1">
+          <input type="hidden" name="site_id" value="{{ hit.id }}">
+          <button type="submit" class="suggest-item">
+            <strong>{{ hit.facility or hit.operator or hit.permit_no }}</strong>
+            <span class="muted">
+              {{ hit.operator }}{% if hit.permit_no %} · {{ hit.permit_no }}{% endif %}{% if hit.county %} · {{ hit.county }} County{% endif %}
+            </span>
+          </button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% elif query %}
+  <p class="hint">No waste disposal sites match “{{ query }}”.</p>
+{% endif %}

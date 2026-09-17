@@ -129,6 +129,28 @@ TX_COUNTY_NAME = {code: name for code, name in TX_COUNTIES}
 PERMIT_SYMNUMS = {2, 9}  # Permitted Location, Canceled Location
 DEFAULT_PERMIT_LIFETIME_DAYS = 730
 
+# RRC EWA wellbore query district codes (used to refine oversize county pulls).
+TX_DISTRICTS = (
+    "01", "02", "03", "04", "05", "06", "6E", "7B", "7C", "08", "8A", "09", "10",
+)
+
+
+APP_STATES = ("tx", "nm", "ok", "la")
+STATE_LABELS = {
+    "tx": "Texas",
+    "nm": "New Mexico",
+    "ok": "Oklahoma",
+    "la": "Louisiana",
+}
+STATE_API_PREFIX = {"tx": "42", "nm": "30", "ok": "35", "la": "17"}
+PREFIX_TO_STATE = {prefix: code for code, prefix in STATE_API_PREFIX.items()}
+STATE_BBOX = {
+    "tx": {"lon_min": -107.0, "lat_min": 25.5, "lon_max": -93.0, "lat_max": 36.6},
+    "nm": {"lon_min": -109.3, "lat_min": 31.3, "lon_max": -103.0, "lat_max": 37.1},
+    "ok": {"lon_min": -103.1, "lat_min": 33.6, "lon_max": -94.4, "lat_max": 37.1},
+    "la": {"lon_min": -94.1, "lat_min": 28.9, "lon_max": -88.8, "lat_max": 33.1},
+}
+
 
 def normalize_state(code: str) -> str:
     key = (code or "").strip().lower()
@@ -137,9 +159,60 @@ def normalize_state(code: str) -> str:
     return key
 
 
+def parse_states(raw: str | None) -> list[str]:
+    text = (raw or "").strip().lower()
+    if not text or text == "all":
+        return list(APP_STATES)
+    out: list[str] = []
+    for part in text.replace(";", ",").split(","):
+        key = part.strip()
+        if key in APP_STATES and key not in out:
+            out.append(key)
+    return out or list(APP_STATES)
+
+
+def state_from_api(value: str) -> str | None:
+    digits = "".join(ch for ch in (value or "") if ch.isdigit())
+    if len(digits) >= 10:
+        return PREFIX_TO_STATE.get(digits[:2])
+    return None
+
+
+def api_prefix(state: str) -> str:
+    return STATE_API_PREFIX.get(normalize_state(state), "42")
+
+
 def wells_table(state: str) -> str:
     return f"wells_{normalize_state(state)}"
 
 
 def permits_table(state: str) -> str:
     return f"permits_{normalize_state(state)}"
+
+
+def operators_table(state: str) -> str:
+    return f"operators_{normalize_state(state)}"
+
+
+OK_COUNTY_NAME = {
+    "001": "ADAIR", "003": "ALFALFA", "005": "ATOKA", "007": "BEAVER",
+    "009": "BECKHAM", "011": "BLAINE", "013": "BRYAN", "015": "CADDO",
+    "017": "CANADIAN", "019": "CARTER", "021": "CHEROKEE", "023": "CHOCTAW",
+    "025": "CIMARRON", "027": "CLEVELAND", "029": "COAL", "031": "COMANCHE",
+    "033": "COTTON", "035": "CRAIG", "037": "CREEK", "039": "CUSTER",
+    "041": "DELAWARE", "043": "DEWEY", "045": "ELLIS", "047": "GARFIELD",
+    "049": "GARVIN", "051": "GRADY", "053": "GRANT", "055": "GREER",
+    "057": "HARMON", "059": "HARPER", "061": "HASKELL", "063": "HUGHES",
+    "065": "JACKSON", "067": "JEFFERSON", "069": "JOHNSTON", "071": "KAY",
+    "073": "KINGFISHER", "075": "KIOWA", "077": "LATIMER", "079": "LE FLORE",
+    "081": "LINCOLN", "083": "LOGAN", "085": "LOVE", "087": "MCCLAIN",
+    "089": "MCCURTAIN", "091": "MCINTOSH", "093": "MAJOR", "095": "MARSHALL",
+    "097": "MAYES", "099": "MURRAY", "101": "MUSKOGEE", "103": "NOBLE",
+    "105": "NOWATA", "107": "OKFUSKEE", "109": "OKLAHOMA", "111": "OKMULGEE",
+    "113": "OSAGE", "115": "OTTAWA", "117": "PAWNEE", "119": "PAYNE",
+    "121": "PITTSBURG", "123": "PONTOTOC", "125": "POTTAWATOMIE",
+    "127": "PUSHMATAHA", "129": "ROGER MILLS", "131": "ROGERS",
+    "133": "SEMINOLE", "135": "SEQUOYAH", "137": "STEPHENS", "139": "TEXAS",
+    "141": "TILLMAN", "143": "TULSA", "145": "WAGONER", "147": "WASHINGTON",
+    "149": "WASHITA", "151": "WOODS", "153": "WOODWARD",
+}

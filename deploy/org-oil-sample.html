@@ -1,0 +1,1185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+
+
+
+
+
+
+
+
+
+
+
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8;"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=5, IE=8, IE=9, IE=10" />
+    <link rel="stylesheet" type="text/css" href="/EWA/styles/ogm_style3.css">
+
+    <script type="text/javascript">
+      var dojoConfig = {
+      parseOnLoad: true,
+      isDebug: false,
+
+      has: {
+      "dojo-debug-messages": false
+      },
+
+      packages:
+       [ { name:"rrcGisModules", location:location.pathname.replace(/\/[^/]+$/, '') + '/gis/javascript'} ]
+
+      };
+    </script>
+
+    <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=3.3compact"></script>
+    <script type="text/javascript"> 
+      require(["dojo/parser", "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dojo/query", 
+               "dojo/dom-construct", "dojo/NodeList-manipulate", "dojo/dom-attr", "dojo/dom",
+               "dojo/_base/connect", "dojo/_base/event"]);
+    </script>
+
+    <title>Organization Operator Query Criteria</title>
+  </head>
+
+  <body>
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr><td>
+
+
+
+
+
+<script type="text/javascript">
+function openHelp(obj) {
+
+  var help = '/EWA/help/' + obj;
+  //alert(help+', '+obj);
+
+  hold = window.open(help, 'popupWindow',
+                     'resizable=yes,menubar=yes,scrollbars=yes,width=500,height=400,x=1,y=1,screenx=1,screeny=1');
+  hold.focus();
+  return false;
+}
+</script>
+
+<!-- System Header -->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td class="MainHeader"><img src="/EWA/commonuiImages/rrc_online_header.gif"></td>
+    <td class="MainHeader" align="right" nowrap>&nbsp;</td>
+    <td class="MainHeader"><img src="/EWA/commonuiImages/spacer.gif"></td>
+  </tr>
+  <tr><td colspan="3" style="height: 3px;" class="BorderLines"/></tr>
+</table>
+
+<!--Application Header-->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr> 
+    <td class="AppHeader"><img src="/EWA/commonuiImages/spacer.gif"></td>
+    <td class="AppHeader">Oil & Gas Data Query</td>
+  </tr>
+</table>
+
+<!-- Top Nav Level 2 -->
+<!--Navigation Table Level 2 and 3 -->
+<table style="width: 100%;" border="0" cellspacing="0" cellpadding="0">
+  <tr><td colspan="2" style="height: 2px;" class="BorderLines"/></tr>
+  <!--Level 2 navigation row-->
+  <tr>
+    <td class="AppNavMain" width="1%"><img src="/EWA/commonuiImages/spacer.gif" height="1px"></td>
+    <td class="AppNavMain">
+      <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+          <!-- Main -->
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <td class="AppNavMainSelected">
+            <a href="/EWA/ewaMain.do">Query Menu</a>
+          </td>
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <!--Help-->
+          <td class="AppNavMain">
+            
+            <a href="#" onclick="openHelp('P-5_TOC.html');">Help</a>
+          </td>
+          <td class="BorderLines"><img src="/EWA/commonuiImages/spacer.gif"></td>
+          <!--Help END-->
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr><td colspan="2" style="height: 1px;" class="BorderLines"/></tr>
+</table>
+
+</td></tr>
+    </table>
+
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr valign="top">
+        <td style="width: 100%;" class="ContentArea">
+          <span id="messageArea">
+
+
+
+
+
+<!-- /tiles/messages.jsp BEGIN -->
+
+
+
+
+<!-- /tiles/messages.jsp END -->
+</span>
+          
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/EWA/js/ewaPageUtils.js"></script>
+
+
+
+<script>
+function doSearch(){
+  document.forms["organizationQueryActionForm"].elements["methodToCall"].value = "search";
+  document.forms["organizationQueryActionForm"].submit();
+}
+
+function doSort(columnName, direction) {
+  ewaDoSort(document.forms["organizationQueryActionForm"], "searchArgs", columnName, direction);
+}
+
+function generateOrgP5OpReportCsv() {
+    document.forms["organizationQueryActionForm"].methodToCall.value = 
+        "generateOrgP5OpReportCsv";
+    document.forms["organizationQueryActionForm"].submit();
+}
+</script>
+
+<!--Content Area-->
+<form name="organizationQueryActionForm" method="post" action="/EWA/organizationQueryAction.do">
+
+  <input type="hidden" name="searchArgs.orderByColumnName" value="">
+
+  
+    <input type="hidden" name="searchArgs.orgStatusArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.orgTypeArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.builtStartDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.builtEndDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.lastP5FiledStartDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.lastP5FiledEndDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.expirationStartDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.expirationEndDateArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.locationAddressArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.mailingAddressArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.renewalMonthArgHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.activitySpecialityArgHndlr.inputValue" value="OPRS/O">
+    <input type="hidden" name="searchArgs.orderByHndlr.inputValue" value="">
+    <input type="hidden" name="searchArgs.operatorNumbersArgHndlr.inputValue" value="">
+
+  
+    
+  
+
+
+
+
+
+
+
+
+  
+
+  
+    <input type="hidden" name="methodToCall" value="search">
+  
+
+  
+
+
+
+  <input type="hidden" name="actionManager.recordCountHndlr.inputValue" value="2">
+  <input type="hidden" name="actionManager.currentIndexHndlr.inputValue" value="1">
+
+  
+    <input type="hidden" name="actionManager.actionRcrd[0].actionDisplayNmHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].hostHndlr.inputValue" value="webapps2.rrc.texas.gov:443">
+    <input type="hidden" name="actionManager.actionRcrd[0].contextPathHndlr.inputValue" value="/EWA">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionHndlr.inputValue" value="/organizationQueryAction.do">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionParameterHndlr.inputValue" value="methodToCall">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionMethodHndlr.inputValue" value="returnToSearch">
+    <input type="hidden" name="actionManager.actionRcrd[0].pagerParameterKeyHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].actionParametersHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[0].returnIndexHndlr.inputValue" value="0">
+  
+    <input type="hidden" name="actionManager.actionRcrd[0].argRcrdParameters(searchArgs.paramValue)" value="|12=OPRS%2FO">
+
+  
+    <input type="hidden" name="actionManager.actionRcrd[1].actionDisplayNmHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[1].hostHndlr.inputValue" value="webapps2.rrc.texas.gov:443">
+    <input type="hidden" name="actionManager.actionRcrd[1].contextPathHndlr.inputValue" value="/EWA">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionHndlr.inputValue" value="/organizationQueryAction.do">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionParameterHndlr.inputValue" value="methodToCall">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionMethodHndlr.inputValue" value="search">
+    <input type="hidden" name="actionManager.actionRcrd[1].pagerParameterKeyHndlr.inputValue" value="pager.paramValue">
+    <input type="hidden" name="actionManager.actionRcrd[1].actionParametersHndlr.inputValue" value="">
+    <input type="hidden" name="actionManager.actionRcrd[1].returnIndexHndlr.inputValue" value="0">
+  
+    <input type="hidden" name="actionManager.actionRcrd[1].argRcrdParameters(pager.paramValue)" value="|1=1|2=10|3=4231|4=0|5=424|6=10">
+    <input type="hidden" name="actionManager.actionRcrd[1].argRcrdParameters(searchArgs.paramValue)" value="|12=OPRS%2FO">
+
+
+
+
+  <table class="ewaPage">
+    <tr>
+      <td>
+        <h2 class="style5">Organization Operator Query Results</h2>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+        <table class="TabBox2" cellspacing="0" cellpadding="4" border="0">
+          <tr>
+            <td>
+              <table style="white-space: nowrap; width:99%; margin: auto;">
+                <tr>
+                  <td>
+                    <p><b>Search Criteria:</b></p>
+                    <p>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Operators List -->
+
+
+<!-- Organization Status -->
+
+
+<!-- Organization Type -->
+
+
+<!-- Built Date -->
+
+
+<!-- Last P5 Filed Date -->
+
+
+<!-- Expiration Date -->
+
+
+<!-- Location Address -->
+
+
+<!-- Mailing Address -->
+
+
+<!-- Renewal Month -->
+
+
+<!-- Activity Speciality Code -->
+
+  <strong>Activity Specialty Code:</strong>
+
+  Well Operator-Oil
+  <br>
+
+</p>
+                  </td>
+                  <td valign="bottom">
+                    <input type="button" name="unused" value="Return" onclick="returnToCaller('/EWA/organizationQueryAction.do?methodToCall=returnToSearch&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAG2OPw-CMBTEPw2OTVswcXlDY3RFgehAHJ6lARKg5LX4L3x4C65ul99d7m4WnIOYBRfAN0Raad_aIdNUlfwGK3-aO46jkyzYzJsXOlbbRxSrJIlDQEIkj4erCjJepKUah_aDS895MvT-VbLKhkQCvfGNrQq7x64LYAtk_ERDYXODpJuAdn-elG51FdWOjUjYX7CbzHJQQnrK8rCbfgEvPtUsywAAAA');" style="float: right;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr><td>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table style="white-space: normal; width:98%; text-align: center; margin: auto;" 
+       class="DataGrid" border="1" cellpadding="4" cellspacing="0" bordercolor="#666666">
+  <tr>
+    <td colspan="11" height="25" class="PagerBanner">
+      
+        
+      
+
+
+
+
+
+
+
+
+
+
+
+
+  <table style="width:100%; white-space: nowrap;">
+    <tr>
+      <td style="text-align: left; border-style:none; font-weight: bold">
+        1 - 10 of 4231 results
+      </td>
+      <td style="text-align: center; border-style:none;">
+        
+          
+
+            
+            <!-- Add pager control links -->  
+            
+              
+                [&lt;&lt;First][&lt;Previous]
+              
+              
+            
+            
+              
+              
+                <!-- Next page link -->  
+                <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=10&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">[Next&gt]</a>
+
+                <!-- Last page link -->  
+                <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=4230&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">[Last&gt;&gt;]</a>
+              
+            
+
+            &nbsp; | &nbsp; Page: &nbsp;
+
+            <!-- Page index links -->  
+            
+              
+                
+                  <b>1</b>
+                
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=10&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">2</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=20&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">3</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=30&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">4</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=40&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">5</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=50&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">6</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=60&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">7</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=70&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">8</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=80&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">9</a>
+                
+              
+            
+              
+                
+                
+                  <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=90&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">10</a>
+                
+              
+            
+
+            &nbsp; of &nbsp;
+
+            
+              
+              
+                <a href="/EWA/organizationQueryAction.do?pager.pageSize=10&pager.offset=4230&methodToCall=search&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">424</a>
+              
+            
+
+          
+        
+      </td>
+
+      <!-- Page size control -->  
+      <td style="text-align: right; border-style:none;">
+        <label>
+          Page Size:
+          <select name="pager.pageSize" onchange="doSearch()"><option value="-1">View All</option>
+<option value="5">5</option>
+<option value="10" selected="selected">10</option>
+<option value="20">20</option>
+<option value="25">25</option>
+<option value="50">50</option>
+<option value="100">100</option></select>
+        </label>
+      </td>
+
+    </tr>
+  </table>
+
+
+
+    </td>
+  </tr>
+
+  <tr>
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('OPERATOR_NO','ASC')">Operator No.</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('OPERATOR_NAME','ASC')">Operator Name</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('MAILING_ADDRESS','ASC')">Mailing Address</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('MAILING_CITY','ASC')">Mailing City</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('MAILING_STATE','ASC')">Mailing State</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('MAILING_ZIP','ASC')">Mailing Zip</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('P5_STATUS','ASC')">Organization Status</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('ORGANIZATION_TYPE','ASC')">Organization Type</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('FLAG_639','ASC')">*TNR 91.114</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('MAIL_HOLD','ASC')">Mail Hold</a>
+
+  
+
+</th>
+
+
+    
+      
+      
+      
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<th style='text-align:center'>
+
+  <a href="Javascript:doSort('PHONE_NO','ASC')">Phone No.</a>
+
+  
+
+</th>
+
+
+  </tr>
+
+  
+  
+    
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000016&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000016</a>
+          </td>
+          <td>A &amp; E MINERALS, LLC</td>
+          <td>2601 CENTENARY BLVD</td>
+          <td>SHREVEPORT</td>
+          <td>LA</td>
+          <td>71104</td>
+          <td>Delinquent</td>
+          <td>
+            
+              
+              
+                
+                
+                  LIMITED LIAB COMPANY
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(318) 226-1773</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000102&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000102</a>
+          </td>
+          <td>A &amp; G PRODUCERS, INC.</td>
+          <td>PO BOX 25</td>
+          <td>BARSTOW</td>
+          <td>TX</td>
+          <td>79719</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  CORPORATION
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(432) 448-3170</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000116&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000116</a>
+          </td>
+          <td>A - Z OPERATING LLC</td>
+          <td>PO BOX 314</td>
+          <td>WINTERS</td>
+          <td>TX</td>
+          <td>79567</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  LIMITED LIAB COMPANY
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(325) 723-2150</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000118&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000118</a>
+          </td>
+          <td>AAA OIL TRUST</td>
+          <td>4906 MINERAL WELLS HWY</td>
+          <td>WEATHERFORD</td>
+          <td>TX</td>
+          <td>76088</td>
+          <td>Delinquent</td>
+          <td>
+            
+              
+              
+                
+                
+                  TRUST
+                
+              
+            
+            
+          </td>
+          <td>
+            
+              Yes
+            
+            
+          </td>
+          <td>Yes</td>
+          <td>(806) 373-7111</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000137&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000137</a>
+          </td>
+          <td>ABBOTT, JOHN OPERATING</td>
+          <td>3301 SOUTH 14TH STREET SUITE 16 PM B 183</td>
+          <td>ABILENE</td>
+          <td>TX</td>
+          <td>79605</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  SOLE PROPRIETORSHIP
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(325) 260-5007</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000148&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000148</a>
+          </td>
+          <td>AAA OIL COMPANY</td>
+          <td>PO BOX 703</td>
+          <td>CASTROVILLE</td>
+          <td>TX</td>
+          <td>78009</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  SOLE PROPRIETORSHIP
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(830) 931-3923</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000172&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000172</a>
+          </td>
+          <td>A &amp; B OIL</td>
+          <td>BOX 1505</td>
+          <td>MONAHANS</td>
+          <td>TX</td>
+          <td>79756</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  CORPORATION
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(432) 943-7667</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000194&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000194</a>
+          </td>
+          <td>A.C.T. OPERATING COMPANY</td>
+          <td>1001 MAIN ST STE 202 STE 202</td>
+          <td>LUBBOCK</td>
+          <td>TX</td>
+          <td>79401-3309</td>
+          <td>Active-Ext</td>
+          <td>
+            
+              
+              
+                
+                
+                  CORPORATION
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(806) 783-8787</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000211&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000211</a>
+          </td>
+          <td>A.D. OPERATING</td>
+          <td>808 TEXAS</td>
+          <td>GRAHAM</td>
+          <td>TX</td>
+          <td>76450</td>
+          <td>Delinquent</td>
+          <td>
+            
+              
+              
+                
+                
+                  SOLE PROPRIETORSHIP
+                
+              
+            
+            
+          </td>
+          <td>
+            
+              Yes
+            
+            
+          </td>
+          <td>Yes</td>
+          <td>(940) 282-7247</td>
+        </tr>
+      
+        <tr>
+          <td>
+            
+
+            <a href="organizationResultsDrillDownAction.do?methodToCall=searchByOperatorNo&operatorNo=000214&rrcActionMan=H4sIAAAAAAAAAL2QS2_CMBCEfw0cLa9tEJc9RKhceao9RBy2iRWQQhytE_qQf3w3VEgIeuDU22h2dvazE2iNJoEGhDFzkRXdMTSbgstc7_Hif_h3attolIxV5z8pqiqcRzZzzkrA4MgsXt4ykXaQgStqjt809Kx7z1-_laoMknB48t0hlLswp7oWY4Lsu56bXdh64uIg1gz1A0keL9OMq6haYjq9Ut37AdDgcrXZyt3l3RL8D368Yk-xpcrzDd6fb4F9fp8bQBGSQdDJojMWkkOdJiJdmor7WPHEd_wAUc_5pNoBAAA">000214</a>
+          </td>
+          <td>A &amp; C OIL COMPANY, LLC</td>
+          <td>PO BOX 641</td>
+          <td>STOCKDALE</td>
+          <td>TX</td>
+          <td>78160</td>
+          <td>Active</td>
+          <td>
+            
+              
+              
+                
+                
+                  LIMITED LIAB COMPANY
+                
+              
+            
+            
+          </td>
+          <td>
+            
+            No
+          </td>
+          <td>No</td>
+          <td>(830) 534-7454</td>
+        </tr>
+      
+    
+
+    
+  
+
+</table>
+</td></tr>
+
+          <tr>
+            <td>
+              <table style="width:99%; margin: auto;">
+                <tr><td>*  Indicates whether the operator is subject to a final and unappealable Commission order or judgment. Pursuant to Tex. Nat. Res. Code §91.114, the Commission is prohibited from accepting a P-5 Organization Report filing, approving any permits, or issuing any P-4 Certificates of Compliance for an operator with an unsatisfied order/judgment of this type.</td></tr>
+                <tr>
+                  <td align="left">
+                    <input type="button" name="unused" value="Download" onclick="generateOrgP5OpReportCsv();">
+                  </td>
+                  <td align="right">
+                    <input type="button" name="unused" value="Return" onclick="returnToCaller('/EWA/organizationQueryAction.do?methodToCall=returnToSearch&searchArgs.paramValue=|12=OPRS%2FO&rrcActionMan=H4sIAAAAAAAAAG2OPw-CMBTEPw2OTVswcXlDY3RFgehAHJ6lARKg5LX4L3x4C65ul99d7m4WnIOYBRfAN0Raad_aIdNUlfwGK3-aO46jkyzYzJsXOlbbRxSrJIlDQEIkj4erCjJepKUah_aDS895MvT-VbLKhkQCvfGNrQq7x64LYAtk_ERDYXODpJuAdn-elG51FdWOjUjYX7CbzHJQQnrK8rCbfgEvPtUsywAAAA');" style="float: right;">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</form>
+
+
+        </td>
+      </tr>
+    </table>
+
+    <table style="width: 100%; table-layout:fixed;" border="0" cellspacing="0" cellpadding="0">
+      <tr><td><table style="width: 100%" class="MainFooter">
+  <tr><td style="width: 100%;" class="BorderLines"></td></tr>
+  <tr>
+    <td style="width: 100%; height: 100%;" align="center" class="MainFooter">
+      <a target="_blank" href="http://www.rrc.texas.gov/site-policies/">Disclaimer</a> |
+      <a target="_blank" href="http://www.rrc.texas.gov">RRC Home</a> |
+      <a href="mailto:helpdesk@rrc.texas.gov?subject=Oil & Gas Queries">Contact</a>
+    </td>
+  </tr>
+</table>
+</td></tr>
+    </table>
+  </body>
+</html>
+
