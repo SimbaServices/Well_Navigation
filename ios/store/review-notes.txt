@@ -1,11 +1,26 @@
-Well Navigation is workplace software for oil and gas organizations (Apple Guideline 3.1.3(c) enterprise / 3.1.3(b) multiplatform). Employees sign in with their work email to search wells, pipelines, and waste-disposal sites.
+App Review Information (paste into App Store Connect → App Review Information)
 
-The iOS app does not sell subscriptions and does not collect payment. Organization admins buy seats on the website (https://wellnav.simba.services) in Safari. Stripe Checkout for MP Solutions never loads in the WKWebView. There are no In-App Purchases.
+Contact
+First name: Simba
+Last name: Services
+Email: wellnav@simba.services
+Phone: use the number on the Apple Developer account
 
-Account deletion is in-app: Account → Delete account → password + type DELETE.
-
-The wrapper is not a general-purpose browser (no address bar; host allow-list). Field value beyond the website: offline USGS map tiles and pinned wells after the user taps Save this view, native splash, and an offline banner.
-
-Demo login (complimentary @simba.services, no payment required):
+Demo account (complimentary @simba.services, no payment)
 Email: appreview@simba.services
-Password: see C:\Simba\wellnav-app-review-login.txt on the operator laptop (do not commit).
+Password: paste from C:\Simba\wellnav-app-review-login.txt on the operator laptop (do not commit).
+Sign-in path: open the app → Sign in → work email and password.
+
+Notes for the reviewer
+
+Well Navigation is workplace software for oil and gas organizations (Guideline 3.1.3(c) enterprise / 3.1.3(b) multiplatform). Employees sign in with their work email to search wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
+
+The iOS app does not sell subscriptions and does not collect payment. There are no In-App Purchases. Organization admins buy seats on the website (https://wellnav.simba.services) in Safari. Stripe Checkout for MP Solutions never loads in the WKWebView. Any URL with ?external_browser=1, plus maps.apple.com / Google Maps, mailto, and tel, open in Safari or the system apps.
+
+Account deletion is in-app: Account → Delete account → enter password → type DELETE.
+
+The wrapper is not a general-purpose browser (no address bar; host allow-list is wellnav.simba.services only). Field value beyond the website: offline USGS map tiles and pinned wells after the user taps Save this view, a native splash, and an offline banner.
+
+Export compliance: HTTPS only. ITSAppUsesNonExemptEncryption is false.
+
+Sign in with Apple is not offered because the only login is email and password (no third-party social login).

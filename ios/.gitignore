@@ -1,4 +1,8 @@
 xcuserdata/
 DerivedData/
+build/
 *.xcuserstate
 *.moved-aside
+*.ipa
+*.dSYM.zip
+*.xcarchive

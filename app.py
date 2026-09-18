@@ -203,7 +203,7 @@ def view_ctx(request: Request, **extra) -> dict:
     context.setdefault("hotjar_id", hotjar_site_id())
     context.setdefault("clarity_id", clarity_project_id())
     context.setdefault("contentsquare_id", contentsquare_tag_id())
-    context.setdefault("can_record_ux", can_record(user))
+    context.setdefault("can_record_ux", can_record(user) and not context.get("store_client"))
     return context
 
 
@@ -405,12 +405,13 @@ async def index(request: Request) -> HTMLResponse:
 async def account(request: Request) -> HTMLResponse:
     user = current_user(request)
     workspace = workspace_snapshot(user)
+    store = is_store_client(request.headers.get("user-agent") or "")
     html = render(
         "partials/account.html",
         request,
         org=workspace.get("org"),
         workspace=workspace,
-        recordings=list_recordings() if can_record(user) else [],
+        recordings=list_recordings() if can_record(user) and not store else [],
     )
     return fragment_or_page(request, html, clear_suggest=True)
 
@@ -421,6 +422,8 @@ def _simba_user(request: Request):
         if wants_json(request):
             return None, JSONResponse({"error": "sign_in_required"}, status_code=401)
         return None, login_required_html(request)
+    if is_store_client(request.headers.get("user-agent") or ""):
+        return None, JSONResponse({"error": "not available in the store app"}, status_code=403)
     if not can_record(user):
         return None, JSONResponse({"error": "Screen recording is only available to Simba Services."}, status_code=403)
     return user, None
@@ -482,7 +485,7 @@ async def ux_recording_replay(request: Request) -> Response:
     user = current_user(request)
     if not user:
         return login_required_html(request)
-    if not can_record(user):
+    if is_store_client(request.headers.get("user-agent") or "") or not can_record(user):
         return PlainTextResponse("not found", status_code=404)
     found = recording_file(request.path_params["recording_id"])
     if not found:
@@ -491,7 +494,7 @@ async def ux_recording_replay(request: Request) -> Response:
     return templates.TemplateResponse(
         request,
         "ux_replay.html",
-        {**view_ctx(request), "recording": meta},
+        {**view_ctx(request), "recording": meta, "local_player": False},
     )
 
 

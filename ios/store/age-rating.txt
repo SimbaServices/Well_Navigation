@@ -1,0 +1,32 @@
+Age Rating (App Store Connect → App Information → Age Rating)
+
+Answer so the rating is 4+. This is a professional records workspace. It does not include social UGC, chat, ads, or a general-purpose browser.
+
+Unrestricted Web Access: No
+  The WKWebView only loads wellnav.simba.services (plus about:). mailto, tel, Maps, and Stripe open in Safari or the system apps.
+
+User-Generated Content: No
+  Saved wells and searches stay in the signed-in workplace account. There is no public feed, comments, or sharing.
+
+Advertising: No
+  No ads, no tracking, no advertising identifier.
+
+Age Assurance: No
+
+Mature Themes: None
+Horror/Fear Themes: None
+Medical or Treatment Information: None
+Alcohol, Tobacco, or Drug Use or References: None
+Profanity or Crude Humor: None
+Sexual Content or Nudity: None
+Graphic Sexual Content and Nudity: None
+Cartoon or Fantasy Violence: None
+Realistic Violence: None
+Prolonged Graphic or Sadistic Realistic Violence: None
+Guns or Other Weapons: None
+Gambling and Contests: None
+Simulated Gambling: None
+Contests: None
+Messaging and Chat: No
+
+Expected result: 4+

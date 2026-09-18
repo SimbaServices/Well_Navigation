@@ -15,6 +15,7 @@ from wellnav.db import ROOT
 
 RECORDING_ID_RE = re.compile(r"^[a-f0-9]{16,32}$")
 MAX_RECORDING_BYTES = 250 * 1024 * 1024
+SNAPSHOT_PROBE_BYTES = 1024 * 1024
 HOTJAR_ID_RE = re.compile(r"^\d{5,12}$")
 CLARITY_ID_RE = re.compile(r"^[a-f0-9]{8,20}$")
 CONTENTSQUARE_ID_RE = re.compile(r"^[a-f0-9]{10,16}$")
@@ -23,6 +24,21 @@ CONTENTSQUARE_ID_RE = re.compile(r"^[a-f0-9]{10,16}$")
 def recordings_dir() -> Path:
     raw = (os.environ.get("WELLNAV_RECORDINGS_DIR") or "").strip()
     path = Path(raw) if raw else ROOT / "ux-recordings"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def local_watch_dir() -> Path:
+    raw = (os.environ.get("WELLNAV_RECORDINGS_DIR") or "").strip()
+    if raw:
+        path = Path(raw)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+    pulled = ROOT / "data" / "ux-recordings"
+    host = ROOT / "ux-recordings"
+    pulled_n = len(list(pulled.glob("*.json"))) if pulled.is_dir() else 0
+    host_n = len(list(host.glob("*.json"))) if host.is_dir() else 0
+    path = pulled if pulled_n >= host_n else host
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -114,6 +130,40 @@ def _write_meta(recording_id: str, meta: dict[str, Any]) -> None:
     _meta_path(recording_id).write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
+def load_events(path: Path) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    if not path.is_file() or path.suffix == ".webm":
+        return events
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return events
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        batch = parsed if isinstance(parsed, list) else [parsed]
+        for item in batch:
+            if isinstance(item, dict) and item.get("type") is not None:
+                events.append(item)
+    return events
+
+
+def session_playable(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size <= 0:
+        return False
+    if path.suffix == ".webm":
+        return True
+    try:
+        sample = path.read_bytes()[:SNAPSHOT_PROBE_BYTES]
+    except OSError:
+        return False
+    return b'"type":2,"data":{"node"' in sample or b'"type":2, "data": {"node"' in sample
+
+
 def start_recording(user: dict, user_agent: str = "") -> dict[str, Any]:
     if not can_record(user):
         raise PermissionError("Screen recording is only available to Simba Services.")
@@ -186,6 +236,8 @@ def list_recordings() -> list[dict[str, Any]]:
             continue
         video_path = _data_path(str(data["id"]))
         data["bytes"] = video_path.stat().st_size if video_path.is_file() else int(data.get("bytes") or 0)
+        data["playable"] = session_playable(video_path)
+        data["media"] = "video" if video_path.suffix == ".webm" else "session"
         rows.append(data)
     rows.sort(key=lambda item: str(item.get("started_at") or ""), reverse=True)
     return rows
@@ -201,4 +253,6 @@ def recording_file(recording_id: str) -> tuple[Path, dict[str, Any]] | None:
     video_path = _data_path(safe)
     if not video_path.is_file():
         return None
+    meta["playable"] = session_playable(video_path)
+    meta["media"] = "video" if video_path.suffix == ".webm" else "session"
     return video_path, meta

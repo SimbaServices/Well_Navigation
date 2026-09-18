@@ -15,6 +15,7 @@ from wellnav.recordings import (
     hotjar_site_id,
     list_recordings,
     recording_file,
+    session_playable,
     start_recording,
 )
 
@@ -78,6 +79,32 @@ class RecordingHelperTests(unittest.TestCase):
                 self.assertEqual(rows[0]["email"], "sam@simba.services")
                 self.assertEqual(rows[0].get("kind"), "session")
 
+    def test_marks_session_playable_when_snapshot_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"WELLNAV_RECORDINGS_DIR": tmp}):
+                user = {"id": 9, "email": "sam@simba.services"}
+                meta = start_recording(user)
+                path, _ = recording_file(meta["id"])
+                self.assertFalse(session_playable(path))
+                payload = (
+                    b'[{"type":4,"data":{"href":"/","width":800,"height":600},"timestamp":1},'
+                    b'{"type":2,"data":{"node":{"id":1,"type":0,"childNodes":[]},"initialOffset":{"top":0,"left":0}},"timestamp":2}]'
+                )
+                append_chunk(meta["id"], user, payload)
+                path, info = recording_file(meta["id"])
+                self.assertTrue(session_playable(path))
+                self.assertTrue(info["playable"])
+                self.assertTrue(list_recordings()[0]["playable"])
+
+    def test_local_player_points_at_chosen_folder(self) -> None:
+        from wellnav.replay import configure_watch_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(os.environ, {"WELLNAV_RECORDINGS_DIR": ""}):
+                path = configure_watch_dir(tmp)
+                self.assertEqual(path, Path(tmp).resolve())
+                self.assertEqual(os.environ["WELLNAV_RECORDINGS_DIR"], str(path))
+
     def test_rejects_other_user_and_bad_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             with patch.dict(os.environ, {"WELLNAV_RECORDINGS_DIR": tmp}):
@@ -117,6 +144,37 @@ class RecordingRouteTests(unittest.TestCase):
         self.assertIn("t.contentsquare.net/uxa/ebdac936045ea.js", web)
         self.assertIn("ebdac936045ea", web)
 
+    def test_store_clients_do_not_see_ux_recordings(self) -> None:
+        from app import templates
+
+        html = templates.get_template("partials/account.html").render(
+            error=None,
+            user={"email": "appreview@simba.services", "is_admin": True, "last_login_at": "", "last_activity_at": ""},
+            org={"name": "Simba Services"},
+            workspace={"org_name": "Simba Services", "complimentary": True},
+            saved_count=0,
+            cache_stats=None,
+            can_record_ux=False,
+            store_client=True,
+            recordings=[{"id": "abc", "started_at": "now", "email": "appreview@simba.services", "bytes": 0, "playable": False}],
+        )
+        self.assertNotIn("UX recordings", html)
+        self.assertNotIn("pull-recordings", html)
+        self.assertIn("Delete account", html)
+
+        web = templates.get_template("partials/account.html").render(
+            error=None,
+            user={"email": "sam@simba.services", "is_admin": True, "last_login_at": "", "last_activity_at": ""},
+            org={"name": "Simba Services"},
+            workspace={"org_name": "Simba Services", "complimentary": True},
+            saved_count=0,
+            cache_stats=None,
+            can_record_ux=True,
+            store_client=False,
+            recordings=[],
+        )
+        self.assertIn("UX recordings", web)
+
     def test_workspace_auto_records_without_a_button(self) -> None:
         root = Path(__file__).resolve().parents[1]
         index = (root / "templates" / "index.html").read_text(encoding="utf-8")
@@ -126,8 +184,16 @@ class RecordingRouteTests(unittest.TestCase):
         self.assertNotIn("data-ux-start", index)
         self.assertIn("ux_capture.html", index)
         self.assertIn("ux-record.js", capture)
+        replay = (root / "static" / "js" / "ux-replay.js").read_text(encoding="utf-8")
         self.assertIn("rrweb.record", js)
+        self.assertIn("inlineStylesheet", js)
+        self.assertIn("takeFullSnapshot", js)
+        self.assertIn("/finish", js)
         self.assertNotIn("getDisplayMedia", js)
+        self.assertIn("wellnavStartReplay", replay)
+        self.assertIn("replayer-mouse-tail", (root / "templates" / "ux_replay.html").read_text(encoding="utf-8"))
+        self.assertIn("ux-replay.js", (root / "templates" / "ux_replay.html").read_text(encoding="utf-8"))
+        self.assertNotIn("Replay file", (root / "templates" / "partials" / "ux_recordings.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

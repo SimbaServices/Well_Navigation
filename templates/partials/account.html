@@ -44,9 +44,9 @@
       <a href="/privacy" class="ghost">Privacy</a>
       <a href="/terms" class="ghost">Terms</a>
     </div>
-    {% if can_record_ux %}
+    {% if can_record_ux and not store_client %}
     <h3>UX recordings</h3>
-    <p class="muted">Simba Services only. Every signed-in workspace session is saved on the server. Download here or run <code>deploy\pull-recordings.ps1</code>.</p>
+    <p class="muted">Simba Services only. Signed-in workspace sessions are saved on the server. Watch here, or run <code>deploy\pull-recordings.ps1</code> to copy them and open the local player.</p>
     {% include 'partials/ux_recordings.html' %}
     {% endif %}
   {% endif %}

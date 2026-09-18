@@ -44,6 +44,8 @@
 	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.business</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Simba Services</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

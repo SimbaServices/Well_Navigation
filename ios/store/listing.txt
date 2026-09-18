@@ -1,46 +1,96 @@
+App Store Connect — paste sheet for Well Navigation 1.0
+Create the app under Apps → + → New App. Platform: iOS. User Access: Full Access.
+
 App Name: Well Navigation
 Subtitle: Well and Pipeline Search
 SKU: wellnav-ios
 Bundle ID: services.simba.wellnav
 Primary language: English (U.S.)
 Category: Business
-Age rating: 4+
+Secondary category: (none)
+Age rating: 4+  — answers in ios/store/age-rating.txt
 Price: Free
-In-app purchases: none
+In-app purchases: none (do not add IAP or subscriptions)
+Sign in with Apple: do not add (email/password only)
+Copyright: 2026 Simba Services
 Privacy policy: https://wellnav.simba.services/privacy
 Terms: https://wellnav.simba.services/terms
 Support URL: https://wellnav.simba.services
 Marketing URL: https://wellnav.simba.services
+Support email: wellnav@simba.services
 
-Description:
+Version: 1.0
+Build: uploaded from Xcode (Info.plist CFBundleVersion starts at 1; ExportOptions.plist lets Xcode bump it)
+
+Description (App Store Connect, 4000-character limit):
 Well Navigation is workplace software for oil and gas teams. Sign in with your work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
 
-Organization admins buy seats on the website. This app does not sell subscriptions and does not collect payment. Use it in the field: pin wells, save a USGS map view for offline use, and open Apple Maps or Google Maps for turn-by-turn.
+SEARCH
+Look up wells by lease or well name, API number, or operator. Texas APIs start with 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-. Add an operator filter, then narrow by name or API. Sort the table and pin wells onto the map from a row, a selection, or the whole page.
 
-Keywords: well,pipeline,oil,gas,RRC,Texas,New Mexico,Oklahoma,Louisiana
+Search pipelines by operator, P-5, or system name. Coverage includes Texas RRC T-4, New Mexico EIA and BLM right-of-way, Oklahoma EIA, and Louisiana EIA and BSEE. Lines are colored by commodity: gas, crude, HVL, product, and other.
 
-Promotional text:
+Search commercial waste, UIC, and salt-water disposal sites by facility, operator, or permit (STF, R9, WP, and similar). Sources include Texas commercial waste, New Mexico SWD, Oklahoma UIC, and Louisiana injection.
+
+MAP AND FIELD USE
+Pin wells from search, including wellhead and toe coordinates when available. Switch base layers among Esri Imagery, Streets, Topo, OpenStreetMap, and USGS Topo. Toggle pipeline and waste-site overlays. Open Apple Maps or Google Maps for turn-by-turn.
+
+Before you lose signal, tap Save this view to keep USGS tiles plus the last pipeline and waste overlay for that area on the device. Pinned wells stay available offline. Search and new lookups still need a connection. Esri layers stay online-only.
+
+YOUR WORKSPACE
+Save wells to your account, reopen recent searches, and manage your team. People on the same company email domain share one organization. Admins assign seats and roles. Delete your account anytime from Account → Delete account.
+
+BILLING
+This app is free to download. It does not sell subscriptions and does not collect payment. Organization admins buy seats on the website in Safari. The same signed-in workspace works on the web, iOS, and Android.
+
+IMPORTANT
+Records come from public regulatory and published sources and can be incomplete or out of date. Well and pipeline locations are not a substitute for a One Call / 811 locate, an as-built survey, or operator drawings. Call 811 before you dig.
+
+Privacy: https://wellnav.simba.services/privacy
+Terms: https://wellnav.simba.services/terms
+Support: wellnav@simba.services
+
+Keywords (100-character limit, comma-separated, no spaces after commas except inside a phrase):
+well,pipeline,oil,gas,RRC,Texas,New Mexico,Oklahoma,Louisiana,API,disposal
+
+Promotional text (170-character limit):
 Search wells, pipelines, and waste sites in TX, NM, OK, and LA. Seats are billed on the website, not in the app.
 
-Privacy nutrition:
-- Email address — linked, App Functionality, not used for tracking
-- User ID — linked, App Functionality, not used for tracking
-- Other user content (saved wells) — linked, App Functionality, not used for tracking
-- IP address — not linked, App Functionality, not used for tracking
-No tracking. No advertising.
+What's New: paste ios/store/whats-new.txt
 
-Export compliance: ITSAppUsesNonExemptEncryption is false (HTTPS only).
+App icon (1024×1024 RGB PNG, no alpha):
+  ios/WellNavigation/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+  ios/store/icon-1024.png
+App Store Connect uses the icon from the uploaded build. The store copy is for the listing if asked.
 
-Screenshots (upload in App Store Connect → iOS app → Previews and Screenshots):
-iPhone 6.9" (1290×2796):
+Privacy nutrition (App Privacy):
+Data collected, not used for tracking, not used for third-party advertising:
+- Email address — linked, App Functionality
+- User ID — linked, App Functionality
+- Other user content (saved wells) — linked, App Functionality
+- IP address — not linked, App Functionality
+No tracking. No advertising. No advertising identifier. Product Page Optimization / SKAdNetwork: none.
+
+Export compliance: ITSAppUsesNonExemptEncryption is false (HTTPS only). In App Store Connect answer that the app uses encryption only for HTTPS / standard encryption.
+
+Content rights: Yes. Records are public regulatory compilations; the app UI and compilation are Simba Services.
+
+Screenshots (iOS app → Previews and Screenshots). PNG, no alpha.
+iPhone 6.9" (1290×2796) — required:
   ios/store/screenshots/iphone-6.9-01-search.png
   ios/store/screenshots/iphone-6.9-02-results.png
   ios/store/screenshots/iphone-6.9-03-map.png
   ios/store/screenshots/iphone-6.9-04-account.png
-iPad 13" (2048×2732):
+iPad 13" (2048×2732) — required because the app runs on iPad:
   ios/store/screenshots/ipad-13-01-search.png
   ios/store/screenshots/ipad-13-02-results.png
+  ios/store/screenshots/ipad-13-03-map.png
   ios/store/screenshots/ipad-13-04-account.png
-Do not upload cdp-test.png or ipad-13-01-workspace.png.
-Review notes + demo password: C:\Simba\wellnav-app-review-notes.txt
-Archive on a Mac: ios/store/archive-and-upload.sh
+Do not upload a 6.5" set; App Store Connect scales the 6.9" shots. Recapture with:
+  python ios/store/capture-screenshots.py
+
+App Review: paste ios/store/review-notes.txt
+Demo password: C:\Simba\wellnav-app-review-login.txt (operator laptop only)
+
+Archive on a Mac with Xcode 26+: ios/store/archive-and-upload.sh
+Signing Team must be set in Xcode before that script will export.

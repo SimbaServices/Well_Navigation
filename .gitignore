@@ -16,13 +16,21 @@ data/*.log
 data/.session_secret
 data/ingest_scratch/
 data/ux-recordings/
+data/ux-inspect/
 ux-recordings/
+ios/build/
+ios/DerivedData/
 data/pipelines/
 android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
 android/.idea/
+*.jks
+*.keystore
+keystore.properties
+*.aab
 
 # Contentsquare wizard (generated)
 .cs-wizard/
+.cursor/

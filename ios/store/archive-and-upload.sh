@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Run on a Mac with Xcode 16+ after signing in to the Apple Developer Team.
+# Run on a Mac with Xcode 26+ after signing in to the Apple Developer Team.
 # Usage: cd ios && zsh store/archive-and-upload.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

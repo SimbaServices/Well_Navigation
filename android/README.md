@@ -17,16 +17,15 @@ Offline maps are handled by the **website**, not by Google Maps SDK:
 1. Android Studio (Koala / 2024.1 or newer) → Open → this `android/` folder.
 2. Let Gradle sync. Application id is `services.simba.wellnav`.
 3. Set your Play signing key in Gradle or Play App Signing.
-4. Build a signed AAB (`Build` → `Generate Signed App Bundle`).
+4. Build a signed AAB from this folder: `gradlew.bat bundleRelease`.
+   Output: `android/app/build/outputs/bundle/release/app-release.aab`.
+   Upload keystore (do not commit): `C:\Simba\secrets\wellnav-upload.jks`.
 
 ## Suggested listing copy
 
 **Short description:** Well and Pipeline Search
 
-**Full description:**
-Well Navigation is workplace software for oil and gas organizations. Employees sign in with their work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
-
-This app does not sell subscriptions and does not use Google Play Billing. Organization admins buy seats on the website in Chrome. In the field you can pin wells, save a USGS map view for offline use, and open Google Maps for turn-by-turn.
+**Full description:** paste from `android/store/listing.txt` (Play Console 4000-character limit).
 
 ## Play Console
 
@@ -36,6 +35,7 @@ This app does not sell subscriptions and does not use Google Play Billing. Organ
 - Account deletion: Account → Delete account (same as iOS). Do not add Google Sign-In unless you also add it on the web.
 - Data safety: account email and user ID (app functionality, linked, not sold); other user content (saved wells); IP address in server logs. No advertising ID. No location. Approximate/precise location: not collected.
 - High-res icon: `android/store/icon-512.png` (also `static/app-icon.png` at 1024). Feature graphic: `android/store/feature-graphic.png`.
+- Screenshots: `android/store/screenshots/` — exact 9:16 24-bit PNG: phone 1080×1920, 7-inch 1440×2560, 10-inch 1800×3200. Recapture with `python android/store/capture-screenshots.py`. Paths are in `android/store/listing.txt`.
 - Content rating: IARC questionnaire — business utility, no user-generated social, no sharing location.
 
 ## Review notes (paste into Play Console)

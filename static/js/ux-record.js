@@ -175,21 +175,35 @@
     }
   }
 
-  function unloadFlush() {
-    if (unauthorized || !queue.length) return;
-    const id = recordingId || readResume();
+  function finishRecording(id) {
     if (!id) return;
-    const body = takeQueue();
-    if (!body) return;
-    if (!beacon(`/ux/recordings/${id}/chunk`, body)) {
-      fetch(`/ux/recordings/${id}/chunk`, {
+    if (!beacon(`/ux/recordings/${id}/finish`, "{}")) {
+      fetch(`/ux/recordings/${id}/finish`, {
         method: "POST",
         credentials: "same-origin",
         keepalive: true,
         headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body,
+        body: "{}",
       }).catch(() => {});
     }
+  }
+
+  function unloadFlush() {
+    const id = recordingId || readResume();
+    if (unauthorized || !id) return;
+    if (queue.length) {
+      const body = takeQueue();
+      if (body && !beacon(`/ux/recordings/${id}/chunk`, body)) {
+        fetch(`/ux/recordings/${id}/chunk`, {
+          method: "POST",
+          credentials: "same-origin",
+          keepalive: true,
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body,
+        }).catch(() => {});
+      }
+    }
+    finishRecording(id);
   }
 
   function hookRecorder(api) {
@@ -197,12 +211,14 @@
     stopRecord = api.record({
       emit(event) {
         queue.push(event);
-        if (queue.length >= 40) {
+        const snapshot = event && (event.type === 2 || event.type === 4);
+        if (snapshot || queue.length >= 40) {
           uploading = uploading.then(() => flush(false)).catch(() => {});
         }
       },
       maskAllInputs: true,
       maskInputOptions: { password: true },
+      inlineStylesheet: true,
       checkoutEveryNms: 8000,
       sampling: { mousemove: 200, mouseInteraction: true, scroll: 150, input: "last" },
     });
@@ -230,6 +246,13 @@
     uploading = uploading.then(() => flush(false)).catch(() => {});
   }
 
+  document.addEventListener("htmx:afterSettle", () => {
+    if (window.rrweb && rrweb.record && typeof rrweb.record.takeFullSnapshot === "function") {
+      try {
+        rrweb.record.takeFullSnapshot();
+      } catch (_error) {}
+    }
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) unloadFlush();
     else onVisible();

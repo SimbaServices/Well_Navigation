@@ -1,4 +1,8 @@
-"""Capture App Store screenshot sizes from the live website."""
+"""Capture Google Play screenshot sizes from the live website.
+
+Play Console's asset picker wants an exact 9:16 (or 16:9) crop. Phone and
+tablet shots here are portrait 9:16, 24-bit PNG, 1080-3840px on each side.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +10,7 @@ import socket
 import time
 from pathlib import Path
 
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 OUT = Path(__file__).resolve().parent / "screenshots"
@@ -24,6 +29,32 @@ FALLBACK_WELL = (
     "?offset=0&scope=wells&state=tx&mode=name&q=UNIVERSITY+11&sort=name&dir=asc"
 )
 
+# Viewport * device_scale_factor must be an exact 9:16 pixel size.
+# width multiple of 9, height = width * 16 / 9.
+SIZES = {
+    "phone": {
+        "viewport": {"width": 540, "height": 960},
+        "device_scale_factor": 2,
+        "pixels": (1080, 1920),
+    },
+    "tablet-7": {
+        "viewport": {"width": 720, "height": 1280},
+        "device_scale_factor": 2,
+        "pixels": (1440, 2560),
+    },
+    "tablet-10": {
+        "viewport": {"width": 900, "height": 1600},
+        "device_scale_factor": 2,
+        "pixels": (1800, 3200),
+    },
+}
+
+USER_AGENT = (
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 "
+    "WellNavigation/1.0 (Android; store)"
+)
+
 
 def chromium_args() -> list[str]:
     args = ["--disable-ipv6"]
@@ -39,8 +70,28 @@ def login(page) -> None:
     page.locator('input[name="email"]').fill(EMAIL)
     page.locator('input[name="password"]').fill(PASSWORD)
     page.locator("button.primary").click()
-    page.wait_for_url(f"https://{LIVE_HOST}/**", timeout=30000)
-    page.wait_for_selector("#q", timeout=15000)
+    page.wait_for_selector("#q", timeout=30000)
+
+
+def hide_account_extras(page) -> None:
+    page.evaluate(
+        """() => {
+          document.querySelectorAll('.search-form, .hint, #operator-suggest, .workspace-tabs')
+            .forEach((el) => { el.style.display = 'none'; });
+          for (const h of document.querySelectorAll('h3')) {
+            if ((h.textContent || '').includes('UX recordings')) {
+              let node = h;
+              while (node) {
+                const next = node.nextElementSibling;
+                node.style.display = 'none';
+                node = next;
+              }
+            }
+          }
+          const card = document.querySelector('.account-card');
+          if (card) card.scrollIntoView({block: 'start'});
+        }"""
+    )
 
 
 def pin_well_with_routes(page) -> None:
@@ -104,11 +155,21 @@ def write_screenshot(page, path: Path) -> None:
     raise last_error
 
 
-def run_flow(page, prefix: str) -> None:
+def save_play_png(path: Path, pixels: tuple[int, int]) -> None:
+    image = Image.open(path).convert("RGB")
+    if image.size != pixels:
+        image = image.resize(pixels, Image.Resampling.LANCZOS)
+    image.save(path, format="PNG", optimize=True)
+
+
+def run_flow(page, prefix: str, pixels: tuple[int, int]) -> None:
     login(page)
-    page.goto(f"https://{LIVE_HOST}/", wait_until="domcontentloaded")
-    page.wait_for_selector("#q")
-    write_screenshot(page, OUT / f"{prefix}-01-search.png")
+    if page.locator("#q").count() == 0:
+        page.goto(f"https://{LIVE_HOST}/", wait_until="domcontentloaded")
+    page.wait_for_selector("#q", timeout=30000)
+    shot = OUT / f"{prefix}-01-search.png"
+    write_screenshot(page, shot)
+    save_play_png(shot, pixels)
 
     page.goto(RESULTS, wait_until="domcontentloaded")
     page.wait_for_selector("#results", timeout=45000)
@@ -116,59 +177,66 @@ def run_flow(page, prefix: str) -> None:
         "() => (document.getElementById('results')||{}).innerText.includes('OXY')",
         timeout=45000,
     )
-    write_screenshot(page, OUT / f"{prefix}-02-results.png")
+    shot = OUT / f"{prefix}-02-results.png"
+    write_screenshot(page, shot)
+    save_play_png(shot, pixels)
 
     pin_well_with_routes(page)
-    write_screenshot(page, OUT / f"{prefix}-03-map.png")
+    shot = OUT / f"{prefix}-03-map.png"
+    write_screenshot(page, shot)
+    save_play_png(shot, pixels)
 
-    page.goto(f"https://{LIVE_HOST}/account", wait_until="domcontentloaded")
+    page.locator("#tab-search").click()
+    page.locator("#account-nav a[href='/account']").click()
+    page.wait_for_selector(".account-card", state="attached", timeout=20000)
     page.evaluate(
         """() => {
           const ws = document.querySelector('.workspace');
           if (ws) ws.setAttribute('data-pane', 'search');
         }"""
     )
-    page.wait_for_selector("text=Delete account", timeout=20000)
-    page.evaluate(
-        """() => {
-          document.querySelectorAll('.search-form, .hint, #operator-suggest, .workspace-tabs')
-            .forEach((el) => { el.style.display = 'none'; });
-          for (const h of document.querySelectorAll('h3')) {
-            if ((h.textContent || '').includes('UX recordings')) {
-              let node = h;
-              while (node) {
-                const next = node.nextElementSibling;
-                node.style.display = 'none';
-                node = next;
-              }
-            }
-          }
-          const card = document.querySelector('.account-card');
-          if (card) card.scrollIntoView({block: 'start'});
-        }"""
-    )
-    write_screenshot(page, OUT / f"{prefix}-04-account.png")
+    hide_account_extras(page)
+    page.wait_for_timeout(300)
+    shot = OUT / f"{prefix}-04-account.png"
+    write_screenshot(page, shot)
+    save_play_png(shot, pixels)
+
+
+def assert_play_size(path: Path, pixels: tuple[int, int]) -> None:
+    image = Image.open(path)
+    width, height = image.size
+    if image.mode != "RGB":
+        raise SystemExit(f"{path.name}: mode {image.mode} (need 24-bit RGB PNG)")
+    if (width, height) != pixels:
+        raise SystemExit(f"{path.name}: {width}x{height} != {pixels[0]}x{pixels[1]}")
+    if width * 16 != height * 9:
+        raise SystemExit(f"{path.name}: {width}x{height} is not exact 9:16")
+    print(f"  {path.name} {width}x{height}")
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    sizes = {
-        "iphone-6.9": {"viewport": {"width": 430, "height": 932}, "device_scale_factor": 3},
-        "ipad-13": {"viewport": {"width": 1024, "height": 1366}, "device_scale_factor": 2},
-    }
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True, args=chromium_args())
-        for name, opts in sizes.items():
+        browser = playwright.chromium.launch(
+            headless=True,
+            args=chromium_args(),
+        )
+        for name, opts in SIZES.items():
             context = browser.new_context(
                 viewport=opts["viewport"],
                 device_scale_factor=opts["device_scale_factor"],
-                user_agent="WellNavigation/1.0 (iOS; store)",
+                user_agent=USER_AGENT,
+                color_scheme="dark",
+                service_workers="block",
             )
             page = context.new_page()
-            run_flow(page, name)
+            run_flow(page, name, opts["pixels"])
             context.close()
         browser.close()
-    print("ok", sorted(p.name for p in OUT.glob("*.png")))
+    for name, opts in SIZES.items():
+        for path in sorted(OUT.glob(f"{name}-*.png")):
+            assert_play_size(path, opts["pixels"])
+    print("ok", [path.name for path in sorted(OUT.glob("*.png"))])
 
 
 if __name__ == "__main__":

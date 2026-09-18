@@ -7,9 +7,57 @@
   <link rel="stylesheet" href="/static/css/app.css?v=offline1">
   <script src="/static/vendor/rrweb.min.js"></script>
   <style>
-    .ux-replay { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; min-height: 100dvh; }
-    #ux-player { flex: 1; min-height: 24rem; background: #0b0e09; border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
-    .replayer-wrapper { margin: 0 auto; }
+    html, body { height: 100%; }
+    .ux-replay {
+      box-sizing: border-box;
+      height: 100dvh;
+      padding: 0.75rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    #ux-player {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      background: #0b0e09;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .replayer-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .replayer-mouse {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      margin-left: -9px;
+      margin-top: -9px;
+      border-radius: 50%;
+      background: #e74c3c;
+      border: 3px solid #fff;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .replayer-mouse-tail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .replayer-wrapper iframe {
+      display: block;
+      border: 0;
+      background: #12160f;
+    }
+    #ux-player video { display: block; width: 100%; height: 100%; background: #000; }
+    .ux-replay .account-actions { align-items: center; }
+    #ux-seek { flex: 1 1 14rem; width: auto; min-width: 8rem; }
+    #ux-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
   </style>
 </head>
 <body class="gate">
@@ -17,33 +65,15 @@
     <p class="muted">{{ recording.email }} · {{ recording.started_at }}</p>
     <div class="account-actions">
       <button type="button" class="primary" id="ux-play">Play</button>
-      <a class="ghost" href="/ux/recordings/{{ recording.id }}/file">Download</a>
-      <a class="ghost" href="/account">Account</a>
+      <input type="range" id="ux-seek" min="0" max="1" value="0" aria-label="Seek">
+      <span class="muted" id="ux-time"></span>
+      <a class="ghost" href="{{ '/' if local_player else '/account' }}">{% if local_player %}All sessions{% else %}Account{% endif %}</a>
     </div>
     <div id="ux-player"></div>
   </main>
+  <script src="/static/js/ux-replay.js?v=3"></script>
   <script>
-    (function () {
-      var id = {{ recording.id | tojson }};
-      fetch("/ux/recordings/" + id + "/file", { credentials: "same-origin" })
-        .then(function (response) { return response.text(); })
-        .then(function (text) {
-          var events = [];
-          text.split(/\n+/).forEach(function (line) {
-            if (!line.trim()) return;
-            var parsed = JSON.parse(line);
-            if (Array.isArray(parsed)) events = events.concat(parsed);
-            else events.push(parsed);
-          });
-          if (events.length < 2) throw new Error("empty");
-          var player = new rrweb.Replayer(events, { root: document.getElementById("ux-player"), skipInactive: true });
-          document.getElementById("ux-play").addEventListener("click", function () { player.play(); });
-          player.play();
-        })
-        .catch(function () {
-          document.getElementById("ux-player").textContent = "Could not play this session.";
-        });
-    })();
+    wellnavStartReplay({{ recording.id | tojson }});
   </script>
 </body>
 </html>
