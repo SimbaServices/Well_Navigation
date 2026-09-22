@@ -2325,9 +2325,7 @@ function applySearchContext() {
     q.setAttribute("hx-get", pipelines ? "/pipelines/suggest" : disposal ? "/disposal/suggest" : "/operators");
     q.setAttribute(
       "hx-trigger",
-      pipelines || disposal
-        ? "input changed delay:400ms[this.value.trim().length>=2]"
-        : "input changed delay:400ms[this.closest('form').scope.value=='wells'&&this.closest('form').mode.value=='operator'&&this.value.trim().length>=2]"
+      "input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
     );
     q.setAttribute("hx-include", "[name=mode],[name=state],[name=pipe_mode],[name=disp_mode],[name=scope]");
     q.setAttribute(
@@ -2505,6 +2503,13 @@ document.addEventListener("htmx:afterSwap", (event) => {
       else applyPipelineFocusFromEl(auto);
     }
   }
+});
+
+document.addEventListener("htmx:sendError", (event) => {
+  const elt = event.detail && event.detail.elt;
+  if (!elt || elt.id !== "search-form" || elt.dataset.nativeFallback === "1") return;
+  elt.dataset.nativeFallback = "1";
+  HTMLFormElement.prototype.submit.call(elt);
 });
 
 document.addEventListener("htmx:afterRequest", (event) => {

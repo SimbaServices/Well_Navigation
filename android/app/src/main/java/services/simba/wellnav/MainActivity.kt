@@ -7,16 +7,23 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.CookieManager
+import android.webkit.ServiceWorkerClient
+import android.webkit.ServiceWorkerController
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
@@ -26,9 +33,22 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Install before any WebView loads. Without this client, service-worker
+        // fetch() inside the Play WebView fails and search calls never return.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ServiceWorkerController.getInstance().setServiceWorkerClient(
+                object : ServiceWorkerClient() {
+                    override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
+                        return super.shouldInterceptRequest(request)
+                    }
+                },
+            )
+        }
+        CookieManager.getInstance().setAcceptCookie(true)
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.web)
         banner = findViewById(R.id.offline_banner)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
         val settings = webView.settings
         settings.javaScriptEnabled = true
@@ -42,6 +62,14 @@ class MainActivity : AppCompatActivity() {
         settings.allowContentAccess = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         settings.userAgentString = settings.userAgentString + " WellNavigation/1.0 (Android; store)"
+
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            WebViewCompat.addDocumentStartJavaScript(
+                webView,
+                STORE_BOOT_JS,
+                setOf("https://wellnav.simba.services"),
+            )
+        }
 
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = object : WebViewClient() {
@@ -149,5 +177,52 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val START_URL = "https://wellnav.simba.services/"
         private val ALLOWED_HOSTS = setOf("wellnav.simba.services")
+
+        // Keep in sync with templates/partials/store_boot.js.
+        private const val STORE_BOOT_JS = """
+            (function () {
+              var ua = navigator.userAgent || "";
+              var store = ua.indexOf("WellNavigation/") !== -1 && ua.toLowerCase().indexOf("store") !== -1;
+              if (!store) return;
+              window.__WN_STORE = true;
+              function armCredentials() {
+                if (window.htmx && window.htmx.config) window.htmx.config.withCredentials = true;
+              }
+              armCredentials();
+              document.addEventListener("DOMContentLoaded", armCredentials);
+              if (!("serviceWorker" in navigator)) return;
+              try {
+                navigator.serviceWorker.register = function () {
+                  return Promise.resolve(null);
+                };
+              } catch (err) {}
+              var controlled = !!navigator.serviceWorker.controller;
+              var tries = 0;
+              try {
+                tries = parseInt(sessionStorage.getItem("wn-store-sw-reset") || "0", 10) || 0;
+              } catch (err) {
+                tries = 2;
+              }
+              function dropWorkers() {
+                return navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all((regs || []).map(function (reg) { return reg.unregister(); })).then(function () {
+                    if (!window.caches || !caches.keys) return;
+                    return caches.keys().then(function (keys) {
+                      return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+                    });
+                  });
+                });
+              }
+              if (!controlled) {
+                dropWorkers().catch(function () {});
+                return;
+              }
+              if (tries >= 2) return;
+              try {
+                sessionStorage.setItem("wn-store-sw-reset", String(tries + 1));
+              } catch (err) {}
+              dropWorkers().then(function () { window.location.reload(); }).catch(function () {});
+            })();
+        """
     }
 }

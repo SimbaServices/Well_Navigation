@@ -41,6 +41,34 @@ class OfflineTilesTest(unittest.TestCase):
 
 
 class OfflineRoutesTest(unittest.TestCase):
+    def test_store_webview_does_not_keep_a_service_worker(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        boot = (root / "templates" / "partials" / "store_boot.js").read_text(encoding="utf-8")
+        self.assertIn("wn-store-sw-reset", boot)
+        self.assertIn("serviceWorker.register", boot)
+        self.assertIn("withCredentials", boot)
+        client = TestClient(app, follow_redirects=False)
+        login = client.get("/login")
+        self.assertEqual(login.status_code, 200)
+        self.assertIn("wn-store-sw-reset", login.text)
+        self.assertIn("navigator.serviceWorker.register = function", login.text)
+        self.assertNotIn("navigator.serviceWorker.register = function () {&amp;", login.text)
+        index = (root / "templates" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("partials/store_boot.html", index)
+        self.assertIn("keyup[this.value.trim().length>=2]", index)
+        worker = (root / "static" / "js" / "sw.js").read_text(encoding="utf-8")
+        self.assertIn('pathname === "/sw.js"', worker)
+        self.assertIn("wellnav-shell-v2", worker)
+        register = (root / "static" / "js" / "sw-register.js").read_text(encoding="utf-8")
+        self.assertIn("isStoreClient", register)
+        android = (root / "android" / "app" / "src" / "main" / "java" / "services" / "simba" / "wellnav" / "MainActivity.kt").read_text(encoding="utf-8")
+        ios = (root / "ios" / "WellNavigation" / "WebContainer.swift").read_text(encoding="utf-8")
+        self.assertIn("wn-store-sw-reset", android)
+        self.assertIn("setAcceptThirdPartyCookies", android)
+        self.assertIn("wn-store-sw-reset", ios)
+        self.assertNotIn("returnCacheDataElseLoad", ios)
+        self.assertIn("reloadRevalidatingCacheData", ios)
+
     def test_service_worker_is_public(self) -> None:
         client = TestClient(app, follow_redirects=False)
         resp = client.get("/sw.js")

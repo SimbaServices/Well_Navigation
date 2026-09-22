@@ -1,11 +1,11 @@
 /* App-shell cache so the iOS / Play Store WebView can reopen the last workspace offline. */
-const SHELL = "wellnav-shell-v1";
+const SHELL = "wellnav-shell-v2";
 const PRECACHE = [
   "/",
   "/static/css/app.css?v=offline1",
   "/static/js/map.js?v=offline1",
   "/static/js/offline-map.js?v=1",
-  "/static/js/sw-register.js?v=1",
+  "/static/js/sw-register.js?v=2",
   "/static/vendor/leaflet/leaflet.css",
   "/static/vendor/leaflet/leaflet.js",
   "/static/vendor/leaflet/images/layers.png",
@@ -37,8 +37,11 @@ self.addEventListener("activate", (event) => {
 
 function isShellAsset(url) {
   if (url.origin !== self.location.origin) return false;
+  // Never cache the worker script. A cache-first /sw.js traps WebViews on a
+  // broken worker and live search calls (/operators, /search) never return.
+  if (url.pathname === "/sw.js") return false;
   if (url.pathname.startsWith("/static/")) return true;
-  return url.pathname === "/" || url.pathname === "/sw.js";
+  return url.pathname === "/";
 }
 
 self.addEventListener("fetch", (event) => {
@@ -58,7 +61,7 @@ self.addEventListener("fetch", (event) => {
           }
           return resp;
         })
-        .catch(() => caches.match("/") || caches.match(req))
+        .catch(async () => (await caches.match("/")) || (await caches.match(req)) || new Response("", { status: 503 }))
     );
     return;
   }

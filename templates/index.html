@@ -11,9 +11,10 @@
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="/static/css/app.css?v=offline1">
+  {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
-  <script src="/static/js/sw-register.js?v=1"></script>
+  <script src="/static/js/sw-register.js?v=2"></script>
   {% include 'partials/hotjar.html' %}
 </head>
 <body>
@@ -139,7 +140,7 @@
             <input id="q" name="q" type="search" autocomplete="off"
                    placeholder="Search"
                    hx-get="/operators"
-                   hx-trigger="input changed delay:400ms[this.closest('form').mode.value=='operator'&&this.value.trim().length>=2]"
+                   hx-trigger="input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
                    hx-target="#operator-suggest"
                    hx-include="[name=mode],[name=state]"
                    hx-params="q,mode,state"
