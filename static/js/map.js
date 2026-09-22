@@ -53,12 +53,8 @@ const PIPELINE_COLORS = {
 };
 
 const MAP_CHROME_HTML = `
-<div class="map-chrome">
-  <div class="map-head">
-    <div>
-      <h2 id="map-title">Map</h2>
-      <p id="map-sub" class="muted"></p>
-    </div>
+<div class="map-chrome" data-focus="idle">
+  <div class="map-toolbar">
     <div class="map-actions">
       <label class="basemap-picker">Base layer
         <select id="basemap-select"></select>
@@ -73,25 +69,33 @@ const MAP_CHROME_HTML = `
     </div>
   </div>
   <div id="well-map" class="well-map"></div>
-  <div id="pipeline-legend" class="pipeline-legend" hidden>
-    <span><i class="swatch gas"></i>Gas</span>
-    <span><i class="swatch crude"></i>Crude</span>
-    <span><i class="swatch hvl"></i>HVL</span>
-    <span><i class="swatch product"></i>Product</span>
-    <span><i class="swatch other"></i>Other</span>
-            <span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>
-  </div>
-  <p id="pipeline-status" class="muted pipeline-status"></p>
-  <div id="pipeline-owners" class="pipeline-owners" hidden></div>
-  <div id="disposal-legend" class="pipeline-legend disposal-legend" hidden>
-    <span><i class="swatch disposal"></i>Commercial waste disposal</span>
-    <span class="muted">TX commercial · NM SWD · OK UIC · LA injection</span>
-  </div>
-  <p id="disposal-status" class="muted pipeline-status"></p>
-  <ul id="mapped-list" class="mapped-list"></ul>
-  <div class="map-footer">
-    <div id="map-coords" class="coord-bar"></div>
-    <div id="nav-links" class="route-row"></div>
+  <div class="map-details">
+    <div class="map-head">
+      <div>
+        <h2 id="map-title">Map</h2>
+        <p id="map-sub" class="muted"></p>
+      </div>
+    </div>
+    <div id="pipeline-legend" class="pipeline-legend" hidden>
+      <span><i class="swatch gas"></i>Gas</span>
+      <span><i class="swatch crude"></i>Crude</span>
+      <span><i class="swatch hvl"></i>HVL</span>
+      <span><i class="swatch product"></i>Product</span>
+      <span><i class="swatch other"></i>Other</span>
+      <span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>
+    </div>
+    <p id="pipeline-status" class="muted pipeline-status"></p>
+    <div id="pipeline-owners" class="pipeline-owners" hidden></div>
+    <div id="disposal-legend" class="pipeline-legend disposal-legend" hidden>
+      <span><i class="swatch disposal"></i>Commercial waste disposal</span>
+      <span class="muted">TX commercial · NM SWD · OK UIC · LA injection</span>
+    </div>
+    <p id="disposal-status" class="muted pipeline-status"></p>
+    <ul id="mapped-list" class="mapped-list"></ul>
+    <div class="map-footer">
+      <div id="map-coords" class="coord-bar"></div>
+      <div id="nav-links" class="route-row"></div>
+    </div>
   </div>
 </div>`;
 
@@ -773,6 +777,14 @@ function bindOverlayToggles() {
   }
 }
 
+function coarsePointer() {
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+function pipelineHitPx() {
+  return coarsePointer() ? 28 : 12;
+}
+
 function pipelineStyle(feature) {
   const props = feature.properties || {};
   const group = props.commodity_group || "other";
@@ -782,11 +794,12 @@ function pipelineStyle(feature) {
   const inFocus =
     (pipelineFocus.p5 && props.p5 && props.p5 === pipelineFocus.p5) ||
     (pipelineFocus.system && props.system && props.system === pipelineFocus.system);
+  const boost = coarsePointer() ? 1.1 : 0;
   return {
     color: selected ? "#fff2a8" : PIPELINE_COLORS[group] || PIPELINE_COLORS.other,
     weight: selected
-      ? Math.max(4.2, Math.min(7, diameter / 6 || 4.5))
-      : Math.max(inFocus ? 2.1 : 1.15, Math.min(5, diameter / 8 || 1.4)),
+      ? Math.max(4.8, Math.min(8, (diameter / 6 || 4.8) + boost))
+      : Math.max((inFocus ? 2.6 : 1.8) + boost, Math.min(5.5, (diameter / 8 || 1.8) + boost)),
     opacity: selected ? 1 : abandoned ? 0.42 : inFocus ? 0.95 : 0.88,
     dashArray: abandoned ? "5 4" : null,
   };
@@ -801,14 +814,9 @@ function ensurePipelineLayer() {
   if (!pipelineLayer) {
     pipelineLayer = L.geoJSON(null, {
       pane: "pipelines",
+      interactive: false,
       renderer: L.canvas({ pane: "pipelines" }),
       style: pipelineStyle,
-      onEachFeature(feature, layer) {
-        layer.on("click", (event) => {
-          L.DomEvent.stopPropagation(event);
-          selectPipelineFeature(feature, event.latlng, layer);
-        });
-      },
     });
     pipelineLayer.addTo(map);
   }
@@ -987,6 +995,79 @@ function applyPipelineFocusFromEl(el) {
     east: el.dataset.east,
     north: el.dataset.north,
   });
+}
+
+function refreshMapSize() {
+  if (!map) return;
+  window.requestAnimationFrame(() => {
+    if (map) map.invalidateSize({ animate: false });
+  });
+}
+
+function pointerOnMapChrome(event) {
+  const target = event && event.originalEvent && event.originalEvent.target;
+  if (!target || !target.closest) return false;
+  return !!target.closest(".leaflet-marker-icon, .leaflet-popup, .leaflet-control, .leaflet-tooltip");
+}
+
+function pointHitsMarker(latlng) {
+  if (!map || !latlng) return false;
+  const point = map.latLngToLayerPoint(latlng);
+  let hit = false;
+  const visit = (layer) => {
+    if (hit || !layer) return;
+    if (typeof layer.eachLayer === "function" && layer !== pipelineLayer) {
+      layer.eachLayer(visit);
+      return;
+    }
+    if (typeof layer._containsPoint === "function") {
+      try {
+        if (layer._containsPoint(point)) hit = true;
+      } catch {
+        /* path not drawn yet */
+      }
+    }
+  };
+  visit(wellLayer);
+  visit(disposalLayer);
+  return hit;
+}
+
+function nearestPipeline(latlng, maxPx) {
+  if (!map || !pipelineLayer || !pipelinesEnabled() || !L.LineUtil) return null;
+  const target = map.latLngToLayerPoint(latlng);
+  let best = null;
+  let bestDist = maxPx;
+  const consider = (layer, coords) => {
+    if (!coords || !coords.length) return;
+    if (typeof coords[0].lat === "number") {
+      for (let i = 0; i < coords.length - 1; i += 1) {
+        const a = map.latLngToLayerPoint(coords[i]);
+        const b = map.latLngToLayerPoint(coords[i + 1]);
+        const point = L.LineUtil.closestPointOnSegment(target, a, b);
+        const dist = point.distanceTo(target);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { layer, feature: layer.feature, point };
+        }
+      }
+      return;
+    }
+    coords.forEach((part) => consider(layer, part));
+  };
+  pipelineLayer.eachLayer((layer) => {
+    if (!layer.feature || typeof layer.getLatLngs !== "function") return;
+    consider(layer, layer.getLatLngs());
+  });
+  return best;
+}
+
+function pickPipelineAt(event) {
+  if (!event || !event.latlng || pointerOnMapChrome(event) || pointHitsMarker(event.latlng)) return;
+  const hit = nearestPipeline(event.latlng, pipelineHitPx());
+  if (!hit || !hit.feature) return;
+  const snapped = hit.point ? map.layerPointToLatLng(hit.point) : event.latlng;
+  selectPipelineFeature(hit.feature, snapped, hit.layer);
 }
 
 function selectPipelineFeature(feature, latlng, layer) {
@@ -1224,6 +1305,7 @@ function renderPipelineOwners(payload) {
   root.replaceChildren(head, dl);
   if (actions.childNodes.length) root.appendChild(actions);
   root.hidden = false;
+  refreshMapSize();
 }
 
 function ensurePipelineOwnersNode() {
@@ -1730,7 +1812,11 @@ function ensureMap() {
   }
   el.classList.remove("is-idle");
 
-  map = L.map(el, { zoomControl: true, closePopupOnClick: true }).setView([31.2, -99.2], 6);
+  map = L.map(el, {
+    zoomControl: true,
+    closePopupOnClick: true,
+    tapTolerance: coarsePointer() ? 32 : 15,
+  }).setView([31.2, -99.2], 6);
   map.createPane("pipelines");
   map.getPane("pipelines").style.zIndex = 350;
   map.createPane("disposal");
@@ -1743,8 +1829,9 @@ function ensureMap() {
   bindOverlayToggles();
   bindOfflinePack();
   observeMapSize(el);
-  map.on("click", () => {
+  map.on("click", (event) => {
     disposalPopupPinned = false;
+    pickPipelineAt(event);
   });
   map.on("moveend", schedulePipelines);
   map.on("zoomend", schedulePipelines);
@@ -1908,6 +1995,13 @@ function updateChrome(store) {
 
   const showPin =
     pinChrome && pipelinePin && Number.isFinite(pipelinePin.lat) && Number.isFinite(pipelinePin.lon);
+  const chrome = document.querySelector(".map-chrome");
+  if (chrome) {
+    const next = showPin ? "pipeline" : disposalFocus ? "disposal" : selected ? "well" : "idle";
+    const changed = chrome.dataset.focus !== next;
+    chrome.dataset.focus = next;
+    if (changed) refreshMapSize();
+  }
 
   if (title) {
     if (showPin) title.textContent = pipelinePin.operator || pipelinePin.system || "Pipeline point";
@@ -2308,6 +2402,9 @@ window.initWellMap = initWellMap;
 window.setBasemap = setBasemap;
 
 function searchScope() {
+  const el = document.querySelector("#search-form [name=scope]");
+  if (!el) return "wells";
+  if (el.tagName === "SELECT") return el.value || "wells";
   return document.querySelector("#search-form [name=scope]:checked")?.value || "wells";
 }
 

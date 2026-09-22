@@ -1,9 +1,9 @@
 /* App-shell cache so the iOS / Play Store WebView can reopen the last workspace offline. */
-const SHELL = "wellnav-shell-v2";
+const SHELL = "wellnav-shell-v3";
 const PRECACHE = [
   "/",
-  "/static/css/app.css?v=offline1",
-  "/static/js/map.js?v=offline1",
+  "/static/css/app.css?v=mobile2",
+  "/static/js/map.js?v=mobile2",
   "/static/js/offline-map.js?v=1",
   "/static/js/sw-register.js?v=2",
   "/static/vendor/leaflet/leaflet.css",

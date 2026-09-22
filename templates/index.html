@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=offline1">
+  <link rel="stylesheet" href="/static/css/app.css?v=mobile2">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -59,46 +59,29 @@
             hx-sync="this:abort"
             hx-disabled-elt="find .primary">
         <input type="hidden" name="offset" value="0">
-        <div class="scopes" role="tablist" aria-label="Search context">
-          <label class="mode">
-            <input type="radio" name="scope" value="wells" checked>
-            <span>Wells</span>
+        <div class="control-row">
+          <label class="picker">
+            <span class="sr-only">What to search</span>
+            <select name="scope" aria-label="What to search">
+              <option value="wells" selected>Wells</option>
+              <option value="pipelines">Pipelines</option>
+              <option value="disposal">Waste sites</option>
+            </select>
           </label>
-          <label class="mode">
-            <input type="radio" name="scope" value="pipelines">
-            <span>Pipelines</span>
+          <label class="picker">
+            <span class="sr-only">State</span>
+            <select name="state" aria-label="State">
+              <option value="tx"{% if state|default('tx') == 'tx' %} selected{% endif %}>Texas</option>
+              <option value="nm"{% if state|default('tx') == 'nm' %} selected{% endif %}>New Mexico</option>
+              <option value="ok"{% if state|default('tx') == 'ok' %} selected{% endif %}>Oklahoma</option>
+              <option value="la"{% if state|default('tx') == 'la' %} selected{% endif %}>Louisiana</option>
+              <option value="all"{% if state|default('tx') == 'all' %} selected{% endif %}>All states</option>
+            </select>
           </label>
-          <label class="mode">
-            <input type="radio" name="scope" value="disposal">
-            <span>Waste sites</span>
-          </label>
-        </div>
-        <div class="scopes states" role="tablist" aria-label="State">
-          <label class="mode">
-            <input type="radio" name="state" value="tx"{% if state|default('tx') == 'tx' %} checked{% endif %}>
-            <span>Texas</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="state" value="nm"{% if state|default('tx') == 'nm' %} checked{% endif %}>
-            <span>New Mexico</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="state" value="ok"{% if state|default('tx') == 'ok' %} checked{% endif %}>
-            <span>Oklahoma</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="state" value="la"{% if state|default('tx') == 'la' %} checked{% endif %}>
-            <span>Louisiana</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="state" value="all"{% if state|default('tx') == 'all' %} checked{% endif %}>
-            <span>All</span>
-          </label>
-        </div>
-        <div class="modes modes-wells" role="tablist">
+        <div class="modes modes-wells" role="tablist" aria-label="Well search">
           <label class="mode">
             <input type="radio" name="mode" value="name" checked>
-            <span>Well / lease name</span>
+            <span title="Well or lease name">Lease name</span>
           </label>
           <label class="mode">
             <input type="radio" name="mode" value="api">
@@ -132,6 +115,7 @@
             <input type="radio" name="disp_mode" value="permit">
             <span>Permit</span>
           </label>
+        </div>
         </div>
 
         <div class="query-row">
@@ -187,12 +171,8 @@
       {% if map_html %}
         {{ map_html | safe }}
       {% else %}
-        <div class="map-chrome">
-          <div class="map-head">
-            <div>
-              <h2 id="map-title">Map</h2>
-                  <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
-            </div>
+        <div class="map-chrome" data-focus="idle">
+          <div class="map-toolbar">
             <div class="map-actions">
               <label class="basemap-picker">
                 Base layer
@@ -214,6 +194,13 @@
             </div>
           </div>
           <div id="well-map" class="well-map"></div>
+          <div class="map-details">
+          <div class="map-head">
+            <div>
+              <h2 id="map-title">Map</h2>
+              <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
+            </div>
+          </div>
           <div id="pipeline-legend" class="pipeline-legend">
             <span><i class="swatch gas"></i>Gas</span>
             <span><i class="swatch crude"></i>Crude</span>
@@ -234,6 +221,7 @@
             <div id="map-coords" class="coord-bar"></div>
             <div id="nav-links" class="route-row"></div>
           </div>
+          </div>
         </div>
       {% endif %}
     </section>
@@ -244,7 +232,7 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/map.js?v=offline1"></script>
+  <script src="/static/js/map.js?v=mobile2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>
