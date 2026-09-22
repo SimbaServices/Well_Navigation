@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=mobile3">
+  <link rel="stylesheet" href="/static/css/app.css?v=mobile4">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -188,7 +188,7 @@
                 <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
-                  <span class="info-tip-pop" hidden role="tooltip">
+                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">
                     <span class="legend-key">
                       <span><i class="swatch gas"></i>Gas</span>
                       <span><i class="swatch crude"></i>Crude</span>
@@ -204,7 +204,7 @@
                 <button type="button" class="ghost" id="offline-save">Save this view</button>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
-                  <span class="info-tip-pop" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
                 </span>
                 <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
                 <p id="offline-status" class="muted"></p>
@@ -238,7 +238,7 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/map.js?v=mobile3"></script>
+  <script src="/static/js/map.js?v=mobile4"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

@@ -63,7 +63,7 @@ const MAP_CHROME_HTML = `
         <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle"> Pipelines</label>
         <span class="info-tip">
           <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
-          <span class="info-tip-pop" hidden role="tooltip">
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">
             <span class="legend-key">
               <span><i class="swatch gas"></i>Gas</span>
               <span><i class="swatch crude"></i>Crude</span>
@@ -79,7 +79,7 @@ const MAP_CHROME_HTML = `
         <button type="button" class="ghost" id="offline-save">Save this view</button>
         <span class="info-tip">
           <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
-          <span class="info-tip-pop" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
         </span>
         <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
         <p id="offline-status" class="muted"></p>
@@ -2004,6 +2004,10 @@ function updateChrome(store) {
 
   if (list) {
     list.replaceChildren();
+    if (store.order.length < 2) {
+      list.hidden = true;
+    } else {
+      list.hidden = false;
     store.order.forEach((api) => {
       const well = store.wells[api];
       if (!well) return;
@@ -2031,6 +2035,7 @@ function updateChrome(store) {
       li.append(pick, remove);
       list.appendChild(li);
     });
+    }
   }
 
   if (coords) {
@@ -2066,6 +2071,13 @@ function updateChrome(store) {
         remove.className = "ghost pipeline-pin-remove";
         remove.textContent = "Remove pin";
         remove.addEventListener("click", () => clearPipelinePin());
+        nav.appendChild(remove);
+      } else if (!disposalFocus && store.order.length === 1 && store.selected) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "ghost";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", () => removeWell(store.selected));
         nav.appendChild(remove);
       }
     }
@@ -2621,6 +2633,7 @@ function closeInfoTips() {
   document.querySelectorAll(".info-tip-pop.is-open").forEach((pop) => {
     pop.classList.remove("is-open");
     pop.hidden = true;
+    if (typeof pop.hidePopover === "function" && pop.matches(":popover-open")) pop.hidePopover();
     if (pop._home) pop._home.appendChild(pop);
   });
   document.querySelectorAll('.info-tip-btn[aria-expanded="true"]').forEach((btn) => {
@@ -2632,7 +2645,9 @@ function openInfoTip(btn, pop) {
   if (!pop._home) pop._home = pop.parentElement;
   closeInfoTips();
   pop.hidden = false;
+  if (!pop.hasAttribute("popover")) pop.setAttribute("popover", "manual");
   document.body.appendChild(pop);
+  if (typeof pop.showPopover === "function" && !pop.matches(":popover-open")) pop.showPopover();
   pop.classList.add("is-open");
   btn.setAttribute("aria-expanded", "true");
   const rect = btn.getBoundingClientRect();
@@ -2642,10 +2657,10 @@ function openInfoTip(btn, pop) {
   if (left < 8) left = 8;
   pop.style.width = `${width}px`;
   pop.style.left = `${left}px`;
-  pop.style.top = `${rect.bottom + 6}px`;
+  pop.style.top = `${rect.bottom + 8}px`;
   const box = pop.getBoundingClientRect();
   if (box.bottom > window.innerHeight - 8) {
-    pop.style.top = `${Math.max(8, rect.top - box.height - 6)}px`;
+    pop.style.top = `${Math.max(8, rect.top - box.height - 8)}px`;
   }
 }
 

@@ -511,7 +511,8 @@ button.well-name-link {
 }
 .info-tip-pop {
   position: fixed;
-  z-index: 80;
+  inset: auto;
+  z-index: 10000;
   margin: 0;
   padding: 0.5rem 0.65rem;
   width: min(15rem, calc(100vw - 1rem));
@@ -676,7 +677,6 @@ button.well-name-link {
 }
 .mapped-item.selected {
   border-color: var(--accent);
-  background: #3d2e0a;
 }
 .mapped-item-select {
   flex: 1;
