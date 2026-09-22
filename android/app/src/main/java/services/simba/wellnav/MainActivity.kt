@@ -63,6 +63,12 @@ class MainActivity : AppCompatActivity() {
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         settings.userAgentString = settings.userAgentString + " WellNavigation/1.0 (Android; store)"
 
+        val prefs = getSharedPreferences("wellnav", MODE_PRIVATE)
+        if (prefs.getInt("ui_cache", 0) < BuildConfig.VERSION_CODE) {
+            webView.clearCache(true)
+            prefs.edit().putInt("ui_cache", BuildConfig.VERSION_CODE).apply()
+        }
+
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             WebViewCompat.addDocumentStartJavaScript(
                 webView,

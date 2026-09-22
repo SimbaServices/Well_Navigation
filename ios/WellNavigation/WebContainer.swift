@@ -38,7 +38,17 @@ struct WebContainer: UIViewRepresentable {
             cachePolicy: .reloadRevalidatingCacheData,
             timeoutInterval: 30
         )
-        view.load(request)
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: "wn.uiCache") != version {
+            let types: Set<String> = [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache]
+            WKWebsiteDataStore.default().removeData(ofTypes: types, modifiedSince: Date(timeIntervalSince1970: 0)) {
+                defaults.set(version, forKey: "wn.uiCache")
+                view.load(request)
+            }
+        } else {
+            view.load(request)
+        }
         return view
     }
 

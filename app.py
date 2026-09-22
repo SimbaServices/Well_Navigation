@@ -207,6 +207,16 @@ def view_ctx(request: Request, **extra) -> dict:
     return context
 
 
+class HtmlCacheMiddleware(BaseHTTPMiddleware):
+    """Store WebViews keep a fresh document so label and layout changes show up."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if response.headers.get("content-type", "").startswith("text/html"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def render(name: str, request: Request | None = None, **context) -> str:
     if request is not None:
         context = {**view_ctx(request), **context}
@@ -1613,6 +1623,7 @@ app = Starlette(
     ],
     middleware=[
         Middleware(GZipMiddleware, minimum_size=500),
+        Middleware(HtmlCacheMiddleware),
         Middleware(
             SessionMiddleware,
             secret_key=session_secret(),
