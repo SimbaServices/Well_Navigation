@@ -559,12 +559,12 @@ button.well-name-link {
   vertical-align: middle;
   background: var(--accent);
 }
-.pipeline-legend .swatch.gas { background: #e4c04a; }
-.pipeline-legend .swatch.crude { background: #6fbf73; }
-.pipeline-legend .swatch.hvl { background: #e0893a; }
-.pipeline-legend .swatch.product { background: #7aa2e3; }
-.pipeline-legend .swatch.other { background: #b7b7a8; }
-.pipeline-legend .swatch.disposal { height: 10px; width: 10px; border-radius: 2px; background: #c45c3a; }
+.swatch.gas { background: #e4c04a; }
+.swatch.crude { background: #6fbf73; }
+.swatch.hvl { background: #e0893a; }
+.swatch.product { background: #7aa2e3; }
+.swatch.other { background: #b7b7a8; }
+.swatch.disposal { height: 10px; width: 10px; border-radius: 2px; background: #c45c3a; }
 .pipeline-status { margin: 0; font-size: 0.8rem; }
 .pipeline-status:empty,
 .coord-bar:empty,
