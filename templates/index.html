@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=mobile2">
+  <link rel="stylesheet" href="/static/css/app.css?v=mobile3">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -184,10 +184,28 @@
                   <option value="usgs">USGS Topo (works offline)</option>
                 </select>
               </label>
-              <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+              <span class="overlay-with-tip">
+                <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
+                  <span class="info-tip-pop" hidden role="tooltip">
+                    <span class="legend-key">
+                      <span><i class="swatch gas"></i>Gas</span>
+                      <span><i class="swatch crude"></i>Crude</span>
+                      <span><i class="swatch hvl"></i>HVL</span>
+                      <span><i class="swatch product"></i>Product</span>
+                      <span><i class="swatch other"></i>Other</span>
+                    </span>
+                  </span>
+                </span>
+              </span>
               <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
               <div class="offline-pack">
                 <button type="button" class="ghost" id="offline-save">Save this view</button>
+                <span class="info-tip">
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
+                  <span class="info-tip-pop" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+                </span>
                 <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
                 <p id="offline-status" class="muted"></p>
               </div>
@@ -201,20 +219,8 @@
               <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
             </div>
           </div>
-          <div id="pipeline-legend" class="pipeline-legend">
-            <span><i class="swatch gas"></i>Gas</span>
-            <span><i class="swatch crude"></i>Crude</span>
-            <span><i class="swatch hvl"></i>HVL</span>
-            <span><i class="swatch product"></i>Product</span>
-            <span><i class="swatch other"></i>Other</span>
-            <span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>
-          </div>
           <p id="pipeline-status" class="muted pipeline-status"></p>
           <div id="pipeline-owners" class="pipeline-owners" hidden></div>
-          <div id="disposal-legend" class="pipeline-legend disposal-legend" hidden>
-            <span><i class="swatch disposal"></i>Commercial waste disposal</span>
-            <span class="muted">TX commercial · NM SWD · OK UIC · LA injection</span>
-          </div>
           <p id="disposal-status" class="muted pipeline-status"></p>
           <ul id="mapped-list" class="mapped-list"></ul>
           <div class="map-footer">
@@ -232,7 +238,7 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/map.js?v=mobile2"></script>
+  <script src="/static/js/map.js?v=mobile3"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

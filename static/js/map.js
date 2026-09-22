@@ -59,10 +59,28 @@ const MAP_CHROME_HTML = `
       <label class="basemap-picker">Base layer
         <select id="basemap-select"></select>
       </label>
-      <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle"> Pipelines</label>
+      <span class="overlay-with-tip">
+        <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle"> Pipelines</label>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
+          <span class="info-tip-pop" hidden role="tooltip">
+            <span class="legend-key">
+              <span><i class="swatch gas"></i>Gas</span>
+              <span><i class="swatch crude"></i>Crude</span>
+              <span><i class="swatch hvl"></i>HVL</span>
+              <span><i class="swatch product"></i>Product</span>
+              <span><i class="swatch other"></i>Other</span>
+            </span>
+          </span>
+        </span>
+      </span>
       <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
       <div class="offline-pack">
         <button type="button" class="ghost" id="offline-save">Save this view</button>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
+          <span class="info-tip-pop" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+        </span>
         <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
         <p id="offline-status" class="muted"></p>
       </div>
@@ -76,20 +94,8 @@ const MAP_CHROME_HTML = `
         <p id="map-sub" class="muted"></p>
       </div>
     </div>
-    <div id="pipeline-legend" class="pipeline-legend" hidden>
-      <span><i class="swatch gas"></i>Gas</span>
-      <span><i class="swatch crude"></i>Crude</span>
-      <span><i class="swatch hvl"></i>HVL</span>
-      <span><i class="swatch product"></i>Product</span>
-      <span><i class="swatch other"></i>Other</span>
-      <span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>
-    </div>
     <p id="pipeline-status" class="muted pipeline-status"></p>
     <div id="pipeline-owners" class="pipeline-owners" hidden></div>
-    <div id="disposal-legend" class="pipeline-legend disposal-legend" hidden>
-      <span><i class="swatch disposal"></i>Commercial waste disposal</span>
-      <span class="muted">TX commercial · NM SWD · OK UIC · LA injection</span>
-    </div>
     <p id="disposal-status" class="muted pipeline-status"></p>
     <ul id="mapped-list" class="mapped-list"></ul>
     <div class="map-footer">
@@ -621,11 +627,7 @@ async function refreshOfflineStatus() {
     const info = await offline.usage();
     if (clearBtn) clearBtn.hidden = !info.tiles;
     if (!info.tiles) {
-      setOfflineStatus(
-        offline.isOnline()
-          ? "Save USGS topo tiles for this view before you lose signal. Esri layers need a network."
-          : "No saved map tiles on this device."
-      );
+      setOfflineStatus(offline.isOnline() ? "" : "No saved map tiles on this device.");
       return;
     }
     setOfflineStatus(
@@ -1670,20 +1672,6 @@ function ensureChromeNodes() {
       actions.appendChild(disposal);
     }
   }
-  if (!document.getElementById("pipeline-legend")) {
-    const legend = document.createElement("div");
-    legend.id = "pipeline-legend";
-    legend.className = "pipeline-legend";
-    legend.hidden = true;
-    legend.innerHTML =
-      '<span><i class="swatch gas"></i>Gas</span>' +
-      '<span><i class="swatch crude"></i>Crude</span>' +
-      '<span><i class="swatch hvl"></i>HVL</span>' +
-      '<span><i class="swatch product"></i>Product</span>' +
-      '<span><i class="swatch other"></i>Other</span>' +
-      '<span class="muted">TX T-4 · NM EIA+BLM · OK EIA · LA EIA+BSEE · call 811</span>';
-    mapEl.insertAdjacentElement("afterend", legend);
-  }
   if (!document.getElementById("pipeline-status")) {
     const status = document.createElement("p");
     status.id = "pipeline-status";
@@ -1698,17 +1686,6 @@ function ensureChromeNodes() {
     panel.hidden = true;
     const after = document.getElementById("pipeline-status") || mapEl;
     after.insertAdjacentElement("afterend", panel);
-  }
-  if (!document.getElementById("disposal-legend")) {
-    const legend = document.createElement("div");
-    legend.id = "disposal-legend";
-    legend.className = "pipeline-legend disposal-legend";
-    legend.hidden = true;
-    legend.innerHTML =
-      '<span><i class="swatch disposal"></i>Commercial waste disposal</span>' +
-      '<span class="muted">RRC surface facilities · not injection wells</span>';
-    const after = document.getElementById("pipeline-owners") || document.getElementById("pipeline-status") || mapEl;
-    after.insertAdjacentElement("afterend", legend);
   }
   if (!document.getElementById("disposal-status")) {
     const status = document.createElement("p");
@@ -2640,6 +2617,79 @@ bindSearchContext();
 restorePickedWells();
 window.addEventListener("online", applyNetworkState);
 window.addEventListener("offline", applyNetworkState);
+function closeInfoTips() {
+  document.querySelectorAll(".info-tip-pop.is-open").forEach((pop) => {
+    pop.classList.remove("is-open");
+    pop.hidden = true;
+    if (pop._home) pop._home.appendChild(pop);
+  });
+  document.querySelectorAll('.info-tip-btn[aria-expanded="true"]').forEach((btn) => {
+    btn.setAttribute("aria-expanded", "false");
+  });
+}
+
+function openInfoTip(btn, pop) {
+  if (!pop._home) pop._home = pop.parentElement;
+  closeInfoTips();
+  pop.hidden = false;
+  document.body.appendChild(pop);
+  pop.classList.add("is-open");
+  btn.setAttribute("aria-expanded", "true");
+  const rect = btn.getBoundingClientRect();
+  const width = Math.min(240, window.innerWidth - 16);
+  let left = rect.left;
+  if (left + width > window.innerWidth - 8) left = window.innerWidth - width - 8;
+  if (left < 8) left = 8;
+  pop.style.width = `${width}px`;
+  pop.style.left = `${left}px`;
+  pop.style.top = `${rect.bottom + 6}px`;
+  const box = pop.getBoundingClientRect();
+  if (box.bottom > window.innerHeight - 8) {
+    pop.style.top = `${Math.max(8, rect.top - box.height - 6)}px`;
+  }
+}
+
+function bindInfoTips() {
+  if (document.documentElement.dataset.infoTips === "1") return;
+  document.documentElement.dataset.infoTips = "1";
+  const fineHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest(".info-tip-btn");
+    if (btn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const tip = btn.closest(".info-tip");
+      const pop = tip && tip.querySelector(".info-tip-pop");
+      if (!pop) return;
+      const open = btn.getAttribute("aria-expanded") === "true";
+      closeInfoTips();
+      if (!open) openInfoTip(btn, pop);
+      return;
+    }
+    if (!event.target.closest(".info-tip-pop")) closeInfoTips();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeInfoTips();
+  });
+  if (!fineHover) return;
+  document.addEventListener("mouseover", (event) => {
+    const tip = event.target.closest(".info-tip");
+    if (!tip || tip.contains(event.relatedTarget)) return;
+    const btn = tip.querySelector(".info-tip-btn");
+    const pop = tip.querySelector(".info-tip-pop");
+    if (btn && pop) openInfoTip(btn, pop);
+  });
+  document.addEventListener("mouseout", (event) => {
+    const next = event.relatedTarget;
+    const open = document.querySelector(".info-tip-pop.is-open");
+    if (next && open && (next === open || open.contains(next))) return;
+    const tip = event.target.closest(".info-tip");
+    if (tip && next && tip.contains(next)) return;
+    if (event.target.closest(".info-tip, .info-tip-pop")) closeInfoTips();
+  });
+}
+
+bindInfoTips();
 applyNetworkState();
 if (document.getElementById("well-map") || document.getElementById("map-panel")) {
   initWellMap();

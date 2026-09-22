@@ -21,7 +21,21 @@
           <option value="usgs">USGS Topo</option>
         </select>
       </label>
-      <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+      <span class="overlay-with-tip">
+        <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
+          <span class="info-tip-pop" hidden role="tooltip">
+            <span class="legend-key">
+              <span><i class="swatch gas"></i>Gas</span>
+              <span><i class="swatch crude"></i>Crude</span>
+              <span><i class="swatch hvl"></i>HVL</span>
+              <span><i class="swatch product"></i>Product</span>
+              <span><i class="swatch other"></i>Other</span>
+            </span>
+          </span>
+        </span>
+      </span>
       <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
     </div>
   </div>
@@ -45,14 +59,6 @@
        {% endif %}
        {% endif %}></div>
 
-  <div id="pipeline-legend" class="pipeline-legend">
-    <span><i class="swatch gas"></i>Gas</span>
-    <span><i class="swatch crude"></i>Crude</span>
-    <span><i class="swatch hvl"></i>HVL</span>
-    <span><i class="swatch product"></i>Product</span>
-    <span><i class="swatch other"></i>Other</span>
-    <span class="muted">RRC T-4 locations · not for excavation · call 811</span>
-  </div>
   <p id="pipeline-status" class="muted pipeline-status"></p>
   <div id="pipeline-owners" class="pipeline-owners" hidden></div>
 
