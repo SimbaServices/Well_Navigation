@@ -346,8 +346,10 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_expires ON {p}(expires_at)")
 
     from wellnav.operators import normalize_stored_operators
+    from wellnav.well_names import normalize_stored_well_names
 
     normalize_stored_operators(conn)
+    normalize_stored_well_names(conn)
 
 
 def _migrate_saved_wells(conn: sqlite3.Connection) -> None:

@@ -36,6 +36,7 @@ from wellnav.ingest.neighbors import (
 )
 from wellnav.ingest.persist import upsert_permits, upsert_wells
 from wellnav.states import DEFAULT_PERMIT_LIFETIME_DAYS, OK_COUNTY_NAME, STATE_BBOX, permits_table, wells_table
+from wellnav.well_names import normalize_well_identity
 
 OK_RBDMS = (
     "https://gis.occ.ok.gov/server/rest/services/Hosted/"
@@ -158,8 +159,6 @@ def comp_feature_to_well(feature: dict) -> dict | None:
         return None
     name = _text(attrs.get("well_name"))
     number = _text(attrs.get("well_number"), attrs.get("well_num"))
-    if name and number and number not in name:
-        name = f"{name} {number}".strip()
     toe_lat = _coord(attrs.get("bottom_hole_lat_y"))
     toe_lon = _coord(attrs.get("bottom_hole_long_x"))
     well = _well_row(
@@ -199,8 +198,6 @@ def uic_feature_to_well(feature: dict) -> dict | None:
         return None
     name = _text(attrs.get("well_name"))
     number = _text(attrs.get("well_num"))
-    if name and number and number not in name:
-        name = f"{name} {number}".strip()
     return _well_row(
         "ok",
         api,
@@ -289,7 +286,7 @@ def itd_feature_to_permit(feature: dict, *, now: str, lifetime_days: int) -> dic
     }.get(status_raw, status_raw.lower() or "approved")
     name = _text(attrs.get("well_name"))
     number = _text(attrs.get("well_number"))
-    well_name = f"{name} {number}".strip() if name and number else name or number
+    well_name, well_no, lease_name = normalize_well_identity(name, number, name)
     permit_no = _text(attrs.get("receipt_number"), attrs.get("batch_id_number")) or f"ITD-{api[2:]}"
     return {
         "api": api,
@@ -297,8 +294,8 @@ def itd_feature_to_permit(feature: dict, *, now: str, lifetime_days: int) -> dic
         "permit_no": permit_no,
         "status": status,
         "well_name": well_name,
-        "well_no": number,
-        "lease_name": name,
+        "well_no": well_no,
+        "lease_name": lease_name,
         "lease_no": "",
         "county": _county(api, attrs.get("county")),
         "county_code": api[2:5],
@@ -334,8 +331,6 @@ def rbdms_csv_to_well(row: dict) -> dict | None:
         return None
     name = _text(row.get("WELL_NAME"), row.get("well_name"))
     number = _text(row.get("WELL_NUM"), row.get("well_num"))
-    if name and number and number not in name:
-        name = f"{name} {number}".strip()
     operator = row.get("OPERATOR") or row.get("operator")
     return _well_row(
         "ok",
@@ -362,8 +357,6 @@ def active_list_to_well(row: dict) -> dict | None:
         return None
     name = _text(row.get("WellName"), row.get("well_name"))
     number = _text(row.get("WellNumber"), row.get("well_no"))
-    if name and number and number not in name:
-        name = f"{name} {number}".strip()
     operator = row.get("Operator") or row.get("operator")
     well = _well_row(
         "ok",
@@ -466,7 +459,7 @@ def _enrich_identity(conn, row: dict) -> int:
     api = row["api"]
     current = conn.execute(
         """
-        SELECT operator, operator_number, field, well_name, well_no, county,
+        SELECT operator, operator_number, field, well_name, well_no, lease_name, county,
                toe_lat, toe_lon, profile, location_kind
         FROM wells_ok WHERE api = ?
         """,
@@ -481,8 +474,11 @@ def _enrich_identity(conn, row: dict) -> int:
         operator = current["operator"] or operator
     operator_number = _text(row.get("operator_number")) or current["operator_number"] or ""
     field = _text(row.get("field")) or current["field"] or ""
-    well_name = _text(row.get("well_name")) or current["well_name"] or ""
-    well_no = _text(row.get("well_no")) or current["well_no"] or ""
+    well_name, well_no, lease_name = normalize_well_identity(
+        _text(row.get("well_name")) or current["well_name"] or "",
+        _text(row.get("well_no")) or current["well_no"] or "",
+        _text(row.get("lease_name")) or current["lease_name"] or "",
+    )
     county = _text(row.get("county")) or current["county"] or ""
     toe_lat = row.get("toe_lat") if row.get("toe_lat") is not None else current["toe_lat"]
     toe_lon = row.get("toe_lon") if row.get("toe_lon") is not None else current["toe_lon"]
@@ -493,6 +489,8 @@ def _enrich_identity(conn, row: dict) -> int:
         and operator_number == (current["operator_number"] or "")
         and field == (current["field"] or "")
         and well_name == (current["well_name"] or "")
+        and well_no == (current["well_no"] or "")
+        and lease_name == (current["lease_name"] or "")
         and toe_lat == current["toe_lat"]
         and toe_lon == current["toe_lon"]
     ):
@@ -501,7 +499,7 @@ def _enrich_identity(conn, row: dict) -> int:
         """
         UPDATE wells_ok
         SET operator = ?, operator_number = ?, field = ?, well_name = ?,
-            well_no = ?, county = ?, toe_lat = ?, toe_lon = ?, toe_crs = ?,
+            well_no = ?, lease_name = ?, county = ?, toe_lat = ?, toe_lon = ?, toe_crs = ?,
             profile = ?, location_kind = ?, updated_at = ?
         WHERE api = ?
         """,
@@ -511,6 +509,7 @@ def _enrich_identity(conn, row: dict) -> int:
             field,
             well_name,
             well_no,
+            lease_name,
             county,
             toe_lat,
             toe_lon,

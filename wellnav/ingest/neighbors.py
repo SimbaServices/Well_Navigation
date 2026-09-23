@@ -19,6 +19,7 @@ from wellnav.pipelines import connect as pipe_connect
 from wellnav.pipelines import init_schema as init_pipelines
 from wellnav.operators import normalize_operator_name
 from wellnav.states import APP_STATES, api_prefix
+from wellnav.well_names import normalize_well_identity
 
 NM_WELLS = (
     "https://gis.emnrd.nm.gov/arcgis/rest/services/OCDView/"
@@ -135,12 +136,17 @@ def _api10(value: object, state: str) -> str | None:
 
 def _well_row(state: str, api: str, **fields: object) -> dict:
     now = utcnow()
+    well_name, well_no, lease_name = normalize_well_identity(
+        _text(fields.get("well_name")),
+        _text(fields.get("well_no")),
+        _text(fields.get("lease_name")),
+    )
     return {
         "api": api,
         "api8": api[2:10],
-        "well_name": _text(fields.get("well_name")),
-        "well_no": _text(fields.get("well_no")),
-        "lease_name": _text(fields.get("lease_name")),
+        "well_name": well_name,
+        "well_no": well_no,
+        "lease_name": lease_name,
         "lease_no": _text(fields.get("lease_no")),
         "county": _text(fields.get("county")),
         "county_code": api[2:5],
@@ -283,8 +289,6 @@ def ok_feature_to_well(feature: dict) -> dict | None:
         return None
     name = _text(attrs.get("well_name"), attrs.get("name"))
     number = _text(attrs.get("well_num"), attrs.get("well_no"))
-    if name and number and number not in name:
-        name = f"{name} {number}".strip()
     return _well_row(
         "ok",
         api,
