@@ -1,0 +1,35 @@
+# SimbaServices remote-host inventory. Schema: see SimbaServices/Org_Info README.
+schema: 1
+repo: Well_Navigation
+name: Well Navigation
+id: wellnav
+live: true
+host: wellnav
+public:
+  - name: wellnav.simba.services
+    url: https://wellnav.simba.services/
+    edge: Cloudflare :443 → nginx
+    health: https://wellnav.simba.services/healthz
+process:
+  name: docker wellnav
+  bind: 127.0.0.1:5050
+  listen_public: false
+  runtime: uvicorn
+store: SQLite volume well_navigation_wellnav-data (wellnav, pipelines, disposal)
+edge_steps:
+  - title: nginx :80 :443
+    detail: wellnav.simba.services
+  - title: docker wellnav
+    detail: 127.0.0.1:5050 · uvicorn
+  - title: SQLite volume
+    detail: wellnav, pipelines, disposal
+outbound:
+  - to: mail.simba.services
+    what: Registration and password OTP
+  - to: Stripe
+    what: Seat checkout webhook at /billing/webhook
+  - to: Twilio
+    what: SMS when configured; SMTP is the other path
+  - to: basemap.nationalmap.gov
+    what: USGS tiles via /offline/tiles
+notes: Out Stripe, Twilio, SMTP, USGS National Map tiles. ufw allows 2222, 80, 443.
