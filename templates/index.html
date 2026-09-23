@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=mobile5">
+  <link rel="stylesheet" href="/static/css/app.css?v=mapchrome2">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -181,7 +181,7 @@
                   <option value="streets">Esri Streets</option>
                   <option value="topo">Esri Topo</option>
                   <option value="osm">OpenStreetMap</option>
-                  <option value="usgs">USGS Topo (works offline)</option>
+                  <option value="usgs">USGS Topo</option>
                 </select>
               </label>
               <span class="overlay-with-tip">
@@ -238,7 +238,7 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/map.js?v=mobile4"></script>
+  <script src="/static/js/map.js?v=mobile5"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

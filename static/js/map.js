@@ -31,7 +31,7 @@ const BASEMAP_LABELS = {
   streets: "Esri Streets",
   topo: "Esri Topo",
   osm: "OpenStreetMap",
-  usgs: "USGS Topo (works offline)",
+  usgs: "USGS Topo",
 };
 
 const STORAGE_KEY = "wellnav.mappedWells";

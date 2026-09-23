@@ -1,7 +1,5 @@
-What's New (App Store Connect → 1.0 → What's New, 4000-character limit):
+What's New (App Store Connect → 1.5 → What's New, 4000-character limit):
 
-Initial release of Well Navigation, workplace software for oil and gas teams.
+Map controls take less room. Save this view, the base layer, and turn-by-turn links sit quieter on the map, and the map credit no longer covers the well card. Delete account is on the Account screen.
 
-Sign in with your work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. Pin wells, save a USGS map view for offline field use, and open Apple Maps or Google Maps for turn-by-turn.
-
-This app does not sell subscriptions. Organization admins buy seats on the website in Safari.
+Sign in with your work email to search wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. This app does not sell subscriptions. Organization admins buy seats on the website in Safari.

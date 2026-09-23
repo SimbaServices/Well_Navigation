@@ -20,17 +20,19 @@ Search, sign-in, and new well lookups still need a network.
 
 ## App Store Connect checklist
 
-Paste copy from `ios/store/listing.txt`. Age-rating answers: `ios/store/age-rating.txt`. Review notes: `ios/store/review-notes.txt`. What's New: `ios/store/whats-new.txt`.
+Paste copy from `ios/store/listing.txt`. Age-rating answers: `ios/store/age-rating.txt`. Review notes: `ios/store/review-notes.txt`. What's New: `ios/store/whats-new.txt`. Physical-device recording shot list: `ios/store/recording-script.txt`.
 
 1. Apple Developer Program team is enrolled. Bundle ID `services.simba.wellnav` is registered (change it in Xcode if Apple says it is taken).
 2. App Store Connect → New App: iOS, name **Well Navigation**, SKU `wellnav-ios`, primary language English (U.S.).
-3. **No IAP. No Sign in with Apple.** Login is work email and password only.
+3. **No IAP. No Sign in with Apple.** Login is work email and password only. Public App Store distribution: any oil and gas professional can register with a work email (not an internal employee-only app).
 4. Privacy URL `https://wellnav.simba.services/privacy`. Terms `https://wellnav.simba.services/terms`. Support URL `https://wellnav.simba.services`.
 5. Age rating 4+ from `ios/store/age-rating.txt`. Category Business. Price Free. Copyright `2026 Simba Services`.
 6. Privacy nutrition: email, user ID, other user content (saved wells), IP address. No tracking. No advertising.
 7. Export compliance: HTTPS only (`ITSAppUsesNonExemptEncryption` is false).
-8. Screenshots: the eight PNGs in `ios/store/screenshots/` (iPhone 6.9" 1290×2796 and iPad 13" 2048×2732).
-9. App Review Information: demo `appreview@simba.services` plus the password in `C:\Simba\wellnav-app-review-login.txt`. Account deletion: Account → Delete account → password + type DELETE.
+8. Screenshots: real in-app shots from `ios/store/screenshots/` (search, results, map, account — not splash-only). Upload paths in `ios/store/listing.txt` (`upload-iphone/` or `upload-iphone-1242/`, plus `ipad-13-*`).
+9. App Review Information: paste `ios/store/review-notes.txt` into **both** the Resolution Center reply and the Notes field. Demo user `appreview@simba.services`; password from `ios/store/review-notes.local.txt` (gitignored) or `C:\Simba\wellnav-app-review-login.txt` — never commit it. Sign-in: open app → Sign in → work email and password. Account deletion: Account → Delete account → password → type DELETE. Do **not** delete `appreview@simba.services`.
+10. Guideline 2.1 recording: follow `ios/store/recording-script.txt` on a **physical** iPhone on the latest iOS (Simulator rejected). Start recording before the icon tap. Sign in as `appreview@simba.services` for search, map, and Save this view. Register and delete a **disposable** account only. Do not buy seats in the recording. No video file in the repo.
+11. Before Submit for Review: TestFlight smoke test on a physical iPhone (and iPad if that destination is enabled) on the latest iOS — sign in as the demo account, search, Save this view, Account (no IAP), then register and delete a disposable account.
 
 ## Before you archive
 

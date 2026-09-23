@@ -234,14 +234,57 @@ class UserStore:
             return False, "Password is incorrect."
         uid = int(row["id"])
         email = (row.get("email") or row.get("username") or "").strip().lower()
+        phone = (row.get("phone") or "").strip()
+        org_id = int(row["org_id"]) if row.get("org_id") else None
         conn = _conn()
-        conn.execute("DELETE FROM otp_challenges WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM saved_wells WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM user_cache WHERE user_id = ?", (uid,))
-        if email:
-            conn.execute("DELETE FROM pending_signups WHERE username = ?", (email,))
-        conn.execute("DELETE FROM users WHERE id = ?", (uid,))
-        conn.commit()
+        try:
+            conn.execute("DELETE FROM otp_challenges WHERE user_id = ?", (uid,))
+            if email:
+                conn.execute("DELETE FROM otp_challenges WHERE phone = ?", (email,))
+                conn.execute(
+                    "DELETE FROM pending_signups WHERE username = ? OR phone = ?",
+                    (email, email),
+                )
+            if phone and phone != email:
+                conn.execute("DELETE FROM otp_challenges WHERE phone = ?", (phone,))
+                conn.execute("DELETE FROM pending_signups WHERE phone = ?", (phone,))
+            conn.execute("DELETE FROM saved_wells WHERE user_id = ?", (uid,))
+            conn.execute("DELETE FROM user_cache WHERE user_id = ?", (uid,))
+            if org_id:
+                remaining = int(
+                    conn.execute(
+                        "SELECT COUNT(*) AS n FROM users WHERE org_id = ? AND id != ?",
+                        (org_id, uid),
+                    ).fetchone()["n"]
+                )
+                org = conn.execute(
+                    "SELECT name, billing_email FROM organizations WHERE id = ?",
+                    (org_id,),
+                ).fetchone()
+                if org:
+                    billing = (org["billing_email"] or "").strip().lower()
+                    name = (org["name"] or "").strip()
+                    sets: list[str] = []
+                    values: list[object] = []
+                    if billing and billing == email:
+                        sets.append("billing_email = NULL")
+                    if remaining == 0 and email and name.strip().lower() == email:
+                        sets.append("name = ?")
+                        values.append("")
+                    if sets:
+                        values.append(org_id)
+                        conn.execute(
+                            f"UPDATE organizations SET {', '.join(sets)} WHERE id = ?",
+                            values,
+                        )
+            conn.execute("DELETE FROM users WHERE id = ?", (uid,))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        from wellnav.recordings import delete_recordings_for_user
+
+        delete_recordings_for_user(uid)
         return True, None
 
     def remove_member(self, admin: dict, member_id: int) -> tuple[bool, str | None]:

@@ -16,7 +16,8 @@ def login(page) -> None:
     page.goto("https://wellnav.simba.services/login", wait_until="domcontentloaded")
     page.locator('input[name="email"]').fill(EMAIL)
     page.locator('input[name="password"]').fill(PASSWORD)
-    page.locator("button.primary").click()
+    with page.expect_navigation(timeout=30000):
+        page.locator("form.auth-form").evaluate("form => form.submit()")
     page.wait_for_selector("#q", timeout=30000)
 
 
@@ -49,6 +50,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     sizes = [
         ("iphone-6.9-04-account.png", {"width": 430, "height": 932}, 3),
+        ("iphone-6.5-04-account.png", {"width": 428, "height": 926}, 3),
         ("ipad-13-04-account.png", {"width": 1024, "height": 1366}, 2),
     ]
     with sync_playwright() as playwright:

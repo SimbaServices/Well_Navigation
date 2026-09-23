@@ -256,3 +256,30 @@ def recording_file(recording_id: str) -> tuple[Path, dict[str, Any]] | None:
     meta["playable"] = session_playable(video_path)
     meta["media"] = "video" if video_path.suffix == ".webm" else "session"
     return video_path, meta
+
+
+def delete_recordings_for_user(user_id: int) -> int:
+    """Remove UX recording files owned by this user. Returns count of sessions removed."""
+    uid = int(user_id)
+    removed = 0
+    folder = recordings_dir()
+    for meta_path in list(folder.glob("*.json")):
+        try:
+            data = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict) or int(data.get("user_id") or 0) != uid:
+            continue
+        recording_id = str(data.get("id") or meta_path.stem).strip().lower()
+        safe = _safe_id(recording_id) or meta_path.stem
+        for path in (
+            meta_path,
+            folder / f"{safe}.jsonl",
+            folder / f"{safe}.webm",
+        ):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        removed += 1
+    return removed

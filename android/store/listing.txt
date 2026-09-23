@@ -62,13 +62,11 @@ Review login: appreview@simba.services — password in C:\Simba\wellnav-app-revi
 
 Play Console upload (Create internal testing release → Upload app bundles):
   android/app/build/outputs/bundle/release/app-release.aab
-  or C:\Simba\secrets\wellnav-1.0.aab
+  or C:\Simba\secrets\wellnav-1.7.aab
 Do not upload screenshots or the keystore on that page.
 
-Release name: 1.0
+Release name: 1.7
 Release notes (Play Console → Release notes, English):
-Initial release of Well Navigation, workplace software for oil and gas teams.
-
-Sign in with your work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. Pin wells, save a USGS map view for offline field use, and open Google Maps for turn-by-turn.
+Map controls take less room. Save this view, the base layer, and turn-by-turn links sit quieter on the map, and the map credit no longer covers the well card. Delete account is on the Account screen.
 
 This app does not sell subscriptions. Organization admins buy seats on the website in Chrome.

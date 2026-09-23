@@ -19,11 +19,11 @@ Support URL: https://wellnav.simba.services
 Marketing URL: https://wellnav.simba.services
 Support email: wellnav@simba.services
 
-Version: 1.0
-Build: uploaded from Xcode (Info.plist CFBundleVersion starts at 1; ExportOptions.plist lets Xcode bump it)
+Version: 1.5
+Build: 6 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 6.
 
 Description (App Store Connect, 4000-character limit):
-Well Navigation is workplace software for oil and gas teams. Sign in with your work email to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
+Well Navigation is a public App Store app for oil and gas professionals—not an internal employee-only tool and not limited to one company. Any oil and gas professional can create an account with a work email. Sign in to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
 
 SEARCH
 Look up wells by lease or well name, API number, or operator. Texas APIs start with 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-. Add an operator filter, then narrow by name or API. Sort the table and pin wells onto the map from a row, a selection, or the whole page.
@@ -53,8 +53,8 @@ Support: wellnav@simba.services
 Keywords (100-character limit, comma-separated, no spaces after commas except inside a phrase):
 well,pipeline,oil,gas,RRC,Texas,New Mexico,Oklahoma,Louisiana,API,disposal
 
-Promotional text (170-character limit):
-Search wells, pipelines, and waste sites in TX, NM, OK, and LA. Seats are billed on the website, not in the app.
+Promotional text (170-character limit, 158 characters):
+Search wells, pipelines, and waste sites in Texas, New Mexico, Oklahoma, and Louisiana. Pin wells, save a map for the field, and open turn-by-turn directions.
 
 What's New: paste ios/store/whats-new.txt
 
@@ -76,21 +76,23 @@ Export compliance: ITSAppUsesNonExemptEncryption is false (HTTPS only). In App S
 Content rights: Yes. Records are public regulatory compilations; the app UI and compilation are Simba Services.
 
 Screenshots (iOS app → Previews and Screenshots). PNG, no alpha.
-iPhone 6.9" (1290×2796) — required:
-  ios/store/screenshots/iphone-6.9-01-search.png
-  ios/store/screenshots/iphone-6.9-02-results.png
-  ios/store/screenshots/iphone-6.9-03-map.png
-  ios/store/screenshots/iphone-6.9-04-account.png
-iPad 13" (2048×2732) — required because the app runs on iPad:
+The iPhone well that lists 1242×2688 / 1284×2778 is 6.5". Delete whatever is already in that well, then upload ONLY these four files:
+  ios/store/screenshots/upload-iphone/01-search.png
+  ios/store/screenshots/upload-iphone/02-results.png
+  ios/store/screenshots/upload-iphone/03-map.png
+  ios/store/screenshots/upload-iphone/04-account.png
+Those are 1284×2778. If Connect still rejects them, use ios/store/screenshots/upload-iphone-1242/ (1242×2688) instead.
+Do not drop iphone-6.9-* (1290×2796) or ipad-13-* (2048×2732) into that iPhone well.
+iPad 13" well only:
   ios/store/screenshots/ipad-13-01-search.png
   ios/store/screenshots/ipad-13-02-results.png
   ios/store/screenshots/ipad-13-03-map.png
   ios/store/screenshots/ipad-13-04-account.png
-Do not upload a 6.5" set; App Store Connect scales the 6.9" shots. Recapture with:
-  python ios/store/capture-screenshots.py
+Recapture with: python ios/store/capture-screenshots.py
 
-App Review: paste ios/store/review-notes.txt
-Demo password: C:\Simba\wellnav-app-review-login.txt (operator laptop only)
+App Review: paste ios/store/review-notes.txt into BOTH the Resolution Center reply and App Review Information → Notes.
+Physical-device recording shot list: ios/store/recording-script.txt (no video in repo; Simulator not accepted).
+Demo password: paste from ios/store/review-notes.local.txt (gitignored) or C:\Simba\wellnav-app-review-login.txt (operator laptop only). Never commit the password.
 
 Archive on a Mac with Xcode 26+: ios/store/archive-and-upload.sh
 Signing Team must be set in Xcode before that script will export.

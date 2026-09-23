@@ -9,7 +9,7 @@
 	<key>signingStyle</key>
 	<string>automatic</string>
 	<key>teamID</key>
-	<string></string>
+	<string>VAGKR22UMT</string>
 	<key>stripSwiftSymbols</key>
 	<true/>
 	<key>compileBitcode</key>

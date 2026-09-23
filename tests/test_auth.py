@@ -189,6 +189,8 @@ class AccountDeletionTests(unittest.TestCase):
     def test_delete_account_removes_user_and_saved_wells(self) -> None:
         user, error = self.users.register("ops@example.com", "password12")
         self.assertIsNone(error)
+        other, error = self.users.register("keep@other.test", "password12")
+        self.assertIsNone(error)
         self.conn.execute(
             """
             INSERT INTO saved_wells(user_id, state, api8, well_name, saved_at)
@@ -196,16 +198,170 @@ class AccountDeletionTests(unittest.TestCase):
             """,
             (user["id"],),
         )
+        self.conn.execute(
+            """
+            INSERT INTO saved_wells(user_id, state, api8, well_name, saved_at)
+            VALUES (?, 'tx', '00300291', 'KEEP', '2026-01-01T00:00:00')
+            """,
+            (other["id"],),
+        )
+        self.conn.execute(
+            """
+            INSERT INTO user_cache(
+                user_id, kind, cache_key, payload, hits, bytes,
+                created_at, last_hit_at, expires_at
+            ) VALUES (?, 'search', 'q', '{}', 0, 2, '2026-01-01', '2026-01-01', '2099-01-01')
+            """,
+            (user["id"],),
+        )
+        self.conn.execute(
+            """
+            INSERT INTO otp_challenges(
+                id, purpose, pending_id, user_id, phone, code_hash,
+                expires_at, attempts, sent_at, created_at
+            ) VALUES ('c1', 'recovery', NULL, ?, ?, 'hash', '2099-01-01', 0, '2026-01-01', '2026-01-01')
+            """,
+            (user["id"], "ops@example.com"),
+        )
+        self.conn.execute(
+            """
+            INSERT INTO pending_signups(id, username, password_hash, phone, created_at)
+            VALUES ('p1', 'ops@example.com', 'hash', 'ops@example.com', '2026-01-01')
+            """
+        )
+        self.conn.execute(
+            "UPDATE organizations SET billing_email = ?, name = ? WHERE id = ?",
+            ("ops@example.com", "ops@example.com", user["org_id"]),
+        )
         self.conn.commit()
+        catalog_before = self.conn.execute(
+            "SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name LIKE 'wells_%'"
+        ).fetchone()["n"]
+
         ok, error = self.users.delete_account(user, "wrong-pass")
         self.assertFalse(ok)
         self.assertIn("incorrect", error or "")
-        ok, error = self.users.delete_account(user, "password12")
+
+        with patch("wellnav.recordings.delete_recordings_for_user") as scrub:
+            ok, error = self.users.delete_account(user, "password12")
+            scrub.assert_called_once_with(user["id"])
         self.assertTrue(ok)
         self.assertIsNone(error)
         self.assertIsNone(self.users.by_username("ops@example.com"))
-        leftover = self.conn.execute("SELECT COUNT(*) AS n FROM saved_wells").fetchone()["n"]
+        leftover = self.conn.execute(
+            "SELECT COUNT(*) AS n FROM saved_wells WHERE user_id = ?",
+            (user["id"],),
+        ).fetchone()["n"]
         self.assertEqual(leftover, 0)
+        kept = self.conn.execute(
+            "SELECT api8 FROM saved_wells WHERE user_id = ?",
+            (other["id"],),
+        ).fetchone()
+        self.assertEqual(kept["api8"], "00300291")
+        self.assertEqual(
+            self.conn.execute(
+                "SELECT COUNT(*) AS n FROM user_cache WHERE user_id = ?",
+                (user["id"],),
+            ).fetchone()["n"],
+            0,
+        )
+        self.assertEqual(
+            self.conn.execute(
+                "SELECT COUNT(*) AS n FROM otp_challenges WHERE user_id = ? OR phone = ?",
+                (user["id"], "ops@example.com"),
+            ).fetchone()["n"],
+            0,
+        )
+        self.assertEqual(
+            self.conn.execute(
+                "SELECT COUNT(*) AS n FROM pending_signups WHERE username = ?",
+                ("ops@example.com",),
+            ).fetchone()["n"],
+            0,
+        )
+        org = self.conn.execute(
+            "SELECT name, billing_email, stripe_customer_id FROM organizations WHERE id = ?",
+            (user["org_id"],),
+        ).fetchone()
+        self.assertIsNotNone(org)
+        self.assertEqual(org["name"], "")
+        self.assertIsNone(org["billing_email"])
+        self.assertEqual(
+            self.conn.execute(
+                "SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name LIKE 'wells_%'"
+            ).fetchone()["n"],
+            catalog_before,
+        )
+        self.assertIsNotNone(self.users.by_username("keep@other.test"))
+
+    def test_delete_account_keeps_shared_org_and_other_member_wells(self) -> None:
+        admin, error = self.users.register("admin@acme.test", "password12")
+        self.assertIsNone(error)
+        member, error = self.users.register("member@acme.test", "password12")
+        self.assertIsNone(error)
+        self.assertEqual(admin["org_id"], member["org_id"])
+        self.conn.execute(
+            "UPDATE organizations SET billing_email = ?, stripe_customer_id = ? WHERE id = ?",
+            ("admin@acme.test", "cus_shared", admin["org_id"]),
+        )
+        self.conn.execute(
+            """
+            INSERT INTO saved_wells(user_id, state, api8, well_name, saved_at)
+            VALUES (?, 'tx', '11111111', 'ADMIN', '2026-01-01T00:00:00')
+            """,
+            (admin["id"],),
+        )
+        self.conn.execute(
+            """
+            INSERT INTO saved_wells(user_id, state, api8, well_name, saved_at)
+            VALUES (?, 'tx', '22222222', 'MEMBER', '2026-01-01T00:00:00')
+            """,
+            (member["id"],),
+        )
+        self.conn.commit()
+        with patch("wellnav.recordings.delete_recordings_for_user"):
+            ok, error = self.users.delete_account(admin, "password12")
+        self.assertTrue(ok)
+        self.assertIsNone(error)
+        org = self.conn.execute(
+            "SELECT name, billing_email, stripe_customer_id FROM organizations WHERE id = ?",
+            (admin["org_id"],),
+        ).fetchone()
+        self.assertIsNotNone(org)
+        self.assertEqual(org["name"], "acme.test")
+        self.assertIsNone(org["billing_email"])
+        self.assertEqual(org["stripe_customer_id"], "cus_shared")
+        kept = self.conn.execute(
+            "SELECT api8 FROM saved_wells WHERE user_id = ?",
+            (member["id"],),
+        ).fetchone()
+        self.assertEqual(kept["api8"], "22222222")
+        self.assertIsNotNone(self.users.by_username("member@acme.test"))
+
+
+class RecordingCleanupTests(unittest.TestCase):
+    def test_delete_recordings_for_user_removes_only_that_user(self) -> None:
+        import json
+        import tempfile
+        from pathlib import Path
+
+        from wellnav.recordings import delete_recordings_for_user
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            for rid, uid in (("aaaaaaaaaaaaaaaa", 1), ("bbbbbbbbbbbbbbbb", 2)):
+                (folder / f"{rid}.json").write_text(
+                    json.dumps({"id": rid, "user_id": uid, "email": f"u{uid}@x.test"}),
+                    encoding="utf-8",
+                )
+                (folder / f"{rid}.jsonl").write_text("{}\n", encoding="utf-8")
+            with patch("wellnav.recordings.recordings_dir", lambda: folder):
+                removed = delete_recordings_for_user(1)
+            self.assertEqual(removed, 1)
+            self.assertFalse((folder / "aaaaaaaaaaaaaaaa.json").exists())
+            self.assertFalse((folder / "aaaaaaaaaaaaaaaa.jsonl").exists())
+            self.assertTrue((folder / "bbbbbbbbbbbbbbbb.json").exists())
+            self.assertTrue((folder / "bbbbbbbbbbbbbbbb.jsonl").exists())
 
 
 class SingleSessionTests(unittest.TestCase):

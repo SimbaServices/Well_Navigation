@@ -1,13 +1,15 @@
 <div class="auth-card">
   <h2>Enter your code</h2>
+  <p class="auth-purpose">
+    We emailed a 6-digit code to <strong>{{ phone_hint }}</strong>. It expires in {{ expires_minutes }} minutes.
+  </p>
   <p class="muted">
-    We emailed a 6-digit code to {{ phone_hint }}. It expires in {{ expires_minutes }} minutes.
     {% if purpose == "register" %}
-      Enter it to finish creating your account.
+      Enter the code to finish creating your account.
     {% elif purpose == "recovery" %}
-      Enter it to recover your account and set a new password.
+      Enter the code to recover your account and set a new password.
     {% else %}
-      Enter it to finish signing in.
+      Enter the code to finish signing in.
     {% endif %}
   </p>
   {% if error %}

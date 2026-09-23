@@ -1,0 +1,66 @@
+Well Navigation — physical-device App Review screen recording
+============================================================
+Apple requires a recording captured on a PHYSICAL iPhone running the LATEST iOS.
+Do NOT use the Simulator. Apple will not accept a Simulator recording.
+No recording file belongs in this git repo — upload or attach only in App Store Connect / Resolution Center.
+
+Prep
+----
+1. Physical iPhone on the latest shipping iOS (update if prompted).
+2. Optional but recommended: same flow once on a physical iPad if App Store Connect includes iPad.
+3. Install the candidate build from TestFlight (same binary you will submit).
+4. Have the demo password for appreview@simba.services (review-notes.local.txt).
+   That account is already entitled and is the only account that should search.
+5. Have mailbox access for a DIFFERENT disposable work email (not @simba.services)
+   so you can read the 6-digit registration code. Do NOT delete appreview@.
+6. A brand-new organization cannot search until seats are bought on the website.
+   Do not buy seats, do not enter a card, and do not finish Stripe Checkout.
+7. Start Screen Recording in Control Center BEFORE you tap the app icon so launch is in frame.
+
+Shot list (record continuously; talk or on-screen labels optional)
+------------------------------------------------------------------
+A. Launch
+   - Home screen visible with Well Navigation icon
+   - Tap the icon; show splash → sign-in / gate UI
+
+B. Login (demo account — this is the entitled workspace)
+   - Sign in → appreview@simba.services and the demo password
+   - Confirm the signed-in search screen
+
+C. Typical feature flow (still appreview@)
+   - Search for a well (lease/well name, API, or operator)
+   - Open results; select a well
+   - Pin / show on map
+   - Tap Save this view (USGS offline pack + pinned wells)
+   - Briefly show map layers if useful (Esri / OSM / USGS)
+
+D. No in-app purchase (still appreview@)
+   - Open Account
+   - Show there is no StoreKit / IAP buy button and no card form
+   - Sign out
+
+E. Registration (disposable account only)
+   - Tap Create account
+   - Enter the disposable work email and a new password
+   - Submit → Email me a code
+   - Enter the emailed 6-digit code
+   - If a seats / billing notice appears, leave it. It must not collect a card
+     inside the app. Do not tap through into a payment.
+
+F. Account deletion (disposable account ONLY)
+   - Open Account (the billing notice links to Account)
+   - Delete account → enter that account's password → type DELETE
+   - Confirm you are back on Sign in
+   - STOP recording
+
+Do not include
+--------------
+- Deleting appreview@simba.services
+- Simulator recordings
+- Committing the .mp4 into the repository
+- Stripe Checkout inside the WKWebView (it should not appear; if a link opens Safari, that is expected for website billing only)
+
+After recording
+---------------
+Attach the video in the Resolution Center reply (and keep a local copy).
+Confirm ios/store/review-notes.txt password PASTE-BEFORE-SUBMIT was filled from review-notes.local.txt before submit.

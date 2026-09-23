@@ -1,6 +1,7 @@
 <div class="auth-card">
   <h2>Sign in</h2>
-  <p class="muted">Enter your work email and password to sign in.</p>
+  <p class="auth-purpose">Search wells, pipelines, and waste-disposal sites across Texas, New Mexico, Oklahoma, and Louisiana. Built for oil and gas field teams.</p>
+  <p class="muted">Sign in with your work email, or create an account below.</p>
   {% if error %}
     <div class="banner error">{{ error }}</div>
   {% endif %}
@@ -33,6 +34,6 @@
   <p class="hint">
     Need an account?
     <a href="/register" class="text-link"
-       hx-get="/register" hx-target="#auth-main" hx-push-url="true">Create one</a>
+       hx-get="/register" hx-target="#auth-main" hx-push-url="true">Create account</a>
   </p>
 </div>

@@ -6,3 +6,4 @@ build/
 *.ipa
 *.dSYM.zip
 *.xcarchive
+store/review-notes.local.txt

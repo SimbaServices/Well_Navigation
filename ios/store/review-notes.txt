@@ -1,4 +1,7 @@
-App Review Information (paste into App Store Connect → App Review Information)
+App Review Information — Well Navigation (iOS)
+Paste this entire document into BOTH:
+  (A) App Store Connect → Resolution Center reply, and
+  (B) App Store Connect → App Review Information → Notes
 
 Contact
 First name: Simba
@@ -6,21 +9,125 @@ Last name: Services
 Email: wellnav@simba.services
 Phone: use the number on the Apple Developer account
 
-Demo account (complimentary @simba.services, no payment)
+Demo account (complimentary @simba.services — no payment required)
 Email: appreview@simba.services
-Password: paste from C:\Simba\wellnav-app-review-login.txt on the operator laptop (do not commit).
-Sign-in path: open the app → Sign in → work email and password.
+Password: PASTE-BEFORE-SUBMIT from ios/store/review-notes.local.txt on the operator laptop (gitignored; do not commit). Source of truth: C:\Simba\wellnav-app-review-login.txt
+IMPORTANT: Do NOT delete appreview@simba.services. Account deletion in the screen recording uses a separate disposable account created during the recording.
 
-Notes for the reviewer
+Sign-in path (matches the UI): open the app → Sign in → work email and password.
+Registration path: Create account → work email → password → email 6-digit code.
+Account deletion path: Account → Delete account → enter password → type DELETE.
 
-Well Navigation is workplace software for oil and gas organizations (Guideline 3.1.3(c) enterprise / 3.1.3(b) multiplatform). Employees sign in with their work email to search wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
+================================================================================
+1. Screen recording (physical device)
+================================================================================
+We will attach a screen recording captured on a physical iPhone running the latest iOS (not the Simulator). No recording file is checked into this repository; Apple will not accept a Simulator recording.
 
-The iOS app does not sell subscriptions and does not collect payment. There are no In-App Purchases. Organization admins buy seats on the website (https://wellnav.simba.services) in Safari. Stripe Checkout for MP Solutions never loads in the WKWebView. Any URL with ?external_browser=1, plus maps.apple.com / Google Maps, mailto, and tel, open in Safari or the system apps.
+The recording begins before the home-screen icon tap so launch is in frame, then shows a typical user flow:
+- Launch the app from the SpringBoard icon
+- Sign in as appreview@simba.services (this workspace is already entitled)
+- Search for a well, open results, pin a well on the map, tap Save this view
+- Open Account and confirm there is no StoreKit purchase and no card form
+- Sign out, then Create account with a separate disposable work email, password, and the emailed 6-digit code
+- A new organization has no seats yet, so that account may see a notice that seats are managed on the website in Safari. The recording does not purchase seats and does not enter a card.
+- Delete only that disposable account: Account → Delete account → password → type DELETE
 
-Account deletion is in-app: Account → Delete account → enter password → type DELETE.
+User-generated content / reporting / blocking: This app has NONE. Saved wells and recent searches are private workspace data for the signed-in user. There is no public feed, comments, social sharing, or user-to-user content. Apple should not expect reporting or blocking features.
 
-The wrapper is not a general-purpose browser (no address bar; host allow-list is wellnav.simba.services only). Field value beyond the website: offline USGS map tiles and pinned wells after the user taps Save this view, a native splash, and an offline banner.
+Paid content / IAP: The iOS app does not sell anything and has no In-App Purchases. There are no IAP products to submit under Guideline 3.1.1. Organization admins buy seats on https://wellnav.simba.services in Safari. Stripe Checkout / Customer Portal never loads inside the WKWebView. The recording shows there is no in-app purchase.
+
+Shot list for the operator: ios/store/recording-script.txt
+
+================================================================================
+2. Purpose and target audience
+================================================================================
+Purpose: Well Navigation helps oil and gas professionals find and map wells, pipelines, and commercial waste / UIC / salt-water disposal sites so they can plan fieldwork and navigate to locations.
+
+Problem it solves: Regulatory well, pipeline, and disposal records are scattered across state and federal public sources. Field and office staff need one signed-in search and map instead of jumping between portals and spreadsheets.
+
+Value: Search by lease/well name, API number, or operator; pin wells on a map; open Apple Maps or Google Maps for turn-by-turn; before losing signal, tap Save this view to keep USGS tiles and pinned wells on the device.
+
+Target audience: Oil and gas professionals (operators, land, field, HSE, consultants) who need TX / NM / OK / LA public well and infrastructure records. Catalog coverage is Texas, New Mexico, Oklahoma, and Louisiana only.
+
+================================================================================
+3. Setup and access instructions
+================================================================================
+There are no sample files to download.
+
+Requirements: iPhone (and iPad if reviewing that destination) with network access to https://wellnav.simba.services. One account type only: work email + password.
+
+Demo credentials (also in the App Review Information username/password fields):
+  Email: appreview@simba.services
+  Password: PASTE-BEFORE-SUBMIT from ios/store/review-notes.local.txt
+  This account is a complimentary @simba.services seat — no payment.
+
+Steps for the reviewer:
+1. Install the build from TestFlight / App Review.
+2. Open Well Navigation → Sign in.
+3. Enter appreview@simba.services and the demo password. This account can search immediately. No payment.
+4. Search wells (for example by API or lease name), open a result, pin on the map, optionally tap Save this view.
+5. Open Account. There is no in-app purchase and no card form.
+
+A newly registered organization cannot search until an admin buys seats on the website. Reviewers should not create an account to reach search, and should not pay. Registration and account deletion are in the screen recording, using a disposable account that is deleted at the end. Do NOT delete appreview@simba.services.
+
+If the demo password is missing on the operator laptop, run deploy/ensure-app-review-user.py on the server, write the password into ios/store/review-notes.local.txt (gitignored), and paste it into App Store Connect before submit.
+
+================================================================================
+4. External services, tools, and platforms (verified in code)
+================================================================================
+Hosting / app backend: https://wellnav.simba.services (first-party Well Navigation service loaded in WKWebView).
+
+Authentication: first-party email/password sessions. Registration and password recovery send a 6-digit email OTP via the app’s own SMTP mail sender (mail.simba.services / WELLNAV_SMTP_FROM). Sign in with Apple and other third-party social logins are not offered because login is email/password only. The App Store iOS sign-up / sign-in flow does not send SMS; Twilio is not part of that flow.
+
+Well and infrastructure public data compiled by the service (not a proprietary third-party well database):
+- Texas Railroad Commission (RRC) — GIS (gis.rrc.texas.gov) and MFT / public datasets (mft.rrc.texas.gov / RRC public portals)
+- New Mexico OCD / EMNRD GIS (gis.emnrd.nm.gov) and BLM right-of-way / realty data
+- Oklahoma OCC GIS (gis.occ.ok.gov)
+- Louisiana SONRIS (including DOTD-hosted SONRIS map services) and related public exports
+- U.S. EIA / HIFLD pipeline data (as used for NM / OK / LA pipeline coverage)
+- NETL ArcGIS services (neighbor / pipeline context)
+- BSEE and BOEM public well / mapping datasets
+- FracFocus public disclosure downloads
+- USGS The National Map basemap tiles (basemap.nationalmap.gov) — may be saved on device after Save this view
+- Esri ArcGIS Online basemap tiles (server.arcgisonline.com) — Imagery, Streets, Topo; online-only (terms disallow caching)
+- OpenStreetMap tiles (tile.openstreetmap.org)
+- Apple Maps and Google Maps — opened via system deep links for turn-by-turn (not embedded purchase)
+
+Billing (website only, not inside the iOS binary): Stripe Checkout / Customer Portal on https://wellnav.simba.services in Safari. Stripe never loads in the WKWebView.
+
+No AI / LLM service is used to deliver core functionality.
+
+================================================================================
+5. Regional differences
+================================================================================
+The same iOS binary and the same feature set ship worldwide. There is no region-locked feature flag, App Store storefront gate, or geography-based feature switch in the app.
+
+Catalog coverage (wells, pipelines, disposal sites) is Texas, New Mexico, Oklahoma, and Louisiana only. Users outside those states still receive the same app; searches simply return the TX / NM / OK / LA catalog.
+
+================================================================================
+6. Regulated industry / protected material
+================================================================================
+Well Navigation compiles publicly available government and open oil-and-gas datasets for workplace lookup. It does not operate wells, does not drill or produce, and does not provide engineering, surveying, or land-title certification. Locations are not a substitute for a One Call / 811 locate, an as-built survey, or operator drawings.
+
+Esri basemap tiles are online-only because Esri’s terms disallow caching them; USGS National Map tiles may be saved on the device after the user taps Save this view. The app does not license or redistribute a proprietary third-party commercial well database.
+
+We are not claiming a special RRC (or other agency) authorization letter beyond ordinary public-data use of published government sources.
+
+================================================================================
+Prevent common issues (preemptive)
+================================================================================
+Guideline 2.1 — bugs: Before resubmit, the developer must install the candidate build from TestFlight on a physical iPhone (and iPad if the App Store Connect destinations include iPad) running the latest iOS, and walk registration, sign-in, search, map / Save this view, Account (no IAP), and disposable-account deletion. That physical-device smoke test cannot be performed from this Windows workspace; it is a required operator step before clicking Submit for Review.
+
+Guideline 2.1 — access: One account type (work email + password). Demo credentials are in the Notes / username-password fields above. Do not delete appreview@simba.services. Use a separate disposable account for the deletion portion of the recording.
+
+Guideline 2.3.3 — screenshots: App Store screenshots are real in-app screens (search, results, map, account), not splash-only images. Paths and upload instructions are in ios/store/listing.txt (ios/store/screenshots/upload-iphone/ and ipad-13 sets).
+
+Guideline 3.1.1 — payments: No IAP products to create or submit. The iOS app never collects payment; seat purchase is website-only in Safari via Stripe.
+
+Guideline 3.2 — business model: This is NOT an internal employee-only app and is NOT limited to one company. Any oil and gas professional can create an account with a work email. People on the same email domain share an organization. Public App Store distribution is intentional. @simba.services addresses are complimentary (developer and App Review), not the only allowed users.
+
+Sign in with Apple: Not offered — login is email/password only (no third-party social login).
 
 Export compliance: HTTPS only. ITSAppUsesNonExemptEncryption is false.
 
-Sign in with Apple is not offered because the only login is email and password (no third-party social login).
+Wrapper: Not a general-purpose browser — no address bar; host allow-list is wellnav.simba.services. Native value beyond the website: offline USGS tiles and pinned wells after Save this view, plus a native splash and offline banner.
