@@ -1,10 +1,18 @@
-/* Disposal near-me search, map-pin enrichment, and wait-time reporting UI. */
+/* Disposal near-me search, map-pin enrichment, and wait-time reporting UI.
+   Environment-agnostic: same behavior on web, iOS/Android store WebViews, and local/dev.
+   Never branch on __WN_STORE / user-agent for product UX. */
 (function () {
   const RADIUM_MODE = "radium_near";
   const NEAR_MODE = "near";
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function apiFetch(url, options) {
+    const opts = options ? Object.assign({}, options) : {};
+    opts.credentials = opts.credentials || "same-origin";
+    return fetch(url, opts);
   }
 
   function pad(n) {
@@ -172,7 +180,7 @@
   async function enrichDisposalFocus(siteId) {
     if (!siteId || !window.selectDisposalSite) return;
     try {
-      const resp = await fetch("/disposal/site/" + encodeURIComponent(siteId), {
+      const resp = await apiFetch("/disposal/site/" + encodeURIComponent(siteId), {
         headers: { Accept: "application/json" },
       });
       if (!resp.ok) return;
@@ -393,7 +401,7 @@
     const root = $("disposal-wait-summary");
     if (root) root.innerHTML = '<p class="muted">Loading recent wait reports…</p>';
     try {
-      const resp = await fetch("/disposal/" + encodeURIComponent(siteId) + "/wait", {
+      const resp = await apiFetch("/disposal/" + encodeURIComponent(siteId) + "/wait", {
         headers: { Accept: "application/json" },
       });
       const body = await resp.json();
@@ -443,7 +451,7 @@
         const id = flag.dataset.reportId;
         const reason = window.prompt("Why is this report wrong?", "Incorrect wait time");
         if (!reason || !id) return;
-        fetch("/disposal/wait/" + encodeURIComponent(id) + "/flag", {
+        apiFetch("/disposal/wait/" + encodeURIComponent(id) + "/flag", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({ reason }),
@@ -492,7 +500,7 @@
           open_lanes: ($("wait-open-lanes") && $("wait-open-lanes").value) || null,
         };
         try {
-          const resp = await fetch("/disposal/" + encodeURIComponent(siteId) + "/wait", {
+          const resp = await apiFetch("/disposal/" + encodeURIComponent(siteId) + "/wait", {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "application/json" },
             body: JSON.stringify(payload),
@@ -521,7 +529,7 @@
       prefs.addEventListener("submit", async (event) => {
         event.preventDefault();
         const hours = Number(($("wait-avg-window") && $("wait-avg-window").value) || 24);
-        await fetch("/account/wait-prefs", {
+        await apiFetch("/account/wait-prefs", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({ avg_window_hours: hours }),
@@ -556,11 +564,10 @@
     wasteClassText,
   };
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function boot() {
     bindNearSearch();
     ensureWaitPanel();
-  });
-  if (document.readyState !== "loading") {
-    bindNearSearch();
   }
+  document.addEventListener("DOMContentLoaded", boot);
+  if (document.readyState !== "loading") boot();
 })();

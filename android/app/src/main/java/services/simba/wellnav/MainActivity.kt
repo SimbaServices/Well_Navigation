@@ -236,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         private val ALLOWED_HOSTS = setOf("wellnav.simba.services")
 
         // Keep in sync with templates/partials/store_boot.js.
+        // Do not gate Near me / wait / map UX on __WN_STORE.
         private const val STORE_BOOT_JS = """
             (function () {
               var ua = navigator.userAgent || "";

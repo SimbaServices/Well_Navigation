@@ -56,6 +56,7 @@ struct WebContainer: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     // Keep in sync with templates/partials/store_boot.js.
+    // Do not gate Near me / wait / map UX on __WN_STORE.
     private static let storeBootScript = """
     (function () {
       var ua = navigator.userAgent || "";
