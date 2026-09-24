@@ -1441,6 +1441,104 @@ async def disposal_sites(request: Request) -> JSONResponse:
 
 
 
+async def _wait_json_body(request: Request) -> dict:
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            return {}
+        return payload if isinstance(payload, dict) else {}
+    form = await request.form()
+    return {key: value for key, value in form.items()}
+
+
+async def disposal_wait_summary(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import get_site_wait_summary, get_user_pref
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    window_raw = request.query_params.get("window_hours")
+    if window_raw:
+        window_hours = window_raw
+    else:
+        window_hours = get_user_pref(user["id"])["avg_window_hours"]
+    org_id = user.get("org_id")
+    payload = get_site_wait_summary(site_id, window_hours=window_hours, org_id=org_id)
+    return JSONResponse(payload)
+
+
+async def disposal_wait_create(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import create_report
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    data = await _wait_json_body(request)
+    try:
+        report = create_report(
+            disposal_site_id=site_id,
+            user_id=int(user["id"]),
+            report_kind=str(data.get("report_kind") or data.get("kind") or ""),
+            arrival_at=(str(data["arrival_at"]) if data.get("arrival_at") not in (None, "") else None),
+            departure_at=(
+                str(data["departure_at"]) if data.get("departure_at") not in (None, "") else None
+            ),
+            open_lanes=data.get("open_lanes"),
+            notes=(str(data["notes"]) if data.get("notes") not in (None, "") else None),
+            org_id=user.get("org_id"),
+            now=(str(data["now"]) if data.get("now") not in (None, "") else None),
+        )
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(report, status_code=201)
+
+
+async def disposal_wait_flag(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import flag_report
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        report_id = int(request.path_params["report_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "report_id must be an integer"}, status_code=400)
+    data = await _wait_json_body(request)
+    reason = str(data.get("reason") or "").strip()
+    try:
+        report = flag_report(report_id, int(user["id"]), reason)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(report)
+
+
+async def account_wait_prefs(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import get_user_pref, set_user_pref
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    if request.method == "GET":
+        return JSONResponse(get_user_pref(int(user["id"])))
+    data = await _wait_json_body(request)
+    raw = data.get("avg_window_hours", request.query_params.get("avg_window_hours"))
+    try:
+        pref = set_user_pref(int(user["id"]), raw if raw is not None else 24)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(pref)
+
+
 async def disposal_site_detail(request: Request) -> JSONResponse:
     from wellnav.disposal import get_site
 
@@ -1671,6 +1769,10 @@ app = Starlette(
         Route("/disposal/suggest", disposal_suggest),
         Route("/disposal/search", disposal_search, methods=["GET", "POST"]),
         Route("/disposal/site/{site_id:int}", disposal_site_detail),
+        Route("/disposal/{site_id:int}/wait", disposal_wait_summary, methods=["GET"]),
+        Route("/disposal/{site_id:int}/wait", disposal_wait_create, methods=["POST"]),
+        Route("/disposal/wait/{report_id:int}/flag", disposal_wait_flag, methods=["POST"]),
+        Route("/account/wait-prefs", account_wait_prefs, methods=["GET", "POST"]),
         Route("/healthz", healthz),
         Route("/sw.js", service_worker),
         Route("/manifest.webmanifest", web_manifest),

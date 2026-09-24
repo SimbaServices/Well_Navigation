@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=mapchrome2">
+  <link rel="stylesheet" href="/static/css/app.css?v=mapchrome3">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -115,6 +115,14 @@
             <input type="radio" name="disp_mode" value="permit">
             <span>Permit</span>
           </label>
+          <label class="mode">
+            <input type="radio" name="disp_mode" value="near">
+            <span>Near me</span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="disp_mode" value="radium_near">
+            <span>Radium near me</span>
+          </label>
         </div>
         </div>
 
@@ -137,9 +145,12 @@
             <span class="ph ph-disp-name">Facility name, e.g. SOUTH TEXAS DISPOSAL</span>
             <span class="ph ph-disp-op">Waste facility operator, e.g. R360</span>
             <span class="ph ph-disp-permit">Permit number, e.g. STF-0006</span>
+            <span class="ph ph-disp-near">Uses your current location — search finds the closest disposal sites</span>
+            <span class="ph ph-disp-radium">Uses your location — radium / NORM / TENORM disposal near you</span>
           </div>
           <button type="submit" class="primary" name="commit" value="1">Search</button>
         </div>
+        <p id="disposal-near-status" class="muted disposal-near-status" hidden></p>
         <div id="active-filters">
           {% include 'partials/filters.html' %}
         </div>
@@ -153,6 +164,8 @@
       <p class="hint hint-disp-name">Search commercial waste, UIC, and salt-water disposal sites, then route in Apple or Google Maps.</p>
       <p class="hint hint-disp-op">Search by the RRC-permitted operator that runs the waste facility.</p>
       <p class="hint hint-disp-permit">Search by surface waste permit number (STF, R9, WP, and similar).</p>
+      <p class="hint hint-disp-near">Allow location access once, then search to list the closest approved disposal facilities from where you are.</p>
+      <p class="hint hint-disp-radium">Same near-me search, limited to facilities whose permits suggest radium, NORM, or TENORM acceptance.</p>
 
       <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
       <div id="results" class="results">
@@ -238,7 +251,8 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/map.js?v=mobile5"></script>
+  <script src="/static/js/disposal-ux.js?v=1"></script>
+  <script src="/static/js/map.js?v=mobile6"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

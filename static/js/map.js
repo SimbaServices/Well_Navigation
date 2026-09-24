@@ -36,7 +36,6 @@ const BASEMAP_LABELS = {
 
 const STORAGE_KEY = "wellnav.mappedWells";
 const VIEW_KEY = "wellnav.mapView";
-const PICK_KEY = "wellnav.pickedWells";
 const PANE_PREF = "wellnav.workspacePane";
 const PHONE_PANE = "(max-width: 960px)";
 const PIPELINE_PREF = "wellnav.pipelines";
@@ -257,131 +256,6 @@ function saveStore(store) {
   } catch {
     /* quota / private mode */
   }
-}
-
-function emptyPickStore() {
-  return { key: "", wells: {} };
-}
-
-function loadPickStore() {
-  try {
-    const raw = sessionStorage.getItem(PICK_KEY);
-    if (!raw) return emptyPickStore();
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== "object" || typeof data.wells !== "object" || !data.wells) {
-      return emptyPickStore();
-    }
-    return { key: String(data.key || ""), wells: data.wells };
-  } catch {
-    return emptyPickStore();
-  }
-}
-
-function savePickStore(store) {
-  try {
-    sessionStorage.setItem(PICK_KEY, JSON.stringify(store));
-  } catch {
-    /* quota / private mode */
-  }
-}
-
-function currentPickKey() {
-  const table = document.querySelector("[data-results-table]");
-  return table ? String(table.dataset.pickKey || "") : "";
-}
-
-function ensurePickStore() {
-  const key = currentPickKey();
-  const store = loadPickStore();
-  if (!key) return store;
-  if (store.key !== key) {
-    const next = { key, wells: {} };
-    savePickStore(next);
-    return next;
-  }
-  return store;
-}
-
-function pickPayloadFromRow(row) {
-  const data = (row && row.dataset) || {};
-  const api = String(data.api || "").trim();
-  if (!api) return null;
-  return {
-    api,
-    state: data.state || "tx",
-    well_name: data.name || "",
-    well_no: data.wellNo || "",
-    lease_name: data.lease || "",
-    county: data.county || "",
-    operator: data.operator || "",
-    name: data.name || "",
-    lease: data.lease || "",
-    lat: data.lat || "",
-    lon: data.lon || "",
-    toeLat: data.toeLat || "",
-    toeLon: data.toeLon || "",
-    status: data.status || "",
-  };
-}
-
-function setRowPicked(row, picked) {
-  const payload = pickPayloadFromRow(row);
-  if (!payload) return;
-  const store = ensurePickStore();
-  if (picked) {
-    if (!store.wells[payload.api] && Object.keys(store.wells).length >= MAX_WELLS) return;
-    store.wells[payload.api] = payload;
-  } else {
-    delete store.wells[payload.api];
-  }
-  savePickStore(store);
-}
-
-function pickedWells() {
-  const key = currentPickKey();
-  const store = loadPickStore();
-  if (key && store.key !== key) return [];
-  return Object.values(store.wells || {});
-}
-
-function syncPickAllBox() {
-  const all = document.querySelector(".well-pick-all");
-  if (!all) return;
-  const boxes = [...document.querySelectorAll(".well-pick")];
-  if (!boxes.length) {
-    all.checked = false;
-    all.indeterminate = false;
-    return;
-  }
-  const checked = boxes.filter((box) => box.checked).length;
-  all.checked = checked === boxes.length;
-  all.indeterminate = checked > 0 && checked < boxes.length;
-}
-
-function syncPickCount() {
-  const el = document.getElementById("pick-count");
-  if (!el) return;
-  const count = pickedWells().length;
-  el.textContent = count ? ` · ${count} selected` : "";
-}
-
-function restorePickedWells() {
-  const key = currentPickKey();
-  if (!key) {
-    syncPickAllBox();
-    syncPickCount();
-    syncSaveSelectedButton();
-    return;
-  }
-  const store = ensurePickStore();
-  document.querySelectorAll("tr.well-row").forEach((row) => {
-    const api = (row.dataset.api || "").trim();
-    const pick = row.querySelector(".well-pick");
-    if (pick) pick.checked = !!(api && store.wells[api]);
-  });
-  syncPickAllBox();
-  syncPickCount();
-  syncSaveSelectedButton();
 }
 
 function parseCoord(value) {
@@ -1245,19 +1119,28 @@ function renderPipelineOwners(payload) {
   const dl = document.createElement("dl");
   const quality = payload.quality || "";
   const t4ish = !quality || quality.length <= 2;
-  ownerField(dl, t4ish ? "T-4 operator" : "Operator", operator);
+  // When a pin is active, title already shows operator — skip repeating it here.
+  const pinActive = !!(pinChrome && pipelinePin);
+  if (!pinActive || !operator) {
+    ownerField(dl, t4ish ? "T-4 operator" : "Operator", operator);
+  }
   ownerField(dl, "P-5 number", p5);
   ownerField(dl, "RRC organization", identity.name && identity.name !== operator ? identity.name : "");
   ownerField(dl, "Org status", identity.org_status);
   ownerField(dl, "Org type", identity.org_type);
   if (identity.wells) ownerField(dl, "RRC well count", identity.wells);
-  ownerField(dl, "Pipeline / system", system);
+  if (!pinActive || !(pipelinePin && pipelinePin.system === system)) {
+    ownerField(dl, "Pipeline / system", system);
+  }
   ownerField(dl, "Subsystem", payload.subsystem);
   ownerField(dl, t4ish ? "T-4 permit" : "Permit / serial", payload.t4);
   ownerField(dl, "Source", payload.quality_label || "");
   ownerField(dl, "Pipeline ID", payload.pipeline_id);
   ownerField(dl, "Diameter", payload.diameter ? `${payload.diameter} in` : "");
-  ownerField(dl, "Commodity", payload.commodity_desc || payload.commodity);
+  const commodity = payload.commodity_desc || payload.commodity;
+  if (!pinActive || !(pipelinePin && pipelinePin.commodity && commodity)) {
+    ownerField(dl, "Commodity", commodity);
+  }
   ownerField(dl, "Status", payload.status_label);
   ownerField(dl, "System type", payload.systype_label);
   ownerField(dl, "County", payload.county_name ? `${payload.county_name} County` : "");
@@ -1329,11 +1212,15 @@ function bboxFromBounds(bounds) {
 }
 
 function disposalPopup(props) {
+  const waste =
+    Array.isArray(props.waste_classifications) && props.waste_classifications.length
+      ? props.waste_classifications.join(" · ")
+      : props.permit_type_label || props.permit_type || "";
   const bits = [
     `<strong>${escapeHtml(props.facility || props.permit_no || "Waste disposal site")}</strong>`,
     props.operator ? escapeHtml(props.operator) : "",
     props.permit_no ? `Permit ${escapeHtml(props.permit_no)}` : "",
-    props.permit_type ? escapeHtml(props.permit_type) : "",
+    waste ? `Accepted: ${escapeHtml(waste)}` : "",
     props.county ? `${escapeHtml(props.county)} County` : "",
     Number.isFinite(props.lat) && Number.isFinite(props.lon)
       ? `${Number(props.lat).toFixed(6)}, ${Number(props.lon).toFixed(6)}`
@@ -1529,11 +1416,33 @@ function siteFromEl(el) {
     lat,
     lon,
     name: el.dataset.name || "Waste disposal site",
+    facility: el.dataset.name || "Waste disposal site",
+    operator: el.dataset.operator || "",
+    permit_no: el.dataset.permit || "",
+    county: el.dataset.county || "",
   };
 }
 
-function selectDisposalSite(site, { fromMarker = false } = {}) {
+function wasteTextFromSite(site) {
+  if (!site) return "";
+  if (site.wasteText) return site.wasteText;
+  if (Array.isArray(site.waste_classifications) && site.waste_classifications.length) {
+    return site.waste_classifications.join(" · ");
+  }
+  if (window.WellnavDisposalUx && window.WellnavDisposalUx.wasteClassText) {
+    return window.WellnavDisposalUx.wasteClassText(site) || "";
+  }
+  const bits = [site.permit_type_label || site.permit_type, site.discharge_type].filter(Boolean);
+  return bits.join(" · ");
+}
+
+function selectDisposalSite(site, { fromMarker = false, enriched = false } = {}) {
   if (!site || !Number.isFinite(Number(site.lat)) || !Number.isFinite(Number(site.lon))) return;
+  const store = loadStore();
+  if (store.selected) {
+    store.selected = null;
+    saveStore(store);
+  }
   disposalFocus = {
     id: String(site.id || site.disposalId || ""),
     lat: Number(site.lat),
@@ -1542,20 +1451,35 @@ function selectDisposalSite(site, { fromMarker = false } = {}) {
     operator: site.operator || "",
     permit: site.permit_no || site.permit || "",
     county: site.county || "",
+    wasteText: wasteTextFromSite(site),
+    permit_type_label: site.permit_type_label || "",
+    discharge_type: site.discharge_type || "",
+    waste_classifications: site.waste_classifications || [],
   };
   disposalPopupPinned = true;
   pinChrome = false;
+  pipelinePin = null;
+  if (pipelinePinMarker && map) {
+    map.removeLayer(pipelinePinMarker);
+    pipelinePinMarker = null;
+  }
   localStorage.setItem(DISPOSAL_PREF, "1");
   const toggle = document.getElementById("disposal-toggle");
   if (toggle) toggle.checked = true;
   if (!ensureMap()) {
     updateChrome(loadStore());
+    if (window.WellnavDisposalUx) window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
     return;
   }
   if (fromMarker && disposalLayer) {
     restyleDisposalMarkers();
     updateChrome(loadStore());
     revealMapOnPhone();
+    if (!enriched && disposalFocus.id && window.WellnavDisposalUx) {
+      window.WellnavDisposalUx.enrichDisposalFocus(disposalFocus.id);
+    } else if (window.WellnavDisposalUx) {
+      window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
+    }
     return;
   }
   disposalKey = "";
@@ -1563,7 +1487,13 @@ function selectDisposalSite(site, { fromMarker = false } = {}) {
   map.setView([disposalFocus.lat, disposalFocus.lon], Math.max(map.getZoom(), 13));
   updateChrome(loadStore());
   revealMapOnPhone();
+  if (window.WellnavDisposalUx) {
+    if (!enriched && disposalFocus.id) window.WellnavDisposalUx.enrichDisposalFocus(disposalFocus.id);
+    else window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
+  }
 }
+
+window.selectDisposalSite = selectDisposalSite;
 
 function applyDisposalFocusFromEl(el) {
   const site = siteFromEl(el);
@@ -1791,9 +1721,11 @@ function ensureMap() {
 
   map = L.map(el, {
     zoomControl: true,
+    attributionControl: false,
     closePopupOnClick: true,
     tapTolerance: coarsePointer() ? 32 : 15,
   }).setView([31.2, -99.2], 6);
+  L.control.attribution({ position: "topright", prefix: false }).addTo(map);
   map.createPane("pipelines");
   map.getPane("pipelines").style.zIndex = 350;
   map.createPane("disposal");
@@ -1987,16 +1919,17 @@ function updateChrome(store) {
   }
   if (sub) {
     if (showPin) {
-      const bits = ["Pipeline point"];
-      if (pipelinePin.operator) bits.push(pipelinePin.operator);
-      if (pipelinePin.system) bits.push(pipelinePin.system);
-      if (pipelinePin.commodity) bits.push(pipelinePin.commodity);
-      sub.textContent = bits.join(" · ");
+      // Keep subtitle short — ownership panel already lists operator/system/commodity.
+      sub.textContent = pipelinePin.system && pipelinePin.operator
+        ? "Pinned pipeline point"
+        : pipelinePin.system || pipelinePin.commodity || "Pinned pipeline point";
     } else if (disposalFocus) {
-      const bits = ["Commercial waste disposal"];
+      const bits = [];
       if (disposalFocus.operator) bits.push(disposalFocus.operator);
+      if (disposalFocus.permit) bits.push(disposalFocus.permit);
       if (disposalFocus.county) bits.push(`${disposalFocus.county} County`);
-      sub.textContent = bits.join(" · ");
+      if (disposalFocus.wasteText) bits.push(disposalFocus.wasteText);
+      sub.textContent = bits.length ? bits.join(" · ") : "Commercial waste disposal";
     } else if (selected) sub.textContent = wellSubtitle(selected);
     else if (store.order.length) sub.textContent = "Select a well to route.";
     else sub.textContent = "Pin wells from search to show them on the map.";
@@ -2041,12 +1974,9 @@ function updateChrome(store) {
   if (coords) {
     coords.replaceChildren();
     if (showPin) {
-      const hintBits = ["Clicked on pipeline"];
-      if (pipelinePin.operator) hintBits.push(pipelinePin.operator);
-      if (pipelinePin.system) hintBits.push(pipelinePin.system);
-      coords.appendChild(coordChip("Pipeline", pipelinePin.lat, pipelinePin.lon, hintBits.join(" · ")));
+      coords.appendChild(coordChip("Pipeline", pipelinePin.lat, pipelinePin.lon, "Pinned point"));
     } else if (disposalFocus) {
-      coords.appendChild(coordChip("Waste site", disposalFocus.lat, disposalFocus.lon, "Commercial"));
+      coords.appendChild(coordChip("Waste site", disposalFocus.lat, disposalFocus.lon, "WGS84"));
     } else if (selected) {
       coords.appendChild(coordChip("Wellhead", selected.lat, selected.lon, "WGS84"));
       if (hasToe(selected)) {
@@ -2072,7 +2002,20 @@ function updateChrome(store) {
         remove.textContent = "Remove pin";
         remove.addEventListener("click", () => clearPipelinePin());
         nav.appendChild(remove);
-      } else if (!disposalFocus && store.order.length === 1 && store.selected) {
+      } else if (disposalFocus) {
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "ghost";
+        clear.textContent = "Clear site";
+        clear.addEventListener("click", () => {
+          disposalFocus = null;
+          disposalPopupPinned = false;
+          if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
+          restyleDisposalMarkers();
+          updateChrome(loadStore());
+        });
+        nav.appendChild(clear);
+      } else if (store.order.length === 1 && store.selected) {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "ghost";
@@ -2081,6 +2024,14 @@ function updateChrome(store) {
         nav.appendChild(remove);
       }
     }
+  }
+
+  if (showPin) {
+    if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
+  } else if (disposalFocus && window.WellnavDisposalUx) {
+    window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
+  } else if (window.WellnavDisposalUx) {
+    window.WellnavDisposalUx.hideWaitPanel();
   }
 }
 
@@ -2112,6 +2063,7 @@ function selectWell(api) {
   disposalFocus = null;
   disposalPopupPinned = false;
   pinChrome = false;
+  if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
   if (map) map.closePopup();
   revealMapOnPhone();
   paint({ fit: false });
@@ -2176,73 +2128,10 @@ function mapAllVisibleWells() {
   paint({ fit: addedAny || !!store.order.length });
 }
 
-function mapSelectedWells() {
-  const payloads = pickedWells();
-  if (!payloads.length) return;
-  let addedAny = false;
-  payloads.forEach((payload) => {
-    const well = wellFromDataset({
-      api: payload.api,
-      name: payload.name || payload.well_name,
-      lease: payload.lease || payload.lease_name,
-      county: payload.county,
-      operator: payload.operator,
-      lat: payload.lat,
-      lon: payload.lon,
-      toeLat: payload.toeLat,
-      toeLon: payload.toeLon,
-      status: payload.status,
-    });
-    if (!well) {
-      const row = document.querySelector(`tr.well-row[data-api="${payload.api}"]`);
-      if (row) markNoCoords(row.querySelector(".map-toggle"));
-      return;
-    }
-    const { added, isNew } = upsertIntoStore(well, { select: false });
-    if (added && isNew) addedAny = true;
-  });
-  const store = loadStore();
-  if (!store.selected && store.order.length) {
-    store.selected = store.order[0];
-    saveStore(store);
-  }
-  revealMapOnPhone();
-  paint({ fit: addedAny || !!store.order.length });
-}
-
 function clearMappedWells() {
   saveStore(emptyStore());
   [...overlays.keys()].forEach(removeOverlay);
   paint({ fit: false });
-}
-
-function selectedWellRows() {
-  return [...document.querySelectorAll("tr.well-row")].filter((row) => {
-    const pick = row.querySelector(".well-pick");
-    return pick && pick.checked;
-  });
-}
-
-function wellSavePayload(row) {
-  const data = row.dataset || {};
-  return {
-    api: (data.api || "").trim(),
-    well_name: data.name || "",
-    well_no: data.wellNo || "",
-    lease_name: data.lease || "",
-    county: data.county || "",
-    operator: data.operator || "",
-  };
-}
-
-function syncSaveSelectedButton() {
-  const btn = document.querySelector("[data-save-action='selected']");
-  if (!btn) return;
-  const count = pickedWells().length;
-  if (!btn.classList.contains("is-busy")) {
-    btn.textContent = count ? `Save selected (${count})` : "Save selected";
-  }
-  btn.disabled = count === 0 || btn.classList.contains("is-busy");
 }
 
 function markRowsSaved(apis) {
@@ -2266,43 +2155,6 @@ function applySaveStatus(root) {
   const marked = status || document.querySelector("#save-status [data-apis]");
   if (!marked) return;
   markRowsSaved(String(marked.dataset.apis || "").split(","));
-}
-
-function saveSelectedWells(btn) {
-  const wells = pickedWells()
-    .map((well) => ({
-      api: well.api,
-      state: well.state || "tx",
-      well_name: well.well_name || well.name || "",
-      well_no: well.well_no || "",
-      lease_name: well.lease_name || well.lease || "",
-      county: well.county || "",
-      operator: well.operator || "",
-    }))
-    .filter((well) => well.api);
-  if (!wells.length || !btn) return;
-  btn.classList.add("is-busy");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
-  if (window.htmx) {
-    window.htmx.ajax("POST", "/saved/bulk", {
-      target: "#save-status",
-      swap: "innerHTML",
-      values: { wells: JSON.stringify(wells) },
-      source: btn,
-    });
-    return;
-  }
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/saved/bulk";
-  const input = document.createElement("input");
-  input.type = "hidden";
-  input.name = "wells";
-  input.value = JSON.stringify(wells);
-  form.appendChild(input);
-  document.body.appendChild(form);
-  form.submit();
 }
 
 function setToggleLabel(btn, on) {
@@ -2382,10 +2234,7 @@ function initWellMap() {
 window.toggleWellOnMap = toggleWellOnMap;
 window.addAndSelectWell = addAndSelectWell;
 window.mapAllVisibleWells = mapAllVisibleWells;
-window.mapSelectedWells = mapSelectedWells;
 window.clearMappedWells = clearMappedWells;
-window.saveSelectedWells = saveSelectedWells;
-window.syncSaveSelectedButton = syncSaveSelectedButton;
 window.syncMapButtons = syncMapButtons;
 window.initWellMap = initWellMap;
 window.setBasemap = setBasemap;
@@ -2468,18 +2317,11 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 document.addEventListener("click", (event) => {
-  const saveAction = event.target.closest("[data-save-action]");
-  if (saveAction) {
-    event.preventDefault();
-    if (saveAction.dataset.saveAction === "selected") saveSelectedWells(saveAction);
-    return;
-  }
   const action = event.target.closest("[data-map-action]");
   if (action) {
     event.preventDefault();
     const kind = action.dataset.mapAction;
-    if (kind === "selected") mapSelectedWells();
-    else if (kind === "page") mapAllVisibleWells();
+    if (kind === "page") mapAllVisibleWells();
     else if (kind === "clear") clearMappedWells();
     return;
   }
@@ -2520,30 +2362,6 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.addEventListener("change", (event) => {
-  const all = event.target.closest(".well-pick-all");
-  if (all) {
-    const table = all.closest("table");
-    table.querySelectorAll(".well-pick").forEach((box) => {
-      box.checked = all.checked;
-      const row = box.closest("tr.well-row");
-      if (row) setRowPicked(row, all.checked);
-    });
-    syncPickAllBox();
-    syncPickCount();
-    syncSaveSelectedButton();
-    return;
-  }
-  const pick = event.target.closest(".well-pick");
-  if (pick) {
-    const row = pick.closest("tr.well-row");
-    if (row) setRowPicked(row, pick.checked);
-    syncPickAllBox();
-    syncPickCount();
-    syncSaveSelectedButton();
-  }
-});
-
 document.addEventListener("htmx:configRequest", (event) => {
   const elt = event.detail && event.detail.elt;
   const q = searchInputEl();
@@ -2577,7 +2395,6 @@ document.addEventListener("htmx:afterSwap", (event) => {
     }
   }
   syncMapButtons();
-  restorePickedWells();
   if (targetId === "save-status" || (target && target.querySelector && target.querySelector("#save-status"))) {
     applySaveStatus(target);
   }
@@ -2596,14 +2413,6 @@ document.addEventListener("htmx:sendError", (event) => {
   if (!elt || elt.id !== "search-form" || elt.dataset.nativeFallback === "1") return;
   elt.dataset.nativeFallback = "1";
   HTMLFormElement.prototype.submit.call(elt);
-});
-
-document.addEventListener("htmx:afterRequest", (event) => {
-  const elt = event.detail && event.detail.elt;
-  if (elt && elt.matches && elt.matches("[data-save-action='selected']")) {
-    elt.classList.remove("is-busy");
-    syncSaveSelectedButton();
-  }
 });
 
 document.body.addEventListener("click", (event) => {
@@ -2626,7 +2435,6 @@ window.addEventListener("resize", () => {
 
 initWorkspaceTabs();
 bindSearchContext();
-restorePickedWells();
 window.addEventListener("online", applyNetworkState);
 window.addEventListener("offline", applyNetworkState);
 function closeInfoTips() {

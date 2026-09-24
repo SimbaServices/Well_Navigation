@@ -5,7 +5,6 @@
   </div>
   {% if wells %}
     <div class="results-toolbar result-tools">
-      <button type="button" class="ghost" data-map-action="selected">Map selected</button>
       <button type="button" class="ghost" data-map-action="page">Map this page</button>
       <button type="button" class="ghost" data-map-action="clear">Clear map</button>
     </div>
@@ -14,12 +13,9 @@
 
 {% if wells %}
   <div class="table-wrap">
-    <table class="wells" data-results-table data-pick-key="saved">
+    <table class="wells" data-results-table>
       <thead>
         <tr>
-          <th class="pick-col">
-            <input type="checkbox" class="well-pick-all" title="Select all saved" aria-label="Select all saved">
-          </th>
           <th class="map-col">Pin</th>
           <th>Well name</th>
           <th>API</th>
@@ -43,9 +39,6 @@
               data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
               data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
               data-status="{{ well.status_label or '' }}">
-            <td class="pick-col">
-              <input type="checkbox" class="well-pick" aria-label="Select {{ well.well_name }}">
-            </td>
             <td class="map-col">
               <button type="button" class="map-toggle" title="Add to map">Pin</button>
             </td>
@@ -64,5 +57,5 @@
     </table>
   </div>
 {% else %}
-  <div class="empty">No saved wells yet. Select wells in search results and press Save selected, or press ☆ Save on a row.</div>
+  <div class="empty">No saved wells yet. Press ☆ Save on a well in search results.</div>
 {% endif %}

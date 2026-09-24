@@ -215,6 +215,8 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="name"]:checked) .ph-disp-name { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="operator"]:checked) .ph-disp-op { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="permit"]:checked) .ph-disp-permit { display: block; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) .ph-disp-near { display: block; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) .ph-disp-radium { display: block; }
 .search-form:has(select[name=scope] option[value="wells"]:checked) .modes-pipelines,
 .search-form:has(select[name=scope] option[value="wells"]:checked) .modes-disposal { display: none; }
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) .modes-wells,
@@ -225,7 +227,8 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked) #active-filters { display: none; }
 .query-field:has(input:not(:placeholder-shown)) .ph { display: none !important; }
 .hint-api, .hint-operator, .hint-pipe-op, .hint-pipe-name,
-.hint-disp-name, .hint-disp-op, .hint-disp-permit { display: none; }
+.hint-disp-name, .hint-disp-op, .hint-disp-permit,
+.hint-disp-near, .hint-disp-radium { display: none; }
 .search-form:has([name=mode][value="api"]:checked) .hint-name,
 .search-form:has([name=mode][value="operator"]:checked) .hint-name,
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) .hint-name,
@@ -251,6 +254,12 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="name"]:checked) ~ .hint-disp-name { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="operator"]:checked) ~ .hint-disp-op { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="permit"]:checked) ~ .hint-disp-permit { display: block; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) ~ .hint-disp-near { display: block; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) ~ .hint-disp-radium { display: block; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) .query-field input,
+.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) .query-field input {
+  opacity: 0.55;
+}
 .search-form:has(select[name=scope] option[value="wells"]:checked):not(:has([name=mode][value="operator"]:checked)) + #operator-suggest { display: none; }
 #active-filters { display: contents; }
 #operator-suggest { margin-top: 0.15rem; }
@@ -379,14 +388,11 @@ table.wells td.col-status {
 table.wells { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 table.wells th, table.wells td { text-align: left; padding: 0.55rem 0.45rem; border-bottom: 1px solid var(--line); }
 table.wells th { color: var(--muted); font-weight: 600; }
-table.wells th.pick-col, table.wells td.pick-col,
 table.wells th.map-col, table.wells td.map-col { width: 2.6rem; text-align: center; }
 table.wells th.save-col, table.wells td.save-cell { width: 5.2rem; text-align: center; }
 .save-status { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--ink); }
 .save-status:empty { display: none; }
 .save-status .text-link { margin-left: 0.35rem; }
-[data-save-action="selected"]:disabled { opacity: 0.55; cursor: default; }
-[data-save-action="selected"].is-busy { cursor: wait; opacity: 1; }
 .sort-link {
   color: inherit;
   text-decoration: none;
@@ -400,7 +406,6 @@ table.wells th.save-col, table.wells td.save-cell { width: 5.2rem; text-align: c
 .well-row { cursor: pointer; }
 .well-row.is-mapped { background: rgba(124, 179, 106, 0.08); }
 .well-row.is-selected { background: rgba(212, 160, 23, 0.14); box-shadow: inset 3px 0 0 var(--accent); }
-.well-pick, .well-pick-all { accent-color: var(--accent); cursor: pointer; }
 .well-name-link {
   color: inherit;
   text-decoration: none;
@@ -571,8 +576,81 @@ button.well-name-link {
   max-width: min(11rem, 46vw);
   white-space: normal;
 }
+.well-map .leaflet-top.leaflet-right .leaflet-control-attribution {
+  margin: 0.35rem 0.35rem 0 0;
+}
 .well-map .leaflet-control-attribution a {
   color: #d7c27a;
+}
+.disposal-near-status:not([hidden]) { margin: 0.35rem 0 0; font-size: 0.85rem; }
+.disposal-waste-classes {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.disposal-wait {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(18, 22, 15, 0.55);
+}
+.disposal-wait[hidden] { display: none; }
+.disposal-wait-head h3 { margin: 0; font-size: 1rem; }
+.disposal-wait-head .muted { margin: 0.2rem 0 0; font-size: 0.78rem; }
+.disposal-wait-summary { margin-top: 0.45rem; font-size: 0.9rem; }
+.disposal-wait-summary p { margin: 0.2rem 0; }
+.wait-report-list {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+.wait-report-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+.disposal-wait-form,
+.disposal-wait-prefs-form {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.45rem;
+}
+.disposal-wait details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 0.45rem;
+}
+.wait-kind {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.wait-kind legend { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.25rem; width: 100%; }
+.wait-datetime-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: end;
+}
+.wait-datetime-row label { flex: 1 1 12rem; display: grid; gap: 0.2rem; }
+.wait-datetime-row input[type="datetime-local"],
+.disposal-wait select,
+.disposal-wait input[type="number"] {
+  min-height: 2.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel, #1b2117);
+  color: inherit;
+  padding: 0.25rem 0.45rem;
 }
 .offline-pack #offline-status {
   margin: 0;
@@ -1150,12 +1228,11 @@ body.gate .gate-tagline {
   .overlay-toggle { min-height: 2rem; }
   .offline-pack .ghost { min-height: 1.65rem; padding: 0.15rem 0.1rem; font-size: 0.72rem; }
   .well-map .leaflet-bottom.leaflet-right {
-    top: 0.35rem;
-    bottom: auto;
+    bottom: 0.35rem;
     right: 0.2rem;
   }
-  .well-map .leaflet-bottom.leaflet-right .leaflet-control {
-    margin: 0;
+  .well-map .leaflet-top.leaflet-right .leaflet-control-attribution {
+    margin: 0.35rem 0.2rem 0 0;
   }
   .well-map {
     flex: 1 1 auto;
