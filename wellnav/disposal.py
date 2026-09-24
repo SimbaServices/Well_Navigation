@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import re
 import sqlite3
 from pathlib import Path
 
@@ -11,6 +13,18 @@ from wellnav.states import APP_STATES, STATE_BBOX
 DISPOSAL_DB_PATH = ROOT / "data" / "disposal.db"
 
 DEFAULT_LIMIT = 400
+EARTH_RADIUS_KM = 6371.0088
+KM_PER_MI = 1.609344
+
+# Case-insensitive tokens that mark radium / NORM / radioactive acceptance.
+_RADIUM_KEYWORDS = (
+    "radium",
+    "norm",
+    "tenorm",
+    "radioactive",
+    "radioactiv",
+    "naturally occurring radioactive",
+)
 
 _DISPOSAL_COLUMNS = """
     id INTEGER PRIMARY KEY,
@@ -127,27 +141,145 @@ def _contains(q: str) -> str:
     return f"%{(q or '').strip()}%"
 
 
+def _type_label(raw: str) -> str:
+    text = (raw or "").replace("_", " ").strip()
+    return text.title() if text else ""
+
+
+def _meaningful_label(raw: str) -> str:
+    text = (raw or "").strip()
+    if not text:
+        return ""
+    lowered = text.lower()
+    if lowered in {"n/a", "na", "none", "null", "unknown", "-", "--"}:
+        return ""
+    return _type_label(text)
+
+
+def waste_classifications_for(*, permit_type: str = "", discharge_type: str = "") -> list[str]:
+    """Human-readable accepted waste labels from permit + discharge fields (deduped)."""
+    labels: list[str] = []
+    seen: set[str] = set()
+    for raw in (permit_type, discharge_type):
+        label = _meaningful_label(raw)
+        if not label:
+            continue
+        key = label.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        labels.append(label)
+    return labels
+
+
 def _site_row(row: sqlite3.Row) -> dict:
+    permit_type = row["permit_type"] or ""
+    discharge_type = row["discharge_type"] or ""
     return {
         "id": int(row["id"]),
         "operator": row["operator"] or "",
         "facility": row["facility"] or "",
         "permit_no": row["permit_no"] or "",
-        "permit_type": row["permit_type"] or "",
-        "discharge_type": row["discharge_type"] or "",
+        "permit_type": permit_type,
+        "discharge_type": discharge_type,
         "permit_expiration": row["permit_expiration"] or "",
         "district": row["district"] or "",
         "county": row["county"] or "",
         "permit_url": row["permit_url"] or "",
         "lat": float(row["lat"]),
         "lon": float(row["lon"]),
-        "permit_type_label": _type_label(row["permit_type"] or ""),
+        "permit_type_label": _type_label(permit_type),
+        "waste_classifications": waste_classifications_for(
+            permit_type=permit_type,
+            discharge_type=discharge_type,
+        ),
     }
 
 
-def _type_label(raw: str) -> str:
-    text = (raw or "").replace("_", " ").strip()
-    return text.title() if text else ""
+def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in kilometres (Haversine)."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * EARTH_RADIUS_KM * math.asin(min(1.0, math.sqrt(a)))
+
+
+_NORM_WORD_RE = re.compile(r"\bnorm\b", re.IGNORECASE)
+
+
+def _suggests_radium(site: dict) -> bool:
+    blob = " ".join(
+        str(site.get(key) or "")
+        for key in ("facility", "permit_type", "discharge_type", "permit_type_label")
+    ).casefold()
+    if not blob.strip():
+        return False
+    for keyword in _RADIUM_KEYWORDS:
+        token = keyword.casefold()
+        if token == "norm":
+            # Avoid matching substrings like "normal"; require a word boundary.
+            if _NORM_WORD_RE.search(blob) or "tenorm" in blob:
+                return True
+            continue
+        if token in blob:
+            return True
+    return False
+
+
+def _iter_all_sites(conn: sqlite3.Connection) -> list[dict]:
+    tables = listed_disposal_tables(conn)
+    if not tables:
+        return []
+    union = " UNION ALL ".join(f"SELECT * FROM {table}" for table in tables)
+    rows = conn.execute(
+        f"SELECT * FROM ({union}) ORDER BY facility, operator, id"
+    ).fetchall()
+    return [_site_row(row) for row in rows]
+
+
+def nearest_sites(
+    lat: float,
+    lon: float,
+    *,
+    limit: int = 20,
+    radium_only: bool = False,
+    max_km: float | None = None,
+    path: Path | None = None,
+) -> list[dict]:
+    """Return disposal sites sorted by Haversine distance from (lat, lon).
+
+    When ``radium_only`` is True, only sites whose facility / permit / discharge
+    fields suggest radium, NORM, TENORM, or similar radioactive waste acceptance
+    are returned. Zero matches yields an empty list (no silent fallback).
+    """
+    origin_lat = float(lat)
+    origin_lon = float(lon)
+    cap = max(1, int(limit))
+    conn = connect(path)
+    init_schema(conn)
+    try:
+        sites = _iter_all_sites(conn)
+    finally:
+        conn.close()
+
+    if radium_only:
+        sites = [site for site in sites if _suggests_radium(site)]
+        if not sites:
+            return []
+
+    ranked: list[dict] = []
+    for site in sites:
+        km = distance_km(origin_lat, origin_lon, site["lat"], site["lon"])
+        if max_km is not None and km > float(max_km):
+            continue
+        item = dict(site)
+        item["distance_km"] = round(km, 3)
+        item["distance_mi"] = round(km / KM_PER_MI, 3)
+        ranked.append(item)
+
+    ranked.sort(key=lambda row: (row["distance_km"], row.get("facility") or "", row["id"]))
+    return ranked[:cap]
 
 
 def get_site(site_id: int, path: Path | None = None) -> dict | None:
@@ -169,13 +301,28 @@ def search_sites(
     *,
     mode: str = "name",
     limit: int = 80,
+    lat: float | None = None,
+    lon: float | None = None,
+    max_km: float | None = None,
     path: Path | None = None,
 ) -> list[dict]:
+    kind = (mode or "name").strip().lower()
+    if kind in {"near", "radium_near"}:
+        if lat is None or lon is None:
+            raise ValueError("lat and lon are required for nearest disposal search")
+        return nearest_sites(
+            float(lat),
+            float(lon),
+            limit=limit,
+            radium_only=(kind == "radium_near"),
+            max_km=max_km,
+            path=path,
+        )
+
     needle = (q or "").strip()
     if len(needle) < 2:
         return []
     like = _contains(needle)
-    kind = (mode or "name").strip().lower()
     if kind == "operator":
         where = "operator LIKE ?"
         params: tuple = (like,)
@@ -192,6 +339,8 @@ def search_sites(
     init_schema(conn)
     try:
         tables = listed_disposal_tables(conn)
+        if not tables:
+            return []
         union = " UNION ALL ".join(f"SELECT * FROM {table} WHERE {where}" for table in tables)
         all_params: list = []
         for _ in tables:
@@ -270,7 +419,10 @@ def query_geojson(
                         "operator": site["operator"],
                         "facility": site["facility"],
                         "permit_no": site["permit_no"],
-                        "permit_type": site["permit_type_label"],
+                        "permit_type": site["permit_type"],
+                        "permit_type_label": site["permit_type_label"],
+                        "discharge_type": site["discharge_type"],
+                        "waste_classifications": site["waste_classifications"],
                         "county": site["county"],
                         "district": site["district"],
                         "permit_url": site["permit_url"],
