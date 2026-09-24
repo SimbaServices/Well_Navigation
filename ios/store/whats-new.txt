@@ -1,5 +1,5 @@
 What's New (App Store Connect → 1.5 → What's New, 4000-character limit):
 
-Map controls take less room. Save this view, the base layer, and turn-by-turn links sit quieter on the map, and the map credit no longer covers the well card. Delete account is on the Account screen.
+Near-me disposal search can use optional device location when you ask for facilities close to you, including radium / NORM sites. Pin a waste site to see accepted waste classes and share wait-time or open-lane reports. Map controls take less room; the map credit sits in the top-right and no longer covers the well card. Delete account is on the Account screen.
 
 Sign in with your work email to search wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. This app does not sell subscriptions. Organization admins buy seats on the website in Safari.

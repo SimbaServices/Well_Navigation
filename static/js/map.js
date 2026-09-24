@@ -1103,8 +1103,12 @@ function renderPipelineOwners(payload) {
   const head = document.createElement("div");
   head.className = "pipeline-owners-head";
   const titles = document.createElement("div");
+  const pinActive = !!(pinChrome && pipelinePin);
   const h3 = document.createElement("h3");
-  h3.textContent = operator || identity.name || "Pipeline ownership";
+  // Pin chrome title already shows the operator — avoid repeating it as the panel heading.
+  h3.textContent = pinActive
+    ? "Pipeline details"
+    : operator || identity.name || "Pipeline ownership";
   const note = document.createElement("p");
   note.className = "muted";
   note.textContent = payload.disclaimer || summary.disclaimer || "";
@@ -1120,7 +1124,6 @@ function renderPipelineOwners(payload) {
   const quality = payload.quality || "";
   const t4ish = !quality || quality.length <= 2;
   // When a pin is active, title already shows operator — skip repeating it here.
-  const pinActive = !!(pinChrome && pipelinePin);
   if (!pinActive || !operator) {
     ownerField(dl, t4ish ? "T-4 operator" : "Operator", operator);
   }
@@ -1924,11 +1927,11 @@ function updateChrome(store) {
         ? "Pinned pipeline point"
         : pipelinePin.system || pipelinePin.commodity || "Pinned pipeline point";
     } else if (disposalFocus) {
+      // Waste classifications live in #disposal-waste-classes — keep subtitle lean.
       const bits = [];
       if (disposalFocus.operator) bits.push(disposalFocus.operator);
       if (disposalFocus.permit) bits.push(disposalFocus.permit);
       if (disposalFocus.county) bits.push(`${disposalFocus.county} County`);
-      if (disposalFocus.wasteText) bits.push(disposalFocus.wasteText);
       sub.textContent = bits.length ? bits.join(" · ") : "Commercial waste disposal";
     } else if (selected) sub.textContent = wellSubtitle(selected);
     else if (store.order.length) sub.textContent = "Select a well to route.";
@@ -2026,11 +2029,8 @@ function updateChrome(store) {
     }
   }
 
-  if (showPin) {
-    if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
-  } else if (disposalFocus && window.WellnavDisposalUx) {
-    window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
-  } else if (window.WellnavDisposalUx) {
+  // Do not re-fetch wait reports on every chrome refresh — selectDisposalSite owns that.
+  if ((showPin || !disposalFocus) && window.WellnavDisposalUx) {
     window.WellnavDisposalUx.hideWaitPanel();
   }
 }

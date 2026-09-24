@@ -250,7 +250,7 @@
       "</fieldset>" +
       '<div class="wait-datetime-row"><label>Arrival <input type="datetime-local" name="arrival_at" id="wait-arrival" required></label>' +
       '<button type="button" class="ghost wait-now-btn" data-target="wait-arrival">Now</button></div>' +
-      '<div class="wait-datetime-row" id="wait-departure-row"><label>Departure <input type="datetime-local" name="departure_at" id="wait-departure"></label>' +
+      '<div class="wait-datetime-row" id="wait-departure-row"><label>Departure <input type="datetime-local" name="departure_at" id="wait-departure" required></label>' +
       '<button type="button" class="ghost wait-now-btn" data-target="wait-departure">Now</button></div>' +
       '<label>Open lanes <select name="open_lanes" id="wait-open-lanes"><option value="">Unknown</option>' +
       Array.from({ length: 21 }, (_, i) => '<option value="' + i + '">' + i + "</option>").join("") +
@@ -273,17 +273,51 @@
     const depRow = $("wait-departure-row");
     const dep = $("wait-departure");
     if (depRow) depRow.hidden = kind === "partial";
-    if (dep) dep.required = kind === "estimated";
+    if (dep) {
+      dep.required = kind !== "partial";
+      if (kind === "partial") dep.value = "";
+    }
     if (!hint) return;
     if (kind === "partial") {
       hint.textContent = "Arrival only. Time cannot be in the future.";
     } else if (kind === "estimated") {
       hint.textContent =
-        "Estimated arrival/departure must be in the future and within 24 hours of each other. Shared with your team.";
+        "Estimated arrival and departure must both be in the future and within 24 hours of each other. Shared with your team.";
     } else {
       hint.textContent =
-        "Actual visits cannot use future times. Arrival and departure must be within 24 hours.";
+        "Actual visits need arrival and departure (no future times). Interval must be within 24 hours.";
     }
+  }
+
+  function validateWaitPayload(kind, arrivalIso, departureIso) {
+    const skewMs = 120 * 1000;
+    const maxIntervalMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    if (!arrivalIso) return "Arrival time is required.";
+    const arrivalMs = Date.parse(arrivalIso);
+    if (Number.isNaN(arrivalMs)) return "Arrival time must be a valid date.";
+    if (kind === "partial") {
+      if (departureIso) return "Arrival-only reports cannot include a departure time.";
+      if (arrivalMs > now + skewMs) return "Arrival cannot be in the future for arrival-only reports.";
+      return null;
+    }
+    if (!departureIso) {
+      return kind === "estimated"
+        ? "Estimated reports require a future departure time."
+        : "Actual visits require a departure time. Use arrival-only for partial reports.";
+    }
+    const departureMs = Date.parse(departureIso);
+    if (Number.isNaN(departureMs)) return "Departure time must be a valid date.";
+    if (departureMs < arrivalMs) return "Departure must be on or after arrival.";
+    if (departureMs - arrivalMs > maxIntervalMs) return "Wait interval cannot exceed 24 hours.";
+    if (kind === "estimated") {
+      if (arrivalMs <= now - skewMs) return "Estimated arrival must be in the future.";
+      if (departureMs <= now - skewMs) return "Estimated departure must be in the future.";
+    } else {
+      if (arrivalMs > now + skewMs) return "Arrival cannot be in the future for actual visits.";
+      if (departureMs > now + skewMs) return "Departure cannot be in the future for actual visits.";
+    }
+    return null;
   }
 
   function renderSummary(payload) {
@@ -363,7 +397,13 @@
         headers: { Accept: "application/json" },
       });
       const body = await resp.json();
-      if (!resp.ok) throw new Error(body.error || "Could not load wait reports");
+      if (!resp.ok) {
+        const msg =
+          body.error === "sign_in_required"
+            ? "Sign in to view and submit facility wait reports."
+            : body.error || "Could not load wait reports";
+        throw new Error(msg);
+      }
       renderSummary(body);
       if (body.window_hours && $("wait-avg-window")) {
         $("wait-avg-window").value = String(body.window_hours);
@@ -432,10 +472,23 @@
         if (!siteId) return;
         const kind =
           (form.querySelector('input[name="report_kind"]:checked') || {}).value || "actual";
+        const arrivalAt = localInputToIso($("wait-arrival") && $("wait-arrival").value);
+        const departureAt =
+          kind === "partial"
+            ? null
+            : localInputToIso($("wait-departure") && $("wait-departure").value);
+        const clientError = validateWaitPayload(kind, arrivalAt, departureAt);
+        if (clientError) {
+          if (errEl) {
+            errEl.hidden = false;
+            errEl.textContent = clientError;
+          }
+          return;
+        }
         const payload = {
           report_kind: kind,
-          arrival_at: localInputToIso($("wait-arrival") && $("wait-arrival").value),
-          departure_at: localInputToIso($("wait-departure") && $("wait-departure").value),
+          arrival_at: arrivalAt,
+          departure_at: departureAt,
           open_lanes: ($("wait-open-lanes") && $("wait-open-lanes").value) || null,
         };
         try {
@@ -445,8 +498,13 @@
             body: JSON.stringify(payload),
           });
           const body = await resp.json();
-          if (!resp.ok) throw new Error(body.error || "Report failed");
-          form.querySelector("details") || form;
+          if (!resp.ok) {
+            const msg =
+              body.error === "sign_in_required"
+                ? "Sign in to submit facility wait reports."
+                : body.error || "Report failed";
+            throw new Error(msg);
+          }
           loadWaitSummary(siteId);
           const wrap = document.querySelector(".disposal-wait-form-wrap");
           if (wrap) wrap.open = false;
@@ -480,6 +538,12 @@
       return;
     }
     renderWasteClasses(site);
+    const panel = ensureWaitPanel();
+    // Skip duplicate fetches when chrome re-selects the same pinned site.
+    if (panel && panel.dataset.siteId === String(site.id) && !panel.hidden) {
+      panel.hidden = false;
+      return;
+    }
     loadWaitSummary(site.id);
   }
 

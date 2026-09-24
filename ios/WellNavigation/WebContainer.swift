@@ -114,10 +114,18 @@ struct WebContainer: UIViewRepresentable {
             self.startURL = startURL
             super.init()
             locationManager.delegate = self
+            // Prompt When In Use so WKWebView navigator.geolocation can resolve
+            // near-me / radium-near disposal searches. WebKit shares this status.
+            if locationManager.authorizationStatus == .notDetermined {
+                locationManager.requestWhenInUseAuthorization()
+            }
         }
 
         func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
             // WebKit observes the same authorization state for Geolocation.
+            if manager.authorizationStatus == .notDetermined {
+                manager.requestWhenInUseAuthorization()
+            }
         }
 
         func webView(

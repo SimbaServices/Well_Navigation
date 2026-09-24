@@ -94,6 +94,13 @@ class WaitReportsTests(unittest.TestCase):
                 departure_at=_iso(self.now + timedelta(hours=1)),
                 org_id=7,
             )
+        with self.assertRaisesRegex(ValueError, "departure"):
+            self._create(
+                report_kind="estimated",
+                arrival_at=_iso(self.now + timedelta(hours=1)),
+                departure_at=None,
+                org_id=7,
+            )
         estimated = self._create(
             report_kind="estimated",
             arrival_at=_iso(self.now + timedelta(hours=1)),
@@ -103,6 +110,13 @@ class WaitReportsTests(unittest.TestCase):
         )
         self.assertEqual(estimated["wait_minutes"], 60)
         self.assertEqual(estimated["org_id"], 7)
+
+    def test_actual_requires_departure(self) -> None:
+        with self.assertRaisesRegex(ValueError, "departure"):
+            self._create(
+                arrival_at=_iso(self.now - timedelta(minutes=30)),
+                departure_at=None,
+            )
 
     def test_interval_and_lanes_bounds(self) -> None:
         with self.assertRaisesRegex(ValueError, "24 hours"):

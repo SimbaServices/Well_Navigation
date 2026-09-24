@@ -190,38 +190,34 @@ def _validate_times(
     if kind == "actual":
         if arrival is None:
             raise ValueError("Actual reports require arrival_at.")
+        if departure is None:
+            raise ValueError("Actual reports require departure_at. Use arrival-only for partial reports.")
         if arrival > now + FUTURE_SKEW:
             raise ValueError("arrival_at cannot be in the future for actual reports.")
-        if departure is not None:
-            if departure > now + FUTURE_SKEW:
-                raise ValueError("departure_at cannot be in the future for actual reports.")
-            if departure < arrival:
-                raise ValueError("departure_at must be on or after arrival_at.")
-            if departure - arrival > MAX_INTERVAL:
-                raise ValueError("Wait interval cannot exceed 24 hours.")
-            wait_minutes = int(round((departure - arrival).total_seconds() / 60.0))
-            return arrival, departure, wait_minutes
-        return arrival, None, None
-
-    # estimated
-    if arrival is None and departure is None:
-        raise ValueError("Estimated reports require a future arrival_at and/or departure_at.")
-    if arrival is not None and arrival <= now - FUTURE_SKEW:
-        raise ValueError("Estimated arrival_at must be in the future.")
-    if departure is not None and departure <= now - FUTURE_SKEW:
-        raise ValueError("Estimated departure_at must be in the future.")
-    if arrival is not None and departure is not None:
+        if departure > now + FUTURE_SKEW:
+            raise ValueError("departure_at cannot be in the future for actual reports.")
         if departure < arrival:
             raise ValueError("departure_at must be on or after arrival_at.")
         if departure - arrival > MAX_INTERVAL:
             raise ValueError("Wait interval cannot exceed 24 hours.")
         wait_minutes = int(round((departure - arrival).total_seconds() / 60.0))
         return arrival, departure, wait_minutes
-    # arrival_at is NOT NULL; store departure as arrival when only departure is given.
+
+    # estimated — both ends required and must be in the future (org-shareable forecast).
     if arrival is None:
-        assert departure is not None
-        return departure, departure, 0
-    return arrival, None, None
+        raise ValueError("Estimated reports require a future arrival_at.")
+    if departure is None:
+        raise ValueError("Estimated reports require a future departure_at.")
+    if arrival <= now - FUTURE_SKEW:
+        raise ValueError("Estimated arrival_at must be in the future.")
+    if departure <= now - FUTURE_SKEW:
+        raise ValueError("Estimated departure_at must be in the future.")
+    if departure < arrival:
+        raise ValueError("departure_at must be on or after arrival_at.")
+    if departure - arrival > MAX_INTERVAL:
+        raise ValueError("Wait interval cannot exceed 24 hours.")
+    wait_minutes = int(round((departure - arrival).total_seconds() / 60.0))
+    return arrival, departure, wait_minutes
 
 
 def _report_row(row: sqlite3.Row) -> dict[str, Any]:

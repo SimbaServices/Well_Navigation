@@ -59,7 +59,7 @@
       <div class="wait-datetime-row" id="wait-departure-row">
         <label>
           Departure
-          <input type="datetime-local" name="departure_at" id="wait-departure">
+          <input type="datetime-local" name="departure_at" id="wait-departure" required>
         </label>
         <button type="button" class="ghost wait-now-btn" data-target="wait-departure">Now</button>
       </div>
@@ -75,7 +75,7 @@
       </label>
 
       <p class="hint" id="wait-kind-hint">
-        Actual visits cannot use future times. Arrival and departure must be within 24 hours.
+        Actual visits need arrival and departure (no future times). Interval must be within 24 hours.
       </p>
       <p class="banner error" id="wait-form-error" hidden></p>
       <button type="submit" class="primary">Submit report</button>

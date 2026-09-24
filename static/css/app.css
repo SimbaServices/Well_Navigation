@@ -259,6 +259,7 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) .query-field input,
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) .query-field input {
   opacity: 0.55;
+  pointer-events: none;
 }
 .search-form:has(select[name=scope] option[value="wells"]:checked):not(:has([name=mode][value="operator"]:checked)) + #operator-suggest { display: none; }
 #active-filters { display: contents; }
