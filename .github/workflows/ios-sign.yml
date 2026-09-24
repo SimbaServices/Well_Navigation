@@ -1,0 +1,136 @@
+# Sign and upload Well Navigation on a GitHub-hosted Mac.
+# macos-26 is the newest generally available macOS image (GA 2026-02-26;
+# macos-latest tracks it). Pin the version so a later macos-latest move
+# does not change this job. Do not run until the three Actions secrets exist.
+
+name: iOS sign
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_upload:
+        description: >-
+          Debug only. Export an IPA artifact and do not upload to App Store
+          Connect. Leave this unchecked for the normal TestFlight upload.
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - main
+    paths:
+      - "ios/**"
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  sign:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Require App Store Connect API secrets
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          set -euo pipefail
+          missing=""
+          if [ -z "${APP_STORE_CONNECT_KEY_ID:-}" ]; then
+            missing="${missing} APP_STORE_CONNECT_KEY_ID"
+          fi
+          if [ -z "${APP_STORE_CONNECT_ISSUER_ID:-}" ]; then
+            missing="${missing} APP_STORE_CONNECT_ISSUER_ID"
+          fi
+          if [ -z "${APP_STORE_CONNECT_API_KEY:-}" ]; then
+            missing="${missing} APP_STORE_CONNECT_API_KEY"
+          fi
+          if [ -n "$missing" ]; then
+            echo "Missing GitHub Actions secrets:${missing}"
+            echo "Add them under Settings → Secrets and variables → Actions before running this workflow."
+            echo "Do not commit the .p8."
+            exit 1
+          fi
+          echo "App Store Connect API secrets are present."
+
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+
+          best_app=""
+          best_ver=""
+
+          consider() {
+            app="$1"
+            if [ ! -d "$app/Contents/Developer" ]; then
+              return 0
+            fi
+            ver="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" 2>/dev/null || true)"
+            major="${ver%%.*}"
+            if [ "$major" != "26" ]; then
+              return 0
+            fi
+            if [ -z "$best_ver" ]; then
+              best_app="$app"
+              best_ver="$ver"
+              return 0
+            fi
+            top="$(printf '%s\n%s\n' "$best_ver" "$ver" | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -n 1)"
+            if [ "$top" = "$ver" ] && [ "$ver" != "$best_ver" ]; then
+              best_app="$app"
+              best_ver="$ver"
+            fi
+          }
+
+          consider /Applications/Xcode.app
+          for app in /Applications/Xcode_26*.app; do
+            if [ ! -d "$app" ]; then
+              continue
+            fi
+            consider "$app"
+          done
+
+          if [ -z "$best_app" ]; then
+            echo "Xcode 26 is not installed."
+            echo "Installed Xcode apps:"
+            ls /Applications | grep -i xcode || true
+            echo "--- xcodebuild -version ---"
+            xcodebuild -version || true
+            echo "--- mdfind ---"
+            mdfind "kMDItemCFBundleIdentifier == 'com.apple.dt.Xcode'" || true
+            exit 1
+          fi
+
+          echo "Selecting Xcode ${best_ver} at ${best_app}"
+          sudo xcode-select -s "${best_app}/Contents/Developer"
+          xcodebuild -version
+
+      - name: Archive and upload
+        working-directory: ios
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          # "true" only for a manual debug run. Push to main always uploads.
+          SKIP_APP_STORE_UPLOAD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_upload == 'true' && '1' || '0' }}
+        run: zsh store/archive-and-upload.sh
+
+      # Debug path only. The default export destination is upload, so a
+      # successful job sends the build to App Store Connect and does not
+      # keep an IPA. Never upload /tmp/AuthKey.p8.
+      - name: Upload IPA artifact
+        if: success() && github.event_name == 'workflow_dispatch' && github.event.inputs.skip_upload == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: WellNavigation-ipa
+          path: ios/build/export/*.ipa
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Delete API key
+        if: always()
+        run: rm -f /tmp/AuthKey.p8
