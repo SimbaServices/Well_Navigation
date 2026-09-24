@@ -39,11 +39,25 @@ Paste copy from `ios/store/listing.txt`. Age-rating answers: `ios/store/age-rati
 1. Confirm `https://wellnav.simba.services` serves the live site over HTTPS.
 2. Open `ios/WellNavigation.xcodeproj` on a Mac with **Xcode 26 or later** (required for App Store uploads since 28 April 2026; iOS 26 SDK). Deployment target stays 16.0.
 3. Signing & Capabilities → your Team. Automatic signing is already on. Bundle ID is `services.simba.wellnav`.
-4. Destination → **Any iOS Device (arm64)** → Product → Archive, or run `zsh store/archive-and-upload.sh` from `ios/`.
-5. Distribute App → App Store Connect → Upload. Use a Distribution certificate and an App Store profile (Xcode Automatic signing creates these when the Team is enrolled).
+4. Destination → **Any iOS Device (arm64)** → Product → Archive, or run `zsh store/archive-and-upload.sh` from `ios/`. Without a Mac, use **CI signing** below.
+5. Distribute App → App Store Connect → Upload. Use a Distribution certificate and an App Store profile (Xcode Automatic signing creates these when the Team is enrolled). The CI workflow does this upload for you.
 6. Select the build, attach screenshots, paste listing copy, then Submit for Review.
 
 First review is often 24–72 hours. Guideline **3.1.1** (payment in a WebView), **4.2** (minimum native chrome), and **5.1.1** (account deletion) are the usual bounce reasons; payment stays in Safari, and the other two are implemented here.
+
+## CI signing
+
+`.github/workflows/ios-sign.yml` runs on GitHub’s hosted `xcode-27` preview runner (macOS 27, Xcode 27). It does not download a macOS image. The job archives with `zsh store/archive-and-upload.sh` and uploads to App Store Connect. Run it with `gh workflow run ios-sign.yml`. It also runs on push to `ios/**` on `main`.
+
+Repository secrets (Settings → Secrets and variables → Actions). Do not commit the `.p8`.
+
+- `APP_STORE_CONNECT_KEY_ID`
+- `APP_STORE_CONNECT_ISSUER_ID`
+- `APP_STORE_CONNECT_API_KEY` — full `.p8` text, including `BEGIN PRIVATE KEY`
+
+Create the key in App Store Connect → Users and Access → Integrations → App Store Connect API. Role: Admin or App Manager. Download the `.p8` once. Copy the Key ID and the Issuer ID.
+
+One-time, before the first run: accept the Apple Developer team agreements, and create the Well Navigation app with bundle ID `services.simba.wellnav`.
 
 ## Suggested listing copy
 
@@ -55,4 +69,4 @@ First review is often 24–72 hours. Guideline **3.1.1** (payment in a WebView),
 
 ## What this project cannot do from Windows
 
-Certificate creation, archive, upload, and review submission require your Apple Developer account and a Mac. This repo ships the Xcode project, 1024×1024 RGB icon, listing copy, and store-sized screenshots.
+Certificate creation, archive, and upload do not run on Windows. Use **CI signing** (GitHub Actions on a Mac runner) or a Mac with Xcode 26+. Review submission stays in App Store Connect. This repo ships the Xcode project, 1024×1024 RGB icon, listing copy, and store-sized screenshots.
