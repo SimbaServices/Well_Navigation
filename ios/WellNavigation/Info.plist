@@ -15,7 +15,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.5</string>
 	<key>CFBundleVersion</key>
-	<string>6</string>
+	<string>7</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -29,6 +29,8 @@
 	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Simba Services</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Well Navigation uses your location only when you search for disposal facilities near you, so field crews can sort sites by distance from where they are standing.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

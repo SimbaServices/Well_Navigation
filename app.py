@@ -1439,11 +1439,126 @@ async def disposal_sites(request: Request) -> JSONResponse:
     return JSONResponse(payload)
 
 
+
+
+async def _wait_json_body(request: Request) -> dict:
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        try:
+            payload = await request.json()
+        except Exception:
+            return {}
+        return payload if isinstance(payload, dict) else {}
+    form = await request.form()
+    return {key: value for key, value in form.items()}
+
+
+async def disposal_wait_summary(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import get_site_wait_summary, get_user_pref
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    window_raw = request.query_params.get("window_hours")
+    if window_raw:
+        window_hours = window_raw
+    else:
+        window_hours = get_user_pref(user["id"])["avg_window_hours"]
+    org_id = user.get("org_id")
+    payload = get_site_wait_summary(site_id, window_hours=window_hours, org_id=org_id)
+    return JSONResponse(payload)
+
+
+async def disposal_wait_create(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import create_report
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    data = await _wait_json_body(request)
+    try:
+        report = create_report(
+            disposal_site_id=site_id,
+            user_id=int(user["id"]),
+            report_kind=str(data.get("report_kind") or data.get("kind") or ""),
+            arrival_at=(str(data["arrival_at"]) if data.get("arrival_at") not in (None, "") else None),
+            departure_at=(
+                str(data["departure_at"]) if data.get("departure_at") not in (None, "") else None
+            ),
+            open_lanes=data.get("open_lanes"),
+            notes=(str(data["notes"]) if data.get("notes") not in (None, "") else None),
+            org_id=user.get("org_id"),
+            now=(str(data["now"]) if data.get("now") not in (None, "") else None),
+        )
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(report, status_code=201)
+
+
+async def disposal_wait_flag(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import flag_report
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        report_id = int(request.path_params["report_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "report_id must be an integer"}, status_code=400)
+    data = await _wait_json_body(request)
+    reason = str(data.get("reason") or "").strip()
+    try:
+        report = flag_report(report_id, int(user["id"]), reason)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(report)
+
+
+async def account_wait_prefs(request: Request) -> JSONResponse:
+    from wellnav.wait_reports import get_user_pref, set_user_pref
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    if request.method == "GET":
+        return JSONResponse(get_user_pref(int(user["id"])))
+    data = await _wait_json_body(request)
+    raw = data.get("avg_window_hours", request.query_params.get("avg_window_hours"))
+    try:
+        pref = set_user_pref(int(user["id"]), raw if raw is not None else 24)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(pref)
+
+
+async def disposal_site_detail(request: Request) -> JSONResponse:
+    from wellnav.disposal import get_site
+
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    site = get_site(site_id)
+    if not site:
+        return JSONResponse({"error": "disposal site not found"}, status_code=404)
+    return JSONResponse(site)
+
+
 async def disposal_suggest(request: Request) -> HTMLResponse:
     from wellnav.disposal import search_sites
 
     q = request.query_params.get("q", "").strip()
     kind = request.query_params.get("disp_mode") or "name"
+    if kind in {"near", "radium_near"}:
+        return fragment_or_page(request, "")
     hits = search_sites(q, mode=kind, limit=20)
     html = render(
         "partials/disposal_suggest.html",
@@ -1455,8 +1570,18 @@ async def disposal_suggest(request: Request) -> HTMLResponse:
     return fragment_or_page(request, html)
 
 
+def _parse_optional_float(raw: str | None, *, name: str) -> float | None:
+    text = (raw or "").strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a number") from exc
+
+
 async def disposal_search(request: Request) -> HTMLResponse:
-    from wellnav.disposal import get_site, search_sites, stats
+    from wellnav.disposal import get_site, nearest_sites, search_sites, stats
 
     source = await _request_source(request)
     data = {key: str(value or "").strip() for key, value in source.items()}
@@ -1478,6 +1603,30 @@ async def disposal_search(request: Request) -> HTMLResponse:
             auto_map = True
         else:
             error = "That waste disposal site was not found in the local overlay."
+    elif disp_mode in {"near", "radium_near"}:
+        try:
+            lat = _parse_optional_float(data.get("lat"), name="lat")
+            lon = _parse_optional_float(data.get("lon"), name="lon")
+            max_km = _parse_optional_float(data.get("max_km"), name="max_km")
+            if lat is None or lon is None:
+                raise ValueError("lat and lon are required for nearest disposal search")
+            rows = nearest_sites(
+                lat,
+                lon,
+                limit=int(data.get("limit") or 20),
+                radium_only=(disp_mode == "radium_near"),
+                max_km=max_km,
+            )
+        except ValueError as exc:
+            error = str(exc)
+            rows = []
+        if not error and not rows:
+            if disp_mode == "radium_near":
+                error = "No radium / NORM disposal sites found near that location."
+            else:
+                error = "No commercial waste disposal sites found near that location."
+        elif len(rows) == 1:
+            auto_map = True
     elif len(q) < 2:
         if stored == 0:
             error = "Local disposal overlay is empty — run python -m wellnav.ingest load-disposal"
@@ -1513,6 +1662,10 @@ def _disposal_subtitle(*, q: str = "", rows: list[dict] | None = None, disp_mode
         if site.get("permit_no"):
             bits.append(site["permit_no"])
         return " · ".join(bits)
+    if disp_mode == "radium_near":
+        return "Nearest radium / NORM sites"
+    if disp_mode == "near":
+        return "Nearest disposal sites"
     labels = {"operator": "Operator", "permit": "Permit", "county": "County"}
     label = labels.get(disp_mode, "Facility")
     if q:
@@ -1615,6 +1768,11 @@ app = Starlette(
         Route("/disposal", disposal_sites),
         Route("/disposal/suggest", disposal_suggest),
         Route("/disposal/search", disposal_search, methods=["GET", "POST"]),
+        Route("/disposal/site/{site_id:int}", disposal_site_detail),
+        Route("/disposal/{site_id:int}/wait", disposal_wait_summary, methods=["GET"]),
+        Route("/disposal/{site_id:int}/wait", disposal_wait_create, methods=["POST"]),
+        Route("/disposal/wait/{report_id:int}/flag", disposal_wait_flag, methods=["POST"]),
+        Route("/account/wait-prefs", account_wait_prefs, methods=["GET", "POST"]),
         Route("/healthz", healthz),
         Route("/sw.js", service_worker),
         Route("/manifest.webmanifest", web_manifest),

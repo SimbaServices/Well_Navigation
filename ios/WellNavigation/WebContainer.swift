@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftUI
 import WebKit
 
@@ -55,6 +56,7 @@ struct WebContainer: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     // Keep in sync with templates/partials/store_boot.js.
+    // Do not gate Near me / wait / map UX on __WN_STORE.
     private static let storeBootScript = """
     (function () {
       var ua = navigator.userAgent || "";
@@ -101,9 +103,31 @@ struct WebContainer: UIViewRepresentable {
     })();
     """
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, CLLocationManagerDelegate {
         let startURL: URL
-        init(startURL: URL) { self.startURL = startURL }
+        /// Retained for the WebView lifetime. WKWebView's Geolocation API uses the
+        /// host app's Core Location When In Use authorization (Info.plist usage
+        /// string). Holding a manager keeps the framework active when the page
+        /// calls navigator.geolocation for disposal-facility near-me search.
+        private let locationManager = CLLocationManager()
+
+        init(startURL: URL) {
+            self.startURL = startURL
+            super.init()
+            locationManager.delegate = self
+            // Prompt When In Use so WKWebView navigator.geolocation can resolve
+            // near-me / radium-near disposal searches. WebKit shares this status.
+            if locationManager.authorizationStatus == .notDetermined {
+                locationManager.requestWhenInUseAuthorization()
+            }
+        }
+
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            // WebKit observes the same authorization state for Geolocation.
+            if manager.authorizationStatus == .notDetermined {
+                manager.requestWhenInUseAuthorization()
+            }
+        }
 
         func webView(
             _ webView: WKWebView,

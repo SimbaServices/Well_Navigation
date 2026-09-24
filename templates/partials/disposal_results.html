@@ -23,7 +23,8 @@
             <th>Facility</th>
             <th>Operator</th>
             <th>Permit</th>
-            <th>Type</th>
+            <th>Accepted waste</th>
+            {% if disp_mode in ['near', 'radium_near'] %}<th>Distance</th>{% endif %}
             <th>County</th>
             <th>Navigate</th>
           </tr>
@@ -34,7 +35,10 @@
                 data-disposal-id="{{ row.id }}"
                 data-lat="{{ row.lat }}"
                 data-lon="{{ row.lon }}"
-                data-name="{{ row.facility }}">
+                data-name="{{ row.facility }}"
+                data-operator="{{ row.operator or '' }}"
+                data-permit="{{ row.permit_no or '' }}"
+                data-county="{{ row.county or '' }}">
               <td class="map-col">
                 <button type="button" class="ghost disposal-map-btn">Show on map</button>
               </td>
@@ -46,7 +50,22 @@
               </td>
               <td>{{ row.operator or '—' }}</td>
               <td class="mono">{{ row.permit_no or '—' }}</td>
-              <td>{{ row.permit_type_label or '—' }}</td>
+              <td>
+                {% if row.waste_classifications %}
+                  {{ row.waste_classifications|join(' · ') }}
+                {% else %}
+                  {{ row.permit_type_label or '—' }}
+                {% endif %}
+              </td>
+              {% if disp_mode in ['near', 'radium_near'] %}
+                <td class="mono">
+                  {% if row.distance_mi is defined %}
+                    {{ '%.1f'|format(row.distance_mi) }} mi
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              {% endif %}
               <td>{{ row.county or '—' }}{% if row.district %} · Dist {{ row.district }}{% endif %}</td>
               <td class="nav-col">
                 <a class="route apple compact"
@@ -64,6 +83,6 @@
       </table>
     </div>
   {% elif not error %}
-    <div class="empty">Search RRC commercial waste disposal sites by facility, operator, permit, or county.</div>
+    <div class="empty">Search RRC commercial waste disposal sites by facility, operator, permit, county, or near your location.</div>
   {% endif %}
 </div>

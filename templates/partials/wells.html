@@ -6,7 +6,6 @@
 {% set f = filters if filters is defined and filters else {} %}
 {% set sort = sort|default('name') %}
 {% set dir = dir|default('asc') %}
-{% set pick_key = filter_query(f, mode=mode|default(''), state=state|default('tx'), lease_no=lease_no|default(''), district=district|default('')) or 'wells' %}
 {% macro page_href(new_offset) -%}
 {{- filter_href(f, mode=mode, state=state|default('tx'), lease_no=lease_no, district=district, lease_type=lease_type, offset=new_offset, page_size=page_size, sort=sort, dir=dir) -}}
 {%- endmacro %}
@@ -31,24 +30,18 @@
         {% if subtitle %}{{ subtitle }} · {% endif %}
         {{ start }}–{{ end }} of {{ total }}
         {% if from_cache %}<span class="pill">cached</span>{% endif %}
-        <span id="pick-count" class="pick-count"></span>
       </p>
       <p id="save-status" class="save-status" aria-live="polite"></p>
     </div>
     <div class="results-toolbar result-tools">
-      <button type="button" class="ghost" data-save-action="selected" disabled>Save selected</button>
-      <button type="button" class="ghost" data-map-action="selected">Map selected</button>
       <button type="button" class="ghost" data-map-action="page">Map this page</button>
       <button type="button" class="ghost" data-map-action="clear">Clear map</button>
     </div>
   </div>
   <div class="table-wrap">
-    <table class="wells" data-results-table data-pick-key="{{ pick_key }}">
+    <table class="wells" data-results-table>
       <thead>
         <tr>
-          <th class="pick-col">
-            <input type="checkbox" class="well-pick-all" title="Select this page" aria-label="Select this page">
-          </th>
           <th class="map-col">Pin</th>
           <th class="save-col">Save</th>
           {{ col("Well name", "name") }}
@@ -74,9 +67,6 @@
               data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
               data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
               data-status="{{ well.status_label or '' }}">
-            <td class="pick-col">
-              <input type="checkbox" class="well-pick" aria-label="Select {{ well.well_name }}">
-            </td>
             <td class="map-col">
               <button type="button" class="map-toggle" title="Add to map">Pin</button>
             </td>

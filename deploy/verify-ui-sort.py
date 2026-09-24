@@ -25,5 +25,5 @@ print("sort_link", 'class="sort-link is-active"' in html or "sort-link is-active
 print("county_sort", "sort=county" in html or "dir=desc" in html)
 print("pin_button", ">Pin<" in html)
 print("map_selected", "Map selected" in html)
-print("pick_all", "well-pick-all" in html)
+print("no_legacy_pick", "well-pick-all" not in html and "well-pick" not in html)
 print("row_data", "data-lat=" in html)

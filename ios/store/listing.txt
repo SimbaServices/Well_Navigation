@@ -20,7 +20,7 @@ Marketing URL: https://wellnav.simba.services
 Support email: wellnav@simba.services
 
 Version: 1.5
-Build: 6 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 6.
+Build: 7 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 7.
 
 Description (App Store Connect, 4000-character limit):
 Well Navigation is a public App Store app for oil and gas professionals—not an internal employee-only tool and not limited to one company. Any oil and gas professional can create an account with a work email. Sign in to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.

@@ -1,0 +1,84 @@
+{# Wait-time / open-lanes panel shown when a disposal site is pinned or selected. #}
+<div class="disposal-wait" id="disposal-wait" hidden
+     data-site-id="{{ site_id|default('') }}">
+  <div class="disposal-wait-head">
+    <h3>Facility status</h3>
+    <p class="muted" id="disposal-wait-window-note">
+      Averages use your report window
+      (<span id="disposal-wait-window-label">{{ window_hours|default(24) }}h</span>).
+      Reports are shared with all users.
+    </p>
+  </div>
+
+  <div class="disposal-wait-summary" id="disposal-wait-summary" aria-live="polite">
+    <p class="muted">Loading recent wait reports…</p>
+  </div>
+
+  <details class="disposal-wait-prefs">
+    <summary>My average window</summary>
+    <form id="disposal-wait-prefs-form" class="disposal-wait-prefs-form">
+      <label>
+        Hours of reports to average
+        <input type="number" name="avg_window_hours" id="wait-avg-window"
+               min="1" max="168" step="1"
+               value="{{ window_hours|default(24) }}" required>
+      </label>
+      <button type="submit" class="ghost">Save window</button>
+      <p class="muted">This setting is only yours. The underlying reports stay global.</p>
+    </form>
+  </details>
+
+  <details class="disposal-wait-form-wrap" id="disposal-wait-form-wrap">
+    <summary>Report wait time / open lanes</summary>
+    <form id="disposal-wait-form" class="disposal-wait-form" novalidate>
+      <input type="hidden" name="disposal_site_id" value="{{ site_id|default('') }}">
+
+      <fieldset class="wait-kind">
+        <legend>Report type</legend>
+        <label class="mode">
+          <input type="radio" name="report_kind" value="actual" checked>
+          <span>Actual visit</span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="report_kind" value="partial">
+          <span>Arrival only</span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="report_kind" value="estimated">
+          <span>Estimated (team)</span>
+        </label>
+      </fieldset>
+
+      <div class="wait-datetime-row">
+        <label>
+          Arrival
+          <input type="datetime-local" name="arrival_at" id="wait-arrival" required>
+        </label>
+        <button type="button" class="ghost wait-now-btn" data-target="wait-arrival">Now</button>
+      </div>
+      <div class="wait-datetime-row" id="wait-departure-row">
+        <label>
+          Departure
+          <input type="datetime-local" name="departure_at" id="wait-departure" required>
+        </label>
+        <button type="button" class="ghost wait-now-btn" data-target="wait-departure">Now</button>
+      </div>
+
+      <label>
+        Open lanes
+        <select name="open_lanes" id="wait-open-lanes">
+          <option value="">Unknown</option>
+          {% for n in range(0, 21) %}
+            <option value="{{ n }}">{{ n }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <p class="hint" id="wait-kind-hint">
+        Actual visits need arrival and departure (no future times). Interval must be within 24 hours.
+      </p>
+      <p class="banner error" id="wait-form-error" hidden></p>
+      <button type="submit" class="primary">Submit report</button>
+    </form>
+  </details>
+</div>

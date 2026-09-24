@@ -68,8 +68,8 @@ PUBLIC_PATHS = {
     "/billing/success",
 }
 PUBLIC_PREFIXES = ("/static/",)
-JSON_PATHS = {"/pipelines", "/disposal"}
-JSON_PREFIXES = ("/pipelines/owner", "/pipelines/segment")
+JSON_PATHS = {"/pipelines", "/disposal", "/account/wait-prefs"}
+JSON_PREFIXES = ("/pipelines/owner", "/pipelines/segment", "/disposal/wait/")
 DUMMY_PASSWORD_HASH = "scrypt$" + ("00" * 16) + "$" + ("00" * 32)
 
 
@@ -236,6 +236,9 @@ def is_public_path(path: str) -> bool:
 def wants_json(request: Request) -> bool:
     path = request.url.path
     if path in JSON_PATHS or any(path.startswith(prefix) for prefix in JSON_PREFIXES):
+        return True
+    # /disposal/{site_id}/wait summary + create
+    if path.startswith("/disposal/") and path.endswith("/wait"):
         return True
     accept = request.headers.get("accept", "")
     return "application/json" in accept and "text/html" not in accept
