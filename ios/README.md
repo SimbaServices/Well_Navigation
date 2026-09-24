@@ -47,7 +47,7 @@ First review is often 24–72 hours. Guideline **3.1.1** (payment in a WebView),
 
 ## CI signing
 
-`.github/workflows/ios-sign.yml` archives on a GitHub-hosted Mac with Xcode 26 and uploads to App Store Connect. It runs the same `zsh store/archive-and-upload.sh` script. Run it with `gh workflow run ios-sign.yml`. It also runs on push to `ios/**` on `main`.
+`.github/workflows/ios-sign.yml` runs on GitHub’s hosted `xcode-27` preview runner (macOS 27, Xcode 27). It does not download a macOS image. The job archives with `zsh store/archive-and-upload.sh` and uploads to App Store Connect. Run it with `gh workflow run ios-sign.yml`. It also runs on push to `ios/**` on `main`.
 
 Repository secrets (Settings → Secrets and variables → Actions). Do not commit the `.p8`.
 

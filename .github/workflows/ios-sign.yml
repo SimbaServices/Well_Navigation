@@ -1,7 +1,6 @@
-# Sign and upload Well Navigation on a GitHub-hosted Mac.
-# macos-26 is the newest generally available macOS image (GA 2026-02-26;
-# macos-latest tracks it). Pin the version so a later macos-latest move
-# does not change this job. Do not run until the three Actions secrets exist.
+# Sign and upload Well Navigation on GitHub's hosted xcode-27 preview runner
+# (macOS 27). There is no macos-27 runs-on label. Do not download a macOS image.
+# Do not run until the three Actions secrets exist.
 
 name: iOS sign
 
@@ -27,7 +26,7 @@ permissions:
 
 jobs:
   sign:
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -57,21 +56,25 @@ jobs:
           fi
           echo "App Store Connect API secrets are present."
 
-      - name: Select Xcode 26
+      - name: Select Xcode 27
         run: |
           set -euo pipefail
 
           best_app=""
           best_ver=""
 
+          version_of() {
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$1/Contents/Info.plist" 2>/dev/null || true
+          }
+
           consider() {
             app="$1"
             if [ ! -d "$app/Contents/Developer" ]; then
               return 0
             fi
-            ver="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" 2>/dev/null || true)"
+            ver="$(version_of "$app")"
             major="${ver%%.*}"
-            if [ "$major" != "26" ]; then
+            if [ "$major" != "27" ]; then
               return 0
             fi
             if [ -z "$best_ver" ]; then
@@ -86,16 +89,24 @@ jobs:
             fi
           }
 
-          consider /Applications/Xcode.app
-          for app in /Applications/Xcode_26*.app; do
-            if [ ! -d "$app" ]; then
-              continue
-            fi
-            consider "$app"
-          done
+          # xcode-27's default Xcode.app is Xcode 27. Use that when it is,
+          # so a newer beta on the same image is not required.
+          default_ver="$(version_of /Applications/Xcode.app)"
+          default_major="${default_ver%%.*}"
+          if [ "$default_major" = "27" ] && [ -d /Applications/Xcode.app/Contents/Developer ]; then
+            best_app="/Applications/Xcode.app"
+            best_ver="$default_ver"
+          else
+            for app in /Applications/Xcode_27*.app /Applications/Xcode*.app; do
+              if [ ! -d "$app" ]; then
+                continue
+              fi
+              consider "$app"
+            done
+          fi
 
           if [ -z "$best_app" ]; then
-            echo "Xcode 26 is not installed."
+            echo "Xcode 27 is not installed."
             echo "Installed Xcode apps:"
             ls /Applications | grep -i xcode || true
             echo "--- xcodebuild -version ---"
