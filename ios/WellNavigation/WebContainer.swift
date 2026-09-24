@@ -1,3 +1,4 @@
+import CoreLocation
 import SwiftUI
 import WebKit
 
@@ -101,9 +102,23 @@ struct WebContainer: UIViewRepresentable {
     })();
     """
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, CLLocationManagerDelegate {
         let startURL: URL
-        init(startURL: URL) { self.startURL = startURL }
+        /// Retained for the WebView lifetime. WKWebView's Geolocation API uses the
+        /// host app's Core Location When In Use authorization (Info.plist usage
+        /// string). Holding a manager keeps the framework active when the page
+        /// calls navigator.geolocation for disposal-facility near-me search.
+        private let locationManager = CLLocationManager()
+
+        init(startURL: URL) {
+            self.startURL = startURL
+            super.init()
+            locationManager.delegate = self
+        }
+
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            // WebKit observes the same authorization state for Geolocation.
+        }
 
         func webView(
             _ webView: WKWebView,
