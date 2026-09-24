@@ -1,10 +1,10 @@
-Release name: 1.7
-Version: 1.7 (versionCode 8)
+Release name: 1.8
+Version: 1.8 (versionCode 9)
 Language: English (United States)
 Play Console limit: 500 characters
 
 Paste into the Play Console release notes:
 
-Map controls take less room. Save this view, the base layer, and turn-by-turn links sit quieter on the map, and the map credit no longer covers the well card. Delete account is on the Account screen.
+Near-me disposal search can use optional device location when you ask for facilities close to you. Map controls take less room. Save this view, the base layer, and turn-by-turn links sit quieter on the map, and the map credit no longer covers the well card. Delete account is on the Account screen.
 
 This app does not sell subscriptions. Organization admins buy seats on the website in Chrome.

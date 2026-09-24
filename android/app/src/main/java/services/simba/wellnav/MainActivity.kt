@@ -1,7 +1,9 @@
 package services.simba.wellnav
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -11,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
 import android.webkit.ServiceWorkerClient
 import android.webkit.ServiceWorkerController
 import android.webkit.WebChromeClient
@@ -21,7 +24,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 
@@ -29,6 +34,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var banner: TextView
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var pendingGeolocationOrigin: String? = null
+    private var pendingGeolocationCallback: GeolocationPermissions.Callback? = null
+
+    private val locationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val granted =
+                results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            val origin = pendingGeolocationOrigin
+            val callback = pendingGeolocationCallback
+            pendingGeolocationOrigin = null
+            pendingGeolocationCallback = null
+            if (origin != null && callback != null) {
+                callback.invoke(origin, granted, false)
+            }
+        }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         settings.allowFileAccess = false
         settings.allowContentAccess = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        settings.setGeolocationEnabled(true)
         settings.userAgentString = settings.userAgentString + " WellNavigation/1.0 (Android; store)"
 
         val prefs = getSharedPreferences("wellnav", MODE_PRIVATE)
@@ -77,7 +99,27 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient =
+            object : WebChromeClient() {
+                override fun onGeolocationPermissionsShowPrompt(
+                    origin: String?,
+                    callback: GeolocationPermissions.Callback?,
+                ) {
+                    if (origin == null || callback == null) return
+                    if (hasLocationPermission()) {
+                        callback.invoke(origin, true, false)
+                        return
+                    }
+                    pendingGeolocationOrigin = origin
+                    pendingGeolocationCallback = callback
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        ),
+                    )
+                }
+            }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 return handleUrl(request.url)
@@ -178,6 +220,15 @@ class MainActivity : AppCompatActivity() {
         val network = manager.activeNetwork ?: return false
         val caps = manager.getNetworkCapabilities(network) ?: return false
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fine =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        return fine == PackageManager.PERMISSION_GRANTED ||
+            coarse == PackageManager.PERMISSION_GRANTED
     }
 
     companion object {
