@@ -1484,11 +1484,22 @@ async def disposal_wait_create(request: Request) -> JSONResponse:
     except (KeyError, TypeError, ValueError):
         return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
     data = await _wait_json_body(request)
+    kind = str(data.get("report_kind") or data.get("kind") or "actual").strip().lower() or "actual"
+    if kind != "actual":
+        return JSONResponse(
+            {
+                "error": (
+                    "Submit arrival and departure for the visit. "
+                    "Estimated trips are added when directions are generated."
+                )
+            },
+            status_code=400,
+        )
     try:
         report = create_report(
             disposal_site_id=site_id,
             user_id=int(user["id"]),
-            report_kind=str(data.get("report_kind") or data.get("kind") or ""),
+            report_kind="actual",
             arrival_at=(str(data["arrival_at"]) if data.get("arrival_at") not in (None, "") else None),
             departure_at=(
                 str(data["departure_at"]) if data.get("departure_at") not in (None, "") else None
@@ -1537,6 +1548,55 @@ async def account_wait_prefs(request: Request) -> JSONResponse:
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     return JSONResponse(pref)
+
+
+async def disposal_direction_estimate(request: Request) -> JSONResponse:
+    """Create an organization estimated trip from generated directions to a disposal site."""
+    from wellnav.disposal import drive_minutes, get_site
+    from wellnav.wait_reports import get_user_pref, record_estimated_trip
+
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    try:
+        site_id = int(request.path_params["site_id"])
+    except (KeyError, TypeError, ValueError):
+        return JSONResponse({"error": "site_id must be an integer"}, status_code=400)
+    site = get_site(site_id)
+    if not site:
+        return JSONResponse({"error": "disposal site not found"}, status_code=404)
+    data = await _wait_json_body(request)
+    try:
+        lat = _parse_optional_float(
+            "" if data.get("lat") in (None, "") else str(data.get("lat")),
+            name="lat",
+        )
+        lon = _parse_optional_float(
+            "" if data.get("lon") in (None, "") else str(data.get("lon")),
+            name="lon",
+        )
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    if lat is None or lon is None:
+        return JSONResponse({"error": "lat and lon are required"}, status_code=400)
+    if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lon <= 180.0):
+        return JSONResponse({"error": "lat and lon are out of range"}, status_code=400)
+    org_id = user.get("org_id")
+    if not org_id:
+        return JSONResponse({"recorded": False, "reason": "no_org"})
+    duration = drive_minutes(lat, lon, float(site["lat"]), float(site["lon"]))
+    window_hours = get_user_pref(int(user["id"]))["avg_window_hours"]
+    try:
+        report = record_estimated_trip(
+            disposal_site_id=site_id,
+            user_id=int(user["id"]),
+            org_id=int(org_id),
+            duration_minutes=duration,
+            window_hours=window_hours,
+        )
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(report, status_code=201)
 
 
 async def disposal_site_detail(request: Request) -> JSONResponse:
@@ -1771,6 +1831,7 @@ app = Starlette(
         Route("/disposal/site/{site_id:int}", disposal_site_detail),
         Route("/disposal/{site_id:int}/wait", disposal_wait_summary, methods=["GET"]),
         Route("/disposal/{site_id:int}/wait", disposal_wait_create, methods=["POST"]),
+        Route("/disposal/{site_id:int}/directions", disposal_direction_estimate, methods=["POST"]),
         Route("/disposal/wait/{report_id:int}/flag", disposal_wait_flag, methods=["POST"]),
         Route("/account/wait-prefs", account_wait_prefs, methods=["GET", "POST"]),
         Route("/healthz", healthz),

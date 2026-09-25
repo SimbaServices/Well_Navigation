@@ -5,7 +5,12 @@ import unittest
 from pathlib import Path
 
 from wellnav.disposal import (
+    DRIVE_MPH,
+    KM_PER_MI,
+    ROAD_FACTOR,
     connect,
+    distance_km,
+    drive_minutes,
     get_site,
     init_schema,
     nearest_sites,
@@ -235,6 +240,18 @@ class DisposalNearestTests(unittest.TestCase):
                 path=db_path,
             )
             self.assertEqual([row["id"] for row in via_radium], [12])
+
+
+class DriveMinutesTests(unittest.TestCase):
+    def test_same_point_is_zero(self) -> None:
+        self.assertEqual(drive_minutes(31.9, -102.1, 31.9, -102.1), 0)
+
+    def test_scales_with_road_distance(self) -> None:
+        minutes = drive_minutes(31.0, -102.0, 32.0, -102.0)
+        miles = distance_km(31.0, -102.0, 32.0, -102.0) / KM_PER_MI
+        expected = int(round((miles * ROAD_FACTOR) / DRIVE_MPH * 60.0))
+        self.assertEqual(minutes, expected)
+        self.assertGreater(minutes, 90)
 
 
 if __name__ == "__main__":

@@ -12,10 +12,14 @@ from wellnav.db import ROOT
 
 WAIT_REPORTS_DB_PATH = ROOT / "data" / "wait_reports.db"
 
-REPORT_KINDS = frozenset({"actual", "partial", "estimated"})
+REPORT_KINDS = frozenset({"actual", "estimated"})
 REPORT_STATUSES = frozenset({"active", "hidden", "reviewed"})
 
 DEFAULT_WINDOW_HOURS = 24
+# Used when a facility has no unflagged visit waits to average.
+DEFAULT_WAIT_MINUTES = 30
+# Opening directions again for the same site refreshes that estimate instead of adding another.
+ESTIMATE_REFRESH = timedelta(minutes=10)
 MIN_WINDOW_HOURS = 1
 MAX_WINDOW_HOURS = 168  # 7 days
 MAX_INTERVAL = timedelta(hours=24)
@@ -178,20 +182,11 @@ def _validate_times(
     arrival = _parse_iso(arrival_at, field="arrival_at")
     departure = _parse_iso(departure_at, field="departure_at")
 
-    if kind == "partial":
-        if arrival is None:
-            raise ValueError("Partial reports require arrival_at.")
-        if departure is not None:
-            raise ValueError("Partial reports cannot include departure_at.")
-        if arrival > now + FUTURE_SKEW:
-            raise ValueError("arrival_at cannot be in the future for partial reports.")
-        return arrival, None, None
-
     if kind == "actual":
         if arrival is None:
             raise ValueError("Actual reports require arrival_at.")
         if departure is None:
-            raise ValueError("Actual reports require departure_at. Use arrival-only for partial reports.")
+            raise ValueError("Actual reports require departure_at.")
         if arrival > now + FUTURE_SKEW:
             raise ValueError("arrival_at cannot be in the future for actual reports.")
         if departure > now + FUTURE_SKEW:
@@ -261,7 +256,7 @@ def _site_wait_samples(
         SELECT wait_minutes FROM reports
         WHERE disposal_site_id = ?
           AND status = 'active'
-          AND report_kind IN ('actual', 'partial')
+          AND report_kind = 'actual'
           AND wait_minutes IS NOT NULL
           AND created_at >= ?
           {exclude_sql}
@@ -366,7 +361,7 @@ def create_report(
     """Create a wait/open-lanes report. Raises ValueError on invalid input."""
     kind = (report_kind or "").strip().lower()
     if kind not in REPORT_KINDS:
-        raise ValueError("report_kind must be actual, partial, or estimated.")
+        raise ValueError("report_kind must be actual or estimated.")
 
     try:
         site_id = int(disposal_site_id)
@@ -440,6 +435,153 @@ def create_report(
         return _report_row(row)
     finally:
         conn.close()
+
+
+def _estimate_wait_minutes(
+    site_id: int,
+    *,
+    window_hours: int | float | str | None,
+    now: datetime,
+    path: Path | None,
+) -> tuple[int, bool]:
+    """Facility average wait, or the 30-minute default when nothing has been reported."""
+    summary = get_site_wait_summary(
+        site_id,
+        window_hours=window_hours,
+        path=path,
+        now=now,
+    )
+    avg = summary.get("avg_wait_minutes")
+    if avg is None:
+        return DEFAULT_WAIT_MINUTES, True
+    minutes = int(round(float(avg)))
+    if minutes < 0:
+        minutes = 0
+    cap = int(MAX_INTERVAL.total_seconds() // 60)
+    if minutes > cap:
+        minutes = cap
+    return minutes, False
+
+
+def _recent_direction_estimate(
+    conn: sqlite3.Connection,
+    *,
+    site_id: int,
+    user_id: int,
+    org_id: int,
+    now: datetime,
+) -> sqlite3.Row | None:
+    cutoff = _to_iso(now - ESTIMATE_REFRESH)
+    return conn.execute(
+        """
+        SELECT * FROM reports
+        WHERE disposal_site_id = ?
+          AND user_id = ?
+          AND org_id = ?
+          AND report_kind = 'estimated'
+          AND status = 'active'
+          AND created_at >= ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+        """,
+        (site_id, user_id, org_id, cutoff),
+    ).fetchone()
+
+
+def record_estimated_trip(
+    *,
+    disposal_site_id: int,
+    user_id: int,
+    org_id: int | None,
+    duration_minutes: int | float | str,
+    window_hours: int | float | str | None = None,
+    now: str | None = None,
+    path: Path | None = None,
+) -> dict[str, Any]:
+    """Record an organization estimated trip from generated directions.
+
+    Arrival is the reference clock plus ``duration_minutes``. Departure is that
+    arrival plus the facility's average wait, or 30 minutes when no visit waits
+    exist. A directions open for the same user, site, and organization inside
+    ``ESTIMATE_REFRESH`` updates the existing estimate.
+    """
+    try:
+        site_id = int(disposal_site_id)
+        uid = int(user_id)
+        org = int(org_id) if org_id not in (None, "") else 0
+    except (TypeError, ValueError) as exc:
+        raise ValueError("disposal_site_id, user_id, and org_id must be integers.") from exc
+    if site_id <= 0 or uid <= 0 or org <= 0:
+        raise ValueError("Estimated trips require a disposal site, user, and organization.")
+
+    try:
+        duration = int(round(float(duration_minutes)))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("duration_minutes must be a number of minutes.") from exc
+    if duration < 0:
+        raise ValueError("duration_minutes cannot be negative.")
+    if duration > 48 * 60:
+        raise ValueError("duration_minutes cannot exceed 48 hours.")
+
+    reference = _parse_iso(now, field="now") if now else _utc_now()
+    assert reference is not None
+    wait_minutes, used_default = _estimate_wait_minutes(
+        site_id,
+        window_hours=window_hours,
+        now=reference,
+        path=path,
+    )
+    arrival = reference + timedelta(minutes=duration)
+    departure = arrival + timedelta(minutes=wait_minutes)
+    arrival_iso = _to_iso(arrival)
+    departure_iso = _to_iso(departure)
+    _validate_times("estimated", arrival_iso, departure_iso, now=reference)
+
+    conn = connect(path)
+    try:
+        init_schema(conn)
+        existing = _recent_direction_estimate(
+            conn,
+            site_id=site_id,
+            user_id=uid,
+            org_id=org,
+            now=_utc_now(),
+        )
+        if existing is not None:
+            conn.execute(
+                """
+                UPDATE reports
+                SET arrival_at = ?, departure_at = ?, wait_minutes = ?
+                WHERE id = ?
+                """,
+                (arrival_iso, departure_iso, wait_minutes, int(existing["id"])),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT * FROM reports WHERE id = ?",
+                (int(existing["id"]),),
+            ).fetchone()
+            assert row is not None
+            report = _report_row(row)
+        else:
+            report = None
+    finally:
+        conn.close()
+
+    if report is None:
+        report = create_report(
+            disposal_site_id=site_id,
+            user_id=uid,
+            report_kind="estimated",
+            arrival_at=arrival_iso,
+            departure_at=departure_iso,
+            org_id=org,
+            now=_to_iso(reference),
+            path=path,
+        )
+    report["duration_minutes"] = duration
+    report["used_default_wait"] = used_default
+    return report
 
 
 def flag_report(
@@ -578,7 +720,7 @@ def get_site_wait_summary(
             SELECT wait_minutes FROM reports
             WHERE disposal_site_id = ?
               AND status = 'active'
-              AND report_kind IN ('actual', 'partial')
+              AND report_kind = 'actual'
               AND wait_minutes IS NOT NULL
               AND is_flagged = 0
               AND created_at >= ?
@@ -593,7 +735,7 @@ def get_site_wait_summary(
             SELECT COUNT(*) AS n FROM reports
             WHERE disposal_site_id = ?
               AND status = 'active'
-              AND report_kind IN ('actual', 'partial')
+              AND report_kind = 'actual'
               AND created_at >= ?
             """,
             (sid, cutoff),
@@ -619,7 +761,7 @@ def get_site_wait_summary(
             SELECT * FROM reports
             WHERE disposal_site_id = ?
               AND status = 'active'
-              AND report_kind IN ('actual', 'partial')
+              AND report_kind = 'actual'
               AND created_at >= ?
             ORDER BY created_at DESC, id DESC
             LIMIT ?

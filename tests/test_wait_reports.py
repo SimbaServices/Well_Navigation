@@ -64,27 +64,13 @@ class WaitReportsTests(unittest.TestCase):
                 departure_at=_iso(self.now + timedelta(hours=2)),
             )
 
-    def test_partial_rejects_departure_and_future(self) -> None:
-        with self.assertRaisesRegex(ValueError, "cannot include departure"):
+    def test_partial_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "actual or estimated"):
             self._create(
                 report_kind="partial",
                 arrival_at=_iso(self.now - timedelta(minutes=30)),
-                departure_at=_iso(self.now - timedelta(minutes=5)),
-            )
-        with self.assertRaisesRegex(ValueError, "future"):
-            self._create(
-                report_kind="partial",
-                arrival_at=_iso(self.now + timedelta(hours=1)),
                 departure_at=None,
             )
-        partial = self._create(
-            report_kind="partial",
-            arrival_at=_iso(self.now - timedelta(minutes=15)),
-            departure_at=None,
-            open_lanes=2,
-        )
-        self.assertIsNone(partial["wait_minutes"])
-        self.assertIsNone(partial["departure_at"])
 
     def test_estimated_must_be_future(self) -> None:
         with self.assertRaisesRegex(ValueError, "future"):
@@ -194,6 +180,142 @@ class WaitReportsTests(unittest.TestCase):
         )
         self.assertEqual(other_org["estimated_for_org"], [])
         self.assertIsNotNone(b["id"])
+
+    def test_direction_estimate_uses_average_or_default(self) -> None:
+        defaulted = wr.record_estimated_trip(
+            disposal_site_id=10,
+            user_id=1,
+            org_id=7,
+            duration_minutes=90,
+            now=self.now_iso,
+            path=self.db,
+        )
+        self.assertEqual(defaulted["report_kind"], "estimated")
+        self.assertEqual(defaulted["org_id"], 7)
+        self.assertTrue(defaulted["used_default_wait"])
+        self.assertEqual(defaulted["duration_minutes"], 90)
+        self.assertEqual(defaulted["wait_minutes"], wr.DEFAULT_WAIT_MINUTES)
+        self.assertEqual(defaulted["arrival_at"], _iso(self.now + timedelta(minutes=90)))
+        self.assertEqual(
+            defaulted["departure_at"],
+            _iso(self.now + timedelta(minutes=90 + wr.DEFAULT_WAIT_MINUTES)),
+        )
+
+        self._create(
+            user_id=3,
+            arrival_at=_iso(self.now - timedelta(hours=2)),
+            departure_at=_iso(self.now - timedelta(hours=2) + timedelta(minutes=50)),
+            open_lanes=2,
+        )
+        self._create(
+            user_id=4,
+            arrival_at=_iso(self.now - timedelta(hours=3)),
+            departure_at=_iso(self.now - timedelta(hours=3) + timedelta(minutes=70)),
+            open_lanes=4,
+        )
+        averaged = wr.record_estimated_trip(
+            disposal_site_id=10,
+            user_id=2,
+            org_id=7,
+            duration_minutes=20,
+            window_hours=24,
+            now=self.now_iso,
+            path=self.db,
+        )
+        self.assertFalse(averaged["used_default_wait"])
+        self.assertEqual(averaged["wait_minutes"], 60)
+        self.assertEqual(averaged["arrival_at"], _iso(self.now + timedelta(minutes=20)))
+        self.assertEqual(averaged["departure_at"], _iso(self.now + timedelta(minutes=80)))
+
+        refreshed = wr.record_estimated_trip(
+            disposal_site_id=10,
+            user_id=1,
+            org_id=7,
+            duration_minutes=40,
+            now=self.now_iso,
+            path=self.db,
+        )
+        self.assertEqual(refreshed["id"], defaulted["id"])
+        self.assertEqual(refreshed["wait_minutes"], 60)
+        self.assertEqual(refreshed["arrival_at"], _iso(self.now + timedelta(minutes=40)))
+
+        summary = wr.get_site_wait_summary(
+            10, window_hours=24, org_id=7, now=self.now_iso, path=self.db
+        )
+        self.assertEqual(summary["avg_wait_minutes"], 60.0)
+        self.assertEqual(summary["report_count"], 2)
+        self.assertEqual(len(summary["estimated_for_org"]), 2)
+        other = wr.get_site_wait_summary(
+            10, window_hours=24, org_id=99, now=self.now_iso, path=self.db
+        )
+        self.assertEqual(other["estimated_for_org"], [])
+
+        flagged = self._create(
+            disposal_site_id=11,
+            user_id=5,
+            arrival_at=_iso(self.now - timedelta(minutes=40)),
+            departure_at=_iso(self.now - timedelta(minutes=10)),
+        )
+        wr.flag_report(flagged["id"], user_id=6, reason="Bad sample", path=self.db)
+        only_flagged = wr.record_estimated_trip(
+            disposal_site_id=11,
+            user_id=5,
+            org_id=7,
+            duration_minutes=15,
+            now=self.now_iso,
+            path=self.db,
+        )
+        self.assertTrue(only_flagged["used_default_wait"])
+        self.assertEqual(only_flagged["wait_minutes"], 30)
+
+        with self.assertRaisesRegex(ValueError, "organization"):
+            wr.record_estimated_trip(
+                disposal_site_id=10,
+                user_id=1,
+                org_id=None,
+                duration_minutes=10,
+                now=self.now_iso,
+                path=self.db,
+            )
+        with self.assertRaisesRegex(ValueError, "negative"):
+            wr.record_estimated_trip(
+                disposal_site_id=10,
+                user_id=1,
+                org_id=7,
+                duration_minutes=-5,
+                now=self.now_iso,
+                path=self.db,
+            )
+
+    def test_direction_estimate_expires_into_a_new_report(self) -> None:
+        first = wr.record_estimated_trip(
+            disposal_site_id=10,
+            user_id=1,
+            org_id=7,
+            duration_minutes=30,
+            now=self.now_iso,
+            path=self.db,
+        )
+        conn = wr.connect(self.db)
+        try:
+            stale = _iso(datetime.now(timezone.utc) - timedelta(minutes=11))
+            conn.execute(
+                "UPDATE reports SET created_at = ? WHERE id = ?",
+                (stale, first["id"]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        second = wr.record_estimated_trip(
+            disposal_site_id=10,
+            user_id=1,
+            org_id=7,
+            duration_minutes=45,
+            now=self.now_iso,
+            path=self.db,
+        )
+        self.assertNotEqual(second["id"], first["id"])
+        self.assertEqual(second["duration_minutes"], 45)
 
     def test_user_prefs(self) -> None:
         default = wr.get_user_pref(42, path=self.db)

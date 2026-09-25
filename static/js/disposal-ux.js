@@ -243,7 +243,7 @@
     panel.innerHTML =
       '<div class="disposal-wait-head"><h3>Facility status</h3>' +
       '<p class="muted">Averages use your report window (<span id="disposal-wait-window-label">24h</span>). ' +
-      "Reports are shared with all users.</p></div>" +
+      "Visit reports are shared with all users. Opening directions adds an estimated trip for your organization.</p></div>" +
       '<div class="disposal-wait-summary" id="disposal-wait-summary"></div>' +
       '<details class="disposal-wait-prefs"><summary>My average window</summary>' +
       '<form id="disposal-wait-prefs-form" class="disposal-wait-prefs-form">' +
@@ -251,11 +251,6 @@
       '<button type="submit" class="ghost">Save window</button></form></details>' +
       '<details class="disposal-wait-form-wrap"><summary>Report wait time / open lanes</summary>' +
       '<form id="disposal-wait-form" class="disposal-wait-form" novalidate>' +
-      '<fieldset class="wait-kind"><legend>Report type</legend>' +
-      '<label class="mode"><input type="radio" name="report_kind" value="actual" checked><span>Actual visit</span></label>' +
-      '<label class="mode"><input type="radio" name="report_kind" value="partial"><span>Arrival only</span></label>' +
-      '<label class="mode"><input type="radio" name="report_kind" value="estimated"><span>Estimated (team)</span></label>' +
-      "</fieldset>" +
       '<div class="wait-datetime-row"><label>Arrival <input type="datetime-local" name="arrival_at" id="wait-arrival" required></label>' +
       '<button type="button" class="ghost wait-now-btn" data-target="wait-arrival">Now</button></div>' +
       '<div class="wait-datetime-row" id="wait-departure-row"><label>Departure <input type="datetime-local" name="departure_at" id="wait-departure" required></label>' +
@@ -263,7 +258,7 @@
       '<label>Open lanes <select name="open_lanes" id="wait-open-lanes"><option value="">Unknown</option>' +
       Array.from({ length: 21 }, (_, i) => '<option value="' + i + '">' + i + "</option>").join("") +
       "</select></label>" +
-      '<p class="hint" id="wait-kind-hint"></p>' +
+      '<p class="hint" id="wait-kind-hint">Arrival and departure determine the wait shared with everyone. Times cannot be in the future, and the visit must be within 24 hours.</p>' +
       '<p class="banner error" id="wait-form-error" hidden></p>' +
       '<button type="submit" class="primary">Submit report</button></form></details>';
     const footer = details.querySelector(".map-footer");
@@ -273,58 +268,31 @@
     return panel;
   }
 
-  function syncKindHints() {
-    const kind =
-      (document.querySelector('#disposal-wait-form input[name="report_kind"]:checked') || {}).value ||
-      "actual";
+  function setWaitHint() {
     const hint = $("wait-kind-hint");
-    const depRow = $("wait-departure-row");
     const dep = $("wait-departure");
-    if (depRow) depRow.hidden = kind === "partial";
-    if (dep) {
-      dep.required = kind !== "partial";
-      if (kind === "partial") dep.value = "";
-    }
+    const depRow = $("wait-departure-row");
+    if (depRow) depRow.hidden = false;
+    if (dep) dep.required = true;
     if (!hint) return;
-    if (kind === "partial") {
-      hint.textContent = "Arrival only. Time cannot be in the future.";
-    } else if (kind === "estimated") {
-      hint.textContent =
-        "Estimated arrival and departure must both be in the future and within 24 hours of each other. Shared with your team.";
-    } else {
-      hint.textContent =
-        "Actual visits need arrival and departure (no future times). Interval must be within 24 hours.";
-    }
+    hint.textContent =
+      "Arrival and departure determine the wait shared with everyone. Times cannot be in the future, and the visit must be within 24 hours.";
   }
 
-  function validateWaitPayload(kind, arrivalIso, departureIso) {
+  function validateWaitPayload(arrivalIso, departureIso) {
     const skewMs = 120 * 1000;
     const maxIntervalMs = 24 * 60 * 60 * 1000;
     const now = Date.now();
     if (!arrivalIso) return "Arrival time is required.";
     const arrivalMs = Date.parse(arrivalIso);
     if (Number.isNaN(arrivalMs)) return "Arrival time must be a valid date.";
-    if (kind === "partial") {
-      if (departureIso) return "Arrival-only reports cannot include a departure time.";
-      if (arrivalMs > now + skewMs) return "Arrival cannot be in the future for arrival-only reports.";
-      return null;
-    }
-    if (!departureIso) {
-      return kind === "estimated"
-        ? "Estimated reports require a future departure time."
-        : "Actual visits require a departure time. Use arrival-only for partial reports.";
-    }
+    if (!departureIso) return "Departure time is required.";
     const departureMs = Date.parse(departureIso);
     if (Number.isNaN(departureMs)) return "Departure time must be a valid date.";
     if (departureMs < arrivalMs) return "Departure must be on or after arrival.";
     if (departureMs - arrivalMs > maxIntervalMs) return "Wait interval cannot exceed 24 hours.";
-    if (kind === "estimated") {
-      if (arrivalMs <= now - skewMs) return "Estimated arrival must be in the future.";
-      if (departureMs <= now - skewMs) return "Estimated departure must be in the future.";
-    } else {
-      if (arrivalMs > now + skewMs) return "Arrival cannot be in the future for actual visits.";
-      if (departureMs > now + skewMs) return "Departure cannot be in the future for actual visits.";
-    }
+    if (arrivalMs > now + skewMs) return "Arrival cannot be in the future.";
+    if (departureMs > now + skewMs) return "Departure cannot be in the future.";
     return null;
   }
 
@@ -356,6 +324,7 @@
         const kind = r.report_kind || "actual";
         const wait = formatMinutes(r.wait_minutes);
         const when = formatWhen(r.created_at || r.arrival_at);
+        const kindBit = kind === "actual" ? "" : " · " + kind;
         const laneBit = r.open_lanes != null && r.open_lanes !== "" ? " · " + r.open_lanes + " lanes" : "";
         const flagBtn =
           '<button type="button" class="ghost wait-flag-btn" data-report-id="' +
@@ -364,8 +333,7 @@
         parts.push(
           "<li><span>" +
             when +
-            " · " +
-            kind +
+            kindBit +
             " · wait " +
             wait +
             laneBit +
@@ -378,13 +346,15 @@
     }
     const estimated = payload.estimated_for_org || [];
     if (estimated.length) {
-      parts.push('<p class="muted"><strong>Team estimates</strong></p><ul class="wait-report-list">');
+      parts.push(
+        '<p class="muted"><strong>Estimated trips</strong> · your organization</p><ul class="wait-report-list">'
+      );
       estimated.slice(0, 5).forEach((r) => {
         parts.push(
-          "<li>" +
+          "<li>ETA " +
             formatWhen(r.arrival_at) +
-            (r.departure_at ? " → " + formatWhen(r.departure_at) : "") +
-            (r.open_lanes != null ? " · " + r.open_lanes + " lanes" : "") +
+            (r.departure_at ? " → depart " + formatWhen(r.departure_at) : "") +
+            (r.wait_minutes != null ? " · wait " + formatMinutes(r.wait_minutes) : "") +
             "</li>"
         );
       });
@@ -461,14 +431,11 @@
         });
       }
     });
-    panel.addEventListener("change", (event) => {
-      if (event.target && event.target.name === "report_kind") syncKindHints();
-    });
     const form = $("disposal-wait-form");
     if (form) {
       const arrival = $("wait-arrival");
       if (arrival && !arrival.value) arrival.value = toLocalInputValue(new Date());
-      syncKindHints();
+      setWaitHint();
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const errEl = $("wait-form-error");
@@ -478,14 +445,9 @@
         }
         const siteId = panel.dataset.siteId;
         if (!siteId) return;
-        const kind =
-          (form.querySelector('input[name="report_kind"]:checked') || {}).value || "actual";
         const arrivalAt = localInputToIso($("wait-arrival") && $("wait-arrival").value);
-        const departureAt =
-          kind === "partial"
-            ? null
-            : localInputToIso($("wait-departure") && $("wait-departure").value);
-        const clientError = validateWaitPayload(kind, arrivalAt, departureAt);
+        const departureAt = localInputToIso($("wait-departure") && $("wait-departure").value);
+        const clientError = validateWaitPayload(arrivalAt, departureAt);
         if (clientError) {
           if (errEl) {
             errEl.hidden = false;
@@ -494,7 +456,7 @@
           return;
         }
         const payload = {
-          report_kind: kind,
+          report_kind: "actual",
           arrival_at: arrivalAt,
           departure_at: departureAt,
           open_lanes: ($("wait-open-lanes") && $("wait-open-lanes").value) || null,
@@ -555,6 +517,55 @@
     loadWaitSummary(site.id);
   }
 
+  const directionEstimateAt = new Map();
+
+  function disposalSiteIdForRoute(link) {
+    if (!link) return "";
+    if (link.dataset && link.dataset.disposalId) return String(link.dataset.disposalId);
+    const row = link.closest("[data-disposal-id]");
+    return row && row.dataset.disposalId ? String(row.dataset.disposalId) : "";
+  }
+
+  function recordDirectionEstimate(siteId) {
+    const key = String(siteId || "");
+    if (!key) return;
+    const last = directionEstimateAt.get(key) || 0;
+    if (Date.now() - last < 15000) return;
+    directionEstimateAt.set(key, Date.now());
+    getPosition()
+      .then((coords) =>
+        apiFetch("/disposal/" + encodeURIComponent(key) + "/directions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ lat: coords.latitude, lon: coords.longitude }),
+        })
+      )
+      .then((resp) => {
+        if (!resp || !resp.ok) {
+          directionEstimateAt.delete(key);
+          return null;
+        }
+        const panel = $("disposal-wait");
+        if (panel && !panel.hidden && panel.dataset.siteId === key) loadWaitSummary(key);
+        return null;
+      })
+      .catch(() => {
+        directionEstimateAt.delete(key);
+      });
+  }
+
+  function bindDirectionEstimates() {
+    if (document.documentElement.dataset.directionEstimates === "1") return;
+    document.documentElement.dataset.directionEstimates = "1";
+    document.addEventListener("click", (event) => {
+      const link = event.target && event.target.closest ? event.target.closest("a.route") : null;
+      if (!link) return;
+      const siteId = disposalSiteIdForRoute(link);
+      if (!siteId) return;
+      recordDirectionEstimate(siteId);
+    });
+  }
+
   window.WellnavDisposalUx = {
     enrichDisposalFocus,
     onDisposalSelected,
@@ -566,6 +577,7 @@
 
   function boot() {
     bindNearSearch();
+    bindDirectionEstimates();
     ensureWaitPanel();
   }
   document.addEventListener("DOMContentLoaded", boot);

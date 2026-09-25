@@ -477,23 +477,27 @@ button.well-name-link {
 .coord-grid,
 .route-row { flex: 0 0 auto; }
 .map-head { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
-.basemap-picker { display: flex; align-items: center; gap: 0.28rem; font-size: 0.72rem; color: var(--muted); }
+.basemap-picker { display: flex; align-items: center; gap: 0.18rem; font-size: 0.66rem; line-height: 1.1; color: var(--muted); }
 .basemap-picker select {
   appearance: none;
   -webkit-appearance: none;
   background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath fill='%239aa386' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E") no-repeat right center;
-  background-size: 0.5rem;
+  background-size: 0.4rem;
   color: var(--ink);
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  padding: 0 0.85rem 0 0;
+  padding: 0 0.62rem 0 0;
   margin: 0;
-  min-height: 1.65rem;
-  height: 1.65rem;
-  max-width: 10.5rem;
-  font: 600 16px/1.2 "Segoe UI", "IBM Plex Sans", sans-serif;
+  min-height: 1.2rem;
+  height: 1.2rem;
+  max-width: 7.2rem;
+  font: 600 0.72rem/1.1 "Segoe UI", "IBM Plex Sans", sans-serif;
   cursor: pointer;
+}
+.basemap-picker select option {
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 .overlay-toggle {
   display: flex;
@@ -550,17 +554,18 @@ button.well-name-link {
   max-width: none;
 }
 .offline-pack .ghost {
-  min-height: 1.65rem;
-  padding: 0.15rem 0.1rem;
+  min-height: 1.2rem;
+  padding: 0 0.02rem;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+  line-height: 1.1;
   text-decoration: underline;
-  text-underline-offset: 0.16em;
+  text-underline-offset: 0.12em;
 }
 .offline-pack .ghost:hover,
 .offline-pack .ghost:focus-visible {
@@ -1225,13 +1230,22 @@ body.gate .gate-tagline {
   .map-chrome {
     min-height: 0;
     overflow: hidden;
-    padding: 0.4rem 0.45rem calc(0.4rem + var(--safe-bottom));
-    gap: 0.3rem;
+    padding: 0.28rem 0.4rem calc(0.28rem + var(--safe-bottom));
+    gap: 0.18rem;
   }
-  .map-actions { gap: 0.3rem 0.5rem; }
-  .basemap-picker select { min-height: 1.65rem; height: 1.65rem; max-width: 10.5rem; }
-  .overlay-toggle { min-height: 2rem; }
-  .offline-pack .ghost { min-height: 1.65rem; padding: 0.15rem 0.1rem; font-size: 0.72rem; }
+  .map-actions { gap: 0.12rem 0.38rem; }
+  .basemap-picker { font-size: 0.62rem; gap: 0.14rem; }
+  .basemap-picker select {
+    min-height: 1.12rem;
+    height: 1.12rem;
+    max-width: 6.5rem;
+    padding-right: 0.55rem;
+    font-size: 0.68rem;
+  }
+  .basemap-picker select option { font-size: 0.75rem; }
+  .overlay-toggle { min-height: 1.35rem; }
+  .offline-pack { gap: 0.05rem 0.32rem; }
+  .offline-pack .ghost { min-height: 1.12rem; padding: 0; font-size: 0.62rem; }
   .well-map .leaflet-bottom.leaflet-right,
   .well-map .leaflet-top.leaflet-right {
     top: 0;

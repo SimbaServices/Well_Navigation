@@ -15,6 +15,10 @@ DISPOSAL_DB_PATH = ROOT / "data" / "disposal.db"
 DEFAULT_LIMIT = 400
 EARTH_RADIUS_KM = 6371.0088
 KM_PER_MI = 1.609344
+# Straight-line distance understates roads. 1.3 is a typical rural road factor.
+ROAD_FACTOR = 1.3
+# Planning speed for a haul to a disposal facility.
+DRIVE_MPH = 50.0
 
 # Case-insensitive tokens that mark radium / NORM / radioactive acceptance.
 _RADIUM_KEYWORDS = (
@@ -203,6 +207,19 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dlambda = math.radians(lon2 - lon1)
     a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     return 2 * EARTH_RADIUS_KM * math.asin(min(1.0, math.sqrt(a)))
+
+
+def drive_minutes(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
+    """Trip duration in minutes from current position to a destination.
+
+    Road miles are the great-circle distance times ``ROAD_FACTOR``, driven at
+    ``DRIVE_MPH``. Same coordinates are a zero-minute trip.
+    """
+    miles = distance_km(float(lat1), float(lon1), float(lat2), float(lon2)) / KM_PER_MI
+    minutes = int(round((miles * ROAD_FACTOR) / DRIVE_MPH * 60.0))
+    if minutes < 0:
+        return 0
+    return minutes
 
 
 _NORM_WORD_RE = re.compile(r"\bnorm\b", re.IGNORECASE)

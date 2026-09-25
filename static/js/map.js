@@ -1886,13 +1886,18 @@ function coordChip(title, lat, lon, hint) {
   return chip;
 }
 
-function routeLink(kind, href, label) {
+function routeLink(kind, href, label, dataset) {
   const a = document.createElement("a");
   a.className = `route ${kind}`;
   a.target = "_blank";
   a.rel = "noopener";
   a.href = href;
   a.textContent = label;
+  if (dataset) {
+    Object.keys(dataset).forEach((key) => {
+      if (dataset[key] != null && dataset[key] !== "") a.dataset[key] = String(dataset[key]);
+    });
+  }
   return a;
 }
 
@@ -1995,9 +2000,11 @@ function updateChrome(store) {
     const destLon = showPin ? pipelinePin.lon : disposalFocus ? disposalFocus.lon : selected && selected.lon;
     if (Number.isFinite(destLat) && Number.isFinite(destLon)) {
       const dest = `${destLat},${destLon}`;
+      const routeAttrs =
+        !showPin && disposalFocus && disposalFocus.id ? { disposalId: disposalFocus.id } : null;
       nav.append(
-        routeLink("apple", `https://maps.apple.com/?daddr=${dest}`, "Apple Maps"),
-        routeLink("google", `https://maps.google.com/maps/dir/?api=1&destination=${dest}`, "Google Maps")
+        routeLink("apple", `https://maps.apple.com/?daddr=${dest}`, "Apple Maps", routeAttrs),
+        routeLink("google", `https://maps.google.com/maps/dir/?api=1&destination=${dest}`, "Google Maps", routeAttrs)
       );
       if (showPin) {
         const remove = document.createElement("button");
