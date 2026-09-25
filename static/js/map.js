@@ -1274,6 +1274,7 @@ function disposalPopup(props) {
     pointLabel: "Waste site",
     lat: props.lat,
     lon: props.lon,
+    disposalId: props.id || "",
   });
 }
 
@@ -1977,6 +1978,7 @@ function locationPopupHtml(place) {
     pointLabel: place.pointLabel || "Location",
     lat,
     lon,
+    disposalId: place.disposalId || "",
   });
   return html;
 }
@@ -1991,16 +1993,19 @@ function mapsShareMarkup(place) {
   const coords = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
   const apple = `https://maps.apple.com/?daddr=${lat},${lon}`;
   const google = `https://maps.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  const disposalId = place.disposalId ? attrText(place.disposalId) : "";
   return (
     `<div class="loc-share" data-share-title="${attrText(place.title || "Location")}"` +
     ` data-share-detail="${attrText(place.detail || "")}"` +
     ` data-share-point="${attrText(place.pointLabel || "Location")}"` +
     ` data-share-coords="${attrText(coords)}"` +
     ` data-share-apple="${attrText(apple)}"` +
-    ` data-share-google="${attrText(google)}">` +
+    ` data-share-google="${attrText(google)}"` +
+    (disposalId ? ` data-share-disposal-id="${disposalId}"` : "") +
+    `>` +
     `<div class="loc-share-platforms" role="group" aria-label="Choose a maps link">` +
-    `<button type="button" class="route apple" data-share-platform="apple" aria-pressed="false">Apple Maps</button>` +
-    `<button type="button" class="route google" data-share-platform="google" aria-pressed="false">Google Maps</button>` +
+    `<button type="button" class="route apple" data-share-platform="apple" aria-pressed="false" title="Double-click to open Apple Maps">Apple Maps</button>` +
+    `<button type="button" class="route google" data-share-platform="google" aria-pressed="false" title="Double-click to open Google Maps">Google Maps</button>` +
     `</div>` +
     `<div class="loc-share-via" hidden>` +
     `<p class="loc-share-prompt"></p>` +
@@ -2091,20 +2096,67 @@ function selectSharePlatform(root, platform) {
   window.requestAnimationFrame(refreshLocationPopup);
 }
 
+function openMapsLink(href, disposalId) {
+  if (!href) return;
+  const a = document.createElement("a");
+  a.className = "route";
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.href = href;
+  if (disposalId) a.dataset.disposalId = String(disposalId);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+let lastMapsOpen = 0;
+
+function openMapsFromShare(root, platform) {
+  const now = Date.now();
+  if (now - lastMapsOpen < 700) return;
+  lastMapsOpen = now;
+  const href = platform === "google" ? root.dataset.shareGoogle : root.dataset.shareApple;
+  openMapsLink(href, root.dataset.shareDisposalId || "");
+}
+
+function sharePlatformButton(target) {
+  if (!target || !target.closest) return null;
+  return target.closest("[data-share-platform]");
+}
+
 function onLocationShareClick(event) {
-  const target = event.target;
-  if (!target || !target.closest) return;
-  const platformBtn = target.closest("[data-share-platform]");
+  const platformBtn = sharePlatformButton(event.target);
   if (!platformBtn) return;
   event.preventDefault();
   const root = platformBtn.closest(".loc-share");
-  if (root) selectSharePlatform(root, platformBtn.dataset.sharePlatform);
+  if (!root) return;
+  const platform = platformBtn.dataset.sharePlatform;
+  const now = Date.now();
+  const last = Number(root.dataset.shareClickAt || 0);
+  if (root.dataset.platform === platform && now - last < 450) {
+    root.dataset.shareClickAt = "0";
+    openMapsFromShare(root, platform);
+    return;
+  }
+  root.dataset.shareClickAt = String(now);
+  selectSharePlatform(root, platform);
+}
+
+function onLocationShareDblClick(event) {
+  const platformBtn = sharePlatformButton(event.target);
+  if (!platformBtn) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const root = platformBtn.closest(".loc-share");
+  if (!root) return;
+  openMapsFromShare(root, platformBtn.dataset.sharePlatform);
 }
 
 function bindLocationShare() {
   if (document.documentElement.dataset.locationShare === "1") return;
   document.documentElement.dataset.locationShare = "1";
   document.addEventListener("click", onLocationShareClick, true);
+  document.addEventListener("dblclick", onLocationShareDblClick, true);
 }
 
 function updateChrome(store) {
