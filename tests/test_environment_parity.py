@@ -80,6 +80,7 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("Near me", index)
         self.assertIn('value="radium_near"', index)
         self.assertIn("disposal-ux.js", index)
+        self.assertIn("data-has-org", index)
         self.assertNotIn("{% if store_client %}", index)
         self.assertNotIn("{% if not store_client %}", index)
 
@@ -134,6 +135,8 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("disposal-wait", disposal)
         self.assertIn("near", disposal)
         self.assertIn("radium_near", disposal)
+        self.assertIn("hasOrgMembership", disposal)
+        self.assertIn("team membership", disposal)
 
     def test_store_boot_only_arms_credentials_and_service_worker(self) -> None:
         boot = (ROOT / "templates" / "partials" / "store_boot.js").read_text(encoding="utf-8")

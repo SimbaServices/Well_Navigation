@@ -385,8 +385,13 @@ def create_report(
         except (TypeError, ValueError) as exc:
             raise ValueError("org_id must be an integer.") from exc
 
-    if kind == "estimated" and org is not None and org <= 0:
-        raise ValueError("org_id must be a positive integer when provided.")
+    if kind == "estimated":
+        if org is None:
+            raise ValueError(
+                "Estimated reports require a team membership so they can be shared with your organization."
+            )
+        if org <= 0:
+            raise ValueError("org_id must be a positive integer for estimated reports.")
 
     reference = _parse_iso(now, field="now") if now else _utc_now()
     assert reference is not None
