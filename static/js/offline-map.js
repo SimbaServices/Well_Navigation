@@ -208,6 +208,91 @@
     return coords;
   }
 
+  function routeProgress(coordinates, lat, lon) {
+    const line = [];
+    (coordinates || []).forEach((pair) => {
+      if (!Array.isArray(pair) || pair.length < 2) return;
+      const pointLon = Number(pair[0]);
+      const pointLat = Number(pair[1]);
+      if (Number.isFinite(pointLat) && Number.isFinite(pointLon)) {
+        line.push({ lat: pointLat, lon: pointLon });
+      }
+    });
+    if (!line.length || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    if (line.length === 1) {
+      const off = distanceMeters(lat, lon, line[0].lat, line[0].lon);
+      return {
+        remainingM: off,
+        alongM: 0,
+        totalM: 0,
+        offRouteM: off,
+        snapLat: line[0].lat,
+        snapLon: line[0].lon,
+        guideLat: line[0].lat,
+        guideLon: line[0].lon,
+        snapIndex: 0,
+      };
+    }
+    const mLat = 111320;
+    const mLon = 111320 * Math.cos((lat * Math.PI) / 180);
+    const xy = (point) => [(point.lon - lon) * mLon, (point.lat - lat) * mLat];
+    let bestDist = Infinity;
+    let bestAlong = 0;
+    let bestSnap = line[0];
+    let bestIndex = 0;
+    let traveled = 0;
+    for (let i = 0; i < line.length - 1; i += 1) {
+      const a = xy(line[i]);
+      const b = xy(line[i + 1]);
+      const abx = b[0] - a[0];
+      const aby = b[1] - a[1];
+      const len2 = abx * abx + aby * aby;
+      const len = Math.sqrt(len2);
+      let t = 0;
+      if (len2 > 0) {
+        t = (-a[0] * abx + -a[1] * aby) / len2;
+        t = Math.max(0, Math.min(1, t));
+      }
+      const sx = a[0] + abx * t;
+      const sy = a[1] + aby * t;
+      const dist = Math.sqrt(sx * sx + sy * sy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestAlong = traveled + len * t;
+        bestIndex = i;
+        bestSnap = { lat: lat + sy / mLat, lon: lon + sx / mLon };
+      }
+      traveled += len;
+    }
+    const total = traveled;
+    const targetAlong = Math.min(total, bestAlong + 70);
+    let guide = line[line.length - 1];
+    let walked = 0;
+    for (let i = 0; i < line.length - 1; i += 1) {
+      const seg = distanceMeters(line[i].lat, line[i].lon, line[i + 1].lat, line[i + 1].lon);
+      if (walked + seg >= targetAlong || i === line.length - 2) {
+        const t = seg > 0 ? Math.max(0, Math.min(1, (targetAlong - walked) / seg)) : 0;
+        guide = {
+          lat: line[i].lat + (line[i + 1].lat - line[i].lat) * t,
+          lon: line[i].lon + (line[i + 1].lon - line[i].lon) * t,
+        };
+        break;
+      }
+      walked += seg;
+    }
+    return {
+      remainingM: Math.max(0, total - bestAlong),
+      alongM: bestAlong,
+      totalM: total,
+      offRouteM: bestDist,
+      snapLat: bestSnap.lat,
+      snapLon: bestSnap.lon,
+      guideLat: guide.lat,
+      guideLon: guide.lon,
+      snapIndex: bestIndex,
+    };
+  }
+
   function directRoutes(origin, destinations) {
     return (destinations || []).map((dest) => {
       const lat = Number(dest.lat);
@@ -404,6 +489,7 @@
     loadRoutes,
     deleteRoute,
     directRoutes,
+    routeProgress,
     distanceMeters,
     bearingDeg,
     putOverlay,

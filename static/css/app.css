@@ -707,6 +707,67 @@ button.well-name-link {
   border: 2px solid #fff;
   box-shadow: 0 0 0 6px rgba(76, 141, 255, 0.28);
 }
+.user-location-icon.is-nav .user-location-dot {
+  width: 0;
+  height: 0;
+  margin: 2px 0 0 7px;
+  border-radius: 0;
+  background: transparent;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 18px solid #4c8dff;
+  border-top: 0;
+  box-shadow: none;
+  transform-origin: 7px 14px;
+}
+.route-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: #241c08;
+}
+.route-nav[hidden] { display: none; }
+.route-nav-arrow {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: #4c8dff;
+  position: relative;
+}
+.route-nav-arrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.32rem;
+  margin-left: -0.34rem;
+  border-left: 0.34rem solid transparent;
+  border-right: 0.34rem solid transparent;
+  border-bottom: 0.85rem solid #fff;
+}
+.route-nav-copy { flex: 1; min-width: 0; }
+.route-nav-title { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.route-nav-detail { margin: 0.1rem 0 0; font-size: 0.78rem; color: var(--muted); }
+.route-nav.is-off .route-nav-detail { color: #e0893a; }
+.route-nav.is-arrived .route-nav-title { color: #7cb36a; }
+.route-nav-actions { display: flex; gap: 0.45rem; align-items: center; }
+.route-nav-actions .ghost { color: var(--muted); }
+.route-nav-go {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.15rem 0.2rem;
+}
+.mapped-item.is-navigating { border-color: var(--accent); }
 .leaflet-container.well-map.is-pinning,
 .leaflet-container.well-map.is-pinning.leaflet-grab,
 .leaflet-container.well-map.is-pinning .leaflet-interactive {

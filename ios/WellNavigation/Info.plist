@@ -30,7 +30,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Simba Services</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Well Navigation uses your location to save routes from you to pinned places, and to estimate drive time when you open directions to a disposal site.</string>
+	<string>Well Navigation uses your location to save routes from you to pinned places, to navigate those saved routes while you are offline, and to estimate drive time when you open directions to a disposal site.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

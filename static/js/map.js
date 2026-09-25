@@ -82,7 +82,7 @@ const MAP_CHROME_HTML = `
         <button type="button" class="ghost" id="offline-save">Save for offline</button>
         <span class="info-tip">
           <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>
         </span>
         <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
         <p id="offline-status" class="muted"></p>
@@ -138,6 +138,16 @@ let lastUserLatLng = null;
 let pinMode = false;
 let savedRoutes = [];
 let routesReady = null;
+let navRouteId = null;
+let navFollow = false;
+let navPaused = false;
+let navUserPicked = false;
+let navSnappedToNearest = false;
+let navRemainLine = null;
+let navJoinLine = null;
+let deviceHeading = null;
+let deviceHeadingBound = false;
+let lastFollowLatLng = null;
 
 function searchInputEl() {
   return document.getElementById("q");
@@ -406,6 +416,18 @@ function preferredBasemap() {
   return localStorage.getItem("wellnav.basemap") || "imagery";
 }
 
+function selectedBasemap() {
+  const select = document.getElementById("basemap-select");
+  const key = select && select.value;
+  if (key && BASE_LAYERS[key]) return key;
+  const saved = preferredBasemap();
+  return BASE_LAYERS[saved] ? saved : "usgs";
+}
+
+function basemapLabel(key) {
+  return BASEMAP_LABELS[key] || "Base layer";
+}
+
 function makeUsgsLayer() {
   const offline = window.WellnavOffline;
   if (typeof L === "undefined") return null;
@@ -641,6 +663,13 @@ function collectRouteDestinations() {
   return { destinations: out, omitted };
 }
 
+function turnInstruction(relative) {
+  const wrapped = ((Number(relative) % 360) + 360) % 360;
+  if (wrapped <= 25 || wrapped >= 335) return "Continue straight";
+  if (wrapped < 180) return `Turn right ${Math.round(wrapped)}°`;
+  return `Turn left ${Math.round(360 - wrapped)}°`;
+}
+
 function compassLabel(deg) {
   const names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const wrapped = ((Number(deg) % 360) + 360) % 360;
@@ -666,12 +695,13 @@ function formatRouteMinutes(seconds) {
   return rem ? `${h}h ${rem}m` : `${h}h`;
 }
 
-function userLocationIcon() {
+function userLocationIcon(heading, navigating) {
+  const rot = Number.isFinite(heading) ? heading : 0;
   return L.divIcon({
-    className: "user-location-icon",
-    html: '<span class="user-location-dot"></span>',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    className: navigating ? "user-location-icon is-nav" : "user-location-icon",
+    html: `<span class="user-location-dot" style="transform: rotate(${rot}deg)"></span>`,
+    iconSize: navigating ? [28, 28] : [18, 18],
+    iconAnchor: navigating ? [14, 14] : [9, 9],
   });
 }
 
@@ -694,32 +724,80 @@ function ensureRouteLayers() {
   if (!routePinLayer) routePinLayer = L.layerGroup().addTo(map);
 }
 
+function currentHeading() {
+  const speed = lastUserLatLng && lastUserLatLng.speed;
+  const gps = lastUserLatLng && lastUserLatLng.heading;
+  if (Number.isFinite(gps) && gps >= 0 && (!Number.isFinite(speed) || speed > 0.8)) return gps;
+  if (Number.isFinite(deviceHeading)) return deviceHeading;
+  if (Number.isFinite(gps) && gps >= 0) return gps;
+  return null;
+}
+
 function drawUserLocation() {
   if (!map || !lastUserLatLng || typeof L === "undefined") return;
   const ll = [lastUserLatLng.lat, lastUserLatLng.lon];
+  const navigating = !!navRouteId;
+  const heading = currentHeading();
+  const key = `${navigating ? 1 : 0}:${heading == null ? "x" : Math.round(heading / 5)}`;
   if (!userLocationMarker) {
     userLocationMarker = L.marker(ll, {
-      icon: userLocationIcon(),
+      icon: userLocationIcon(heading, navigating),
       interactive: false,
       keyboard: false,
       zIndexOffset: 1200,
     }).addTo(map);
+    userLocationMarker._headingKey = key;
   } else {
     userLocationMarker.setLatLng(ll);
+    if (userLocationMarker._headingKey !== key) {
+      userLocationMarker.setIcon(userLocationIcon(heading, navigating));
+      userLocationMarker._headingKey = key;
+    }
   }
+}
+
+function onLocationFix(pos) {
+  const coords = pos && pos.coords ? pos.coords : {};
+  lastUserLatLng = {
+    lat: coords.latitude,
+    lon: coords.longitude,
+    heading: Number.isFinite(coords.heading) ? coords.heading : null,
+    speed: Number.isFinite(coords.speed) ? coords.speed : null,
+    accuracy: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+  };
+  drawUserLocation();
+  if (!navigationAvailable()) {
+    renderOfflineRouteList();
+    return;
+  }
+  if (!navPaused && !navUserPicked && !navSnappedToNearest) {
+    navSnappedToNearest = true;
+    const nearest = nearestSavedRoute();
+    if (nearest) {
+      beginNavigation(nearest.id, { user: false });
+      return;
+    }
+  }
+  if (navRouteId) updateNavigationFrame();
+  else renderOfflineRouteList();
 }
 
 function watchUserLocation() {
   if (!navigator.geolocation || locationWatchId != null) return;
-  locationWatchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      lastUserLatLng = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      drawUserLocation();
-      renderOfflineRouteList();
-    },
-    () => {},
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 25000 }
-  );
+  locationWatchId = navigator.geolocation.watchPosition(onLocationFix, onLocationWatchError, {
+    enableHighAccuracy: true,
+    maximumAge: 2000,
+    timeout: 25000,
+  });
+}
+
+function onLocationWatchError(err) {
+  if (!navigationAvailable()) return;
+  const detail =
+    err && err.code === 1
+      ? "Location permission is off."
+      : "Waiting for a GPS fix. It still works without a connection.";
+  setNavCopy(navRouteLabel() || "Saved route", detail);
 }
 
 function stopUserLocation() {
@@ -730,6 +808,323 @@ function stopUserLocation() {
   lastUserLatLng = null;
   if (userLocationMarker && map) map.removeLayer(userLocationMarker);
   userLocationMarker = null;
+}
+
+function navigationAvailable() {
+  const offline = window.WellnavOffline;
+  return !!(offline && !offline.isOnline() && savedRoutes.length);
+}
+
+function routeById(id) {
+  return savedRoutes.find((route) => route.id === id) || null;
+}
+
+function navRouteLabel() {
+  const route = routeById(navRouteId);
+  return route ? route.label || "Saved route" : "";
+}
+
+function nearestSavedRoute() {
+  if (!savedRoutes.length) return null;
+  const offline = window.WellnavOffline;
+  if (!lastUserLatLng || !offline) return savedRoutes[0];
+  let best = savedRoutes[0];
+  let bestDistance = Infinity;
+  savedRoutes.forEach((route) => {
+    const distance = offline.distanceMeters(lastUserLatLng.lat, lastUserLatLng.lon, route.lat, route.lon);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = route;
+    }
+  });
+  return best;
+}
+
+function ensureNavHud() {
+  if (document.getElementById("route-nav")) return;
+  const mapEl = document.getElementById("well-map");
+  if (!mapEl) return;
+  const bar = document.createElement("div");
+  bar.id = "route-nav";
+  bar.className = "route-nav";
+  bar.hidden = true;
+  bar.innerHTML =
+    '<div id="route-nav-arrow" class="route-nav-arrow" aria-hidden="true"></div>' +
+    '<div class="route-nav-copy">' +
+    '<p id="route-nav-title" class="route-nav-title"></p>' +
+    '<p id="route-nav-detail" class="route-nav-detail" aria-live="polite"></p>' +
+    "</div>" +
+    '<div class="route-nav-actions">' +
+    '<button type="button" class="ghost" id="route-nav-follow">Follow</button>' +
+    '<button type="button" class="ghost" id="route-nav-stop">Stop</button>' +
+    "</div>";
+  mapEl.insertAdjacentElement("beforebegin", bar);
+  bar.querySelector("#route-nav-follow").addEventListener("click", () => {
+    requestDeviceHeading();
+    navFollow = true;
+    lastFollowLatLng = null;
+    updateFollowButton();
+    updateNavigationFrame(true);
+  });
+  bar.querySelector("#route-nav-stop").addEventListener("click", () => {
+    navPaused = true;
+    navUserPicked = true;
+    navRouteId = null;
+    navFollow = false;
+    clearNavGraphics();
+    applyNavStyles();
+    setNavCopy("Navigation paused", "Choose Go on a saved route.");
+    updateFollowButton();
+    renderOfflineRouteList();
+  });
+}
+
+function setNavCopy(title, detail) {
+  ensureNavHud();
+  const bar = document.getElementById("route-nav");
+  const titleEl = document.getElementById("route-nav-title");
+  const detailEl = document.getElementById("route-nav-detail");
+  if (titleEl) titleEl.textContent = title || "";
+  if (detailEl) detailEl.textContent = detail || "";
+  if (bar) {
+    bar.hidden = false;
+    bar.classList.remove("is-off", "is-arrived");
+  }
+}
+
+function updateFollowButton() {
+  const button = document.getElementById("route-nav-follow");
+  if (!button) return;
+  button.textContent = navFollow ? "Following" : "Follow";
+  button.classList.toggle("is-on", navFollow);
+  button.hidden = !navRouteId;
+}
+
+function requestDeviceHeading() {
+  bindDeviceHeading();
+  const orientation = window.DeviceOrientationEvent;
+  if (orientation && typeof orientation.requestPermission === "function") {
+    orientation.requestPermission().catch(() => {});
+  }
+}
+
+function bindDeviceHeading() {
+  if (deviceHeadingBound) return;
+  deviceHeadingBound = true;
+  let wait = false;
+  const onOrientation = (event) => {
+    let heading = null;
+    if (Number.isFinite(event.webkitCompassHeading)) heading = event.webkitCompassHeading;
+    else if (event.absolute && Number.isFinite(event.alpha)) heading = (360 - event.alpha) % 360;
+    if (!Number.isFinite(heading)) return;
+    deviceHeading = (heading + 360) % 360;
+    if (!navRouteId || wait) return;
+    wait = true;
+    window.setTimeout(() => {
+      wait = false;
+    }, 250);
+    drawUserLocation();
+    updateNavArrow();
+  };
+  window.addEventListener("deviceorientationabsolute", onOrientation, true);
+  window.addEventListener("deviceorientation", onOrientation, true);
+}
+
+function updateNavArrow(relativeBearing) {
+  const arrow = document.getElementById("route-nav-arrow");
+  if (!arrow) return;
+  const turn = Number.isFinite(relativeBearing) ? relativeBearing : 0;
+  arrow.style.transform = `rotate(${turn}deg)`;
+}
+
+function clearNavGraphics() {
+  if (navRemainLine && map) map.removeLayer(navRemainLine);
+  if (navJoinLine && map) map.removeLayer(navJoinLine);
+  navRemainLine = null;
+  navJoinLine = null;
+}
+
+function setNavLine(kind, latlngs, style) {
+  if (!map || typeof L === "undefined") return null;
+  ensureRouteLayers();
+  let line = kind === "remain" ? navRemainLine : navJoinLine;
+  if (!latlngs || latlngs.length < 2) {
+    if (line && map) map.removeLayer(line);
+    if (kind === "remain") navRemainLine = null;
+    else navJoinLine = null;
+    return null;
+  }
+  if (!line) {
+    line = L.polyline(latlngs, Object.assign({ pane: "offline-routes", interactive: false }, style)).addTo(map);
+    if (kind === "remain") navRemainLine = line;
+    else navJoinLine = line;
+  } else {
+    line.setLatLngs(latlngs);
+    line.setStyle(style);
+  }
+  if (typeof line.bringToFront === "function") line.bringToFront();
+  return line;
+}
+
+function applyNavStyles() {
+  savedRoutes.forEach((route) => {
+    if (!route._line) return;
+    const active = !!navRouteId && route.id === navRouteId;
+    route._line.setStyle({
+      weight: active ? 6 : 3,
+      opacity: !navRouteId || active ? 0.95 : 0.35,
+    });
+  });
+}
+
+function remainingLatLngs(route, progress) {
+  const coords = route.coordinates || [];
+  const rest = [[progress.snapLat, progress.snapLon]];
+  for (let i = progress.snapIndex + 1; i < coords.length; i += 1) {
+    const pair = coords[i];
+    if (!Array.isArray(pair) || pair.length < 2) continue;
+    const lat = Number(pair[1]);
+    const lon = Number(pair[0]);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) rest.push([lat, lon]);
+  }
+  return rest;
+}
+
+function followUser(force) {
+  if (!navFollow || !map || !lastUserLatLng) return;
+  if (Number.isFinite(lastUserLatLng.accuracy) && lastUserLatLng.accuracy > 150) return;
+  const here = L.latLng(lastUserLatLng.lat, lastUserLatLng.lon);
+  if (!force && lastFollowLatLng && map.distance(lastFollowLatLng, here) < 12) return;
+  lastFollowLatLng = here;
+  const zoom = map.getZoom() >= 13 ? map.getZoom() : 14;
+  if (Math.abs(map.getZoom() - zoom) < 0.01) map.panTo(here, { animate: true });
+  else map.setView(here, zoom, { animate: true });
+}
+
+function onNavDrag() {
+  if (!navRouteId) return;
+  navFollow = false;
+  updateFollowButton();
+}
+
+function updateNavigationFrame(forceFollow) {
+  const route = routeById(navRouteId);
+  const offline = window.WellnavOffline;
+  if (!route || !offline || !lastUserLatLng) {
+    if (route) setNavCopy(route.label || "Saved route", "Waiting for GPS…");
+    return;
+  }
+  const progress = offline.routeProgress(route.coordinates, lastUserLatLng.lat, lastUserLatLng.lon);
+  if (!progress) return;
+  const guideBearing = offline.bearingDeg(
+    lastUserLatLng.lat,
+    lastUserLatLng.lon,
+    progress.guideLat,
+    progress.guideLon
+  );
+  const heading = currentHeading();
+  const relative = heading == null ? guideBearing : (guideBearing - heading + 360) % 360;
+  updateNavArrow(heading == null ? 0 : relative);
+  const label = route.label || "Saved route";
+  const bar = document.getElementById("route-nav");
+  const arrived = progress.remainingM < 45 && progress.offRouteM < 80;
+  const off = progress.offRouteM > 75;
+  let detail = "";
+  if (arrived) {
+    detail = "You're at this pin.";
+  } else if (off) {
+    detail = `${formatRouteDistance(progress.offRouteM)} off the saved route · ${formatRouteDistance(progress.remainingM)} left along it`;
+  } else {
+    const head = heading == null ? `Head ${compassLabel(guideBearing)}` : turnInstruction(relative);
+    detail = `${formatRouteDistance(progress.remainingM)} · ${head}`;
+  }
+  setNavCopy(arrived ? `Arrived · ${label}` : label, detail);
+  if (bar) {
+    bar.classList.toggle("is-off", off && !arrived);
+    bar.classList.toggle("is-arrived", arrived);
+  }
+  updateFollowButton();
+  const activePick = document.querySelector("#offline-routes .is-navigating .mapped-item-select");
+  if (activePick) {
+    activePick.textContent = arrived
+      ? `${label} — arrived`
+      : `${label} — ${formatRouteDistance(progress.remainingM)} · ${compassLabel(guideBearing)}`;
+  }
+  const color = route.color || "#d4a017";
+  setNavLine("remain", remainingLatLngs(route, progress), { color, weight: 6, opacity: 1 });
+  setNavLine(
+    "join",
+    progress.offRouteM > 20
+      ? [
+          [lastUserLatLng.lat, lastUserLatLng.lon],
+          [progress.snapLat, progress.snapLon],
+        ]
+      : null,
+    { color: "#4c8dff", weight: 3, opacity: 0.95, dashArray: "4 6" }
+  );
+  drawUserLocation();
+  followUser(!!forceFollow);
+}
+
+function beginNavigation(id, { user = false } = {}) {
+  const route = routeById(id);
+  if (!route || !navigationAvailable()) return;
+  navPaused = false;
+  navRouteId = id;
+  if (user) navUserPicked = true;
+  navFollow = true;
+  lastFollowLatLng = null;
+  if (map) map.closePopup();
+  ensureNavHud();
+  applyNavStyles();
+  requestDeviceHeading();
+  updateNavigationFrame(true);
+  renderOfflineRouteList();
+}
+
+function stopNavigation() {
+  navRouteId = null;
+  navFollow = false;
+  navPaused = false;
+  navUserPicked = false;
+  navSnappedToNearest = false;
+  clearNavGraphics();
+  applyNavStyles();
+  const bar = document.getElementById("route-nav");
+  if (bar) bar.hidden = true;
+}
+
+function syncNavigationMode() {
+  const available = navigationAvailable();
+  if (!available) {
+    clearNavGraphics();
+    navRouteId = null;
+    navFollow = false;
+    navPaused = false;
+    navUserPicked = false;
+    navSnappedToNearest = false;
+    const bar = document.getElementById("route-nav");
+    if (bar) bar.hidden = true;
+    applyNavStyles();
+    renderOfflineRouteList();
+    return;
+  }
+  ensureNavHud();
+  watchUserLocation();
+  bindDeviceHeading();
+  if (navPaused) {
+    setNavCopy("Navigation paused", "Choose Go on a saved route.");
+    updateFollowButton();
+    renderOfflineRouteList();
+    return;
+  }
+  if (!navRouteId || !routeById(navRouteId)) {
+    const pick = nearestSavedRoute();
+    if (pick) beginNavigation(pick.id, { user: false });
+    return;
+  }
+  updateNavigationFrame();
+  renderOfflineRouteList();
 }
 
 function currentPosition() {
@@ -794,6 +1189,7 @@ function drawOfflineRoutes(routes, { fit = false } = {}) {
       dashArray: route.mode === "direct" ? "7 6" : null,
       interactive: false,
     });
+    route._line = line;
     routeLineLayer.addLayer(line);
     all.push(...latlngs);
   });
@@ -801,6 +1197,7 @@ function drawOfflineRoutes(routes, { fit = false } = {}) {
     const bounds = L.latLngBounds(all);
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
   }
+  applyNavStyles();
   renderOfflineRouteList();
 }
 
@@ -831,7 +1228,7 @@ function renderOfflineRouteList() {
   const offline = window.WellnavOffline;
   rows.forEach((row, index) => {
     const li = document.createElement("li");
-    li.className = "mapped-item";
+    li.className = "mapped-item" + (row.saved && row.id === navRouteId ? " is-navigating" : "");
     const swatch = document.createElement("i");
     swatch.className = "route-swatch";
     swatch.style.background = row.color || ROUTE_COLORS[index % ROUTE_COLORS.length];
@@ -854,8 +1251,26 @@ function renderOfflineRouteList() {
     if (!row.saved) pick.title = "Save for offline to keep a route to this pin.";
     else if (row.mode === "direct") pick.title = "Direct line. A road route was not available.";
     else pick.title = "Road route from your location when this pack was saved.";
-    pick.addEventListener("click", () => focusRouteRow(row));
+    pick.dataset.routeId = row.id || "";
+    pick.addEventListener("click", () => {
+      if (navFollow) {
+        navFollow = false;
+        updateFollowButton();
+      }
+      focusRouteRow(row);
+    });
     li.append(swatch, pick);
+    if (row.saved && navigationAvailable()) {
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "route-nav-go";
+      go.textContent = row.id === navRouteId ? "Navigating" : "Go";
+      go.addEventListener("click", (event) => {
+        event.stopPropagation();
+        beginNavigation(row.id, { user: true });
+      });
+      li.appendChild(go);
+    }
     if (row.kind === "pin") {
       const remove = document.createElement("button");
       remove.type = "button";
@@ -934,9 +1349,20 @@ async function removeRoutePin(id) {
       /* ignore */
     }
   }
+  const wasActive = navRouteId === id;
   drawRoutePins();
   drawOfflineRoutes(savedRoutes);
-  if (!savedRoutes.length) stopUserLocation();
+  if (!savedRoutes.length) {
+    stopNavigation();
+    stopUserLocation();
+    return;
+  }
+  if (wasActive) {
+    navRouteId = null;
+    navUserPicked = false;
+    navSnappedToNearest = false;
+    syncNavigationMode();
+  }
 }
 
 function setPinMode(on) {
@@ -991,7 +1417,7 @@ async function saveCurrentView(saveBtn) {
     }
   );
   setOfflineStatus(
-    `Saved this view (${result.tiles.toLocaleString()} USGS tiles). Pin a spot or a well to also keep a route.`
+    `Saved this view (${result.tiles.toLocaleString()} ${basemapLabel(selectedBasemap())} tile${result.tiles === 1 ? "" : "s"}). Pin a spot or a well to also keep a route.`
   );
 }
 
@@ -1066,7 +1492,10 @@ async function saveOfflineRoutes(saveBtn, destinations, omitted = 0) {
   }
   const directCount = routes.filter((route) => route.mode === "direct").length;
   const routeLabel = `${routes.length} route${routes.length === 1 ? "" : "s"}`;
-  const tileLabel = tiles.length ? ` and ${tiles.length.toLocaleString()} USGS tiles` : "";
+  const layerName = basemapLabel(selectedBasemap());
+  const tileLabel = tiles.length
+    ? ` and ${tiles.length.toLocaleString()} ${layerName} tile${tiles.length === 1 ? "" : "s"}`
+    : "";
   let note = `Saved ${routeLabel}${tileLabel}.`;
   if (directCount) {
     note += directCount === routes.length ? " Road routes were unavailable, so these are direct lines." : ` ${directCount} use a direct line.`;
@@ -1086,7 +1515,7 @@ function ensureOfflineControls() {
       '<button type="button" class="ghost" id="offline-save">Save for offline</button>' +
       '<span class="info-tip">' +
       '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>' +
-      '<span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>' +
+      '<span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>' +
       "</span>" +
       '<button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>' +
       '<p id="offline-status" class="muted"></p>';
@@ -1115,6 +1544,7 @@ function restoreOfflineRoutePack() {
         savedRoutes = Array.isArray(routes) ? routes : [];
         drawOfflineRoutes(savedRoutes);
         if (savedRoutes.length) watchUserLocation();
+        applyNetworkState();
       })
       .catch(() => {
         routesReady = null;
@@ -1139,6 +1569,13 @@ function bindOfflinePack() {
   saveBtn.dataset.bound = "1";
   saveBtn.addEventListener("click", async () => {
     if (!map || saveBtn.dataset.busy === "1") return;
+    const basemap = selectedBasemap();
+    if (!offline.cacheableBasemap(basemap)) {
+      setOfflineStatus(
+        `${basemapLabel(basemap)} can't be saved for offline use. Choose USGS Topo, then save again.`
+      );
+      return;
+    }
     const packed = collectRouteDestinations();
     const destinations = packed.destinations;
     if (!destinations.length && !offline.isOnline()) {
@@ -1182,6 +1619,7 @@ function bindOfflinePack() {
       if (!window.confirm("Remove saved map tiles and offline routes from this device? Pins stay until you remove them.")) return;
       await offline.clear();
       savedRoutes = [];
+      stopNavigation();
       drawOfflineRoutes([]);
       stopUserLocation();
       refreshOfflineStatus();
@@ -1207,6 +1645,7 @@ function applyNetworkState() {
   } else {
     setBasemap(preferredBasemap(), { persist: false });
   }
+  syncNavigationMode();
   refreshOfflineStatus();
 }
 
@@ -2346,6 +2785,8 @@ function destroyMap() {
   routePinLayer = null;
   routeLineLayer = null;
   userLocationMarker = null;
+  navRemainLine = null;
+  navJoinLine = null;
   if (map) {
     try {
     map.remove();
@@ -2425,6 +2866,7 @@ function ensureMap() {
   map.on("zoomend", scheduleDisposal);
   map.on("moveend", persistMapView);
   map.on("zoomend", persistMapView);
+  map.on("dragstart", onNavDrag);
   if (!loadStore().order.length) restoreMapView();
   schedulePipelines();
   scheduleDisposal();

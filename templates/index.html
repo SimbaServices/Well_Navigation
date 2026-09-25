@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=routes1">
+  <link rel="stylesheet" href="/static/css/app.css?v=routes2">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -19,7 +19,7 @@
 </head>
 <body>
   <div id="net-banner" class="net-banner" hidden>
-    Offline — pinned locations, saved routes, and USGS tiles still work. Search needs a connection.
+    Offline — saved routes navigate from your GPS. Search needs a connection.
   </div>
   <header class="topbar">
     <div class="brand">
@@ -210,7 +210,7 @@
                 <button type="button" class="ghost" id="offline-save">Save for offline</button>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>
+                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>
                 </span>
                 <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
                 <p id="offline-status" class="muted"></p>
@@ -242,9 +242,9 @@
   </main>
 
   <script src="/static/js/auth-remember.js?v=1"></script>
-  <script src="/static/js/offline-map.js?v=2"></script>
+  <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=4"></script>
-  <script src="/static/js/map.js?v=routes1"></script>
+  <script src="/static/js/map.js?v=routes3"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

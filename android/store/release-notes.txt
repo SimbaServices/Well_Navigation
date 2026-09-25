@@ -1,10 +1,10 @@
-Release name: 1.12
-Version: 1.12 (versionCode 13)
+Release name: 1.13
+Version: 1.13 (versionCode 14)
 Language: English (United States)
 Play Console limit: 500 characters
 
 Paste into the Play Console release notes:
 
-Pin spots and tap Save for offline to keep a route from your location and USGS tiles along it. Share a place by text or email, or double-click its popup for directions. A phone tap selects the disposal site above a pipeline. Post on your organization's feedback board. You stay signed in after closing the app, and Remember me refills this device after you sign out.
+Open a saved route and tap Go to follow it offline from your GPS. The bar shows remaining distance, which way to head, and when you arrive. Follow keeps the map on you. Save for offline keeps USGS Topo tiles along the route; Esri and OpenStreetMap stay online-only.
 
 This app does not sell subscriptions. Organization admins buy seats on the website in Chrome.

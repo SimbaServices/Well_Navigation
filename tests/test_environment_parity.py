@@ -88,7 +88,7 @@ class EnvironmentParityTest(unittest.TestCase):
     def test_service_worker_precache_matches_index_asset_urls(self) -> None:
         index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
         worker = (ROOT / "static" / "js" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("wellnav-shell-v25", worker)
+        self.assertIn("wellnav-shell-v27", worker)
         self.assertIn("disposal-ux.js", worker)
         script = (ROOT / "static" / "js" / "map.js").read_text(encoding="utf-8")
         self.assertIn('{"X-Live-Filter":"1"}', script)
