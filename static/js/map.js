@@ -1728,6 +1728,7 @@ function ensureMap() {
     closePopupOnClick: true,
     tapTolerance: coarsePointer() ? 32 : 15,
   }).setView([31.2, -99.2], 6);
+  if (map.attributionControl) map.removeControl(map.attributionControl);
   L.control.attribution({ position: "topright", prefix: false }).addTo(map);
   map.createPane("pipelines");
   map.getPane("pipelines").style.zIndex = 350;

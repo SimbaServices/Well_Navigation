@@ -567,21 +567,25 @@ button.well-name-link {
   color: var(--accent);
   border-color: transparent;
 }
-.well-map .leaflet-control-attribution {
-  background: rgba(18, 22, 15, 0.78);
-  color: #c5cbb8;
-  font-size: 0.62rem;
-  line-height: 1.2;
-  padding: 0.05rem 0.35rem;
-  border-radius: 4px;
-  max-width: min(11rem, 46vw);
-  white-space: normal;
+.well-map .leaflet-bottom.leaflet-right {
+  top: 0;
+  bottom: auto;
 }
-.well-map .leaflet-top.leaflet-right .leaflet-control-attribution {
-  margin: 0.35rem 0.35rem 0 0;
+.well-map .leaflet-control-attribution {
+  background: transparent;
+  color: rgba(236, 232, 216, 0.55);
+  font-size: 0.56rem;
+  line-height: 1.1;
+  padding: 0;
+  margin: 0.55rem 0.85rem 0 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: min(12rem, 58vw);
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 .well-map .leaflet-control-attribution a {
-  color: #d7c27a;
+  color: inherit;
 }
 .disposal-near-status:not([hidden]) { margin: 0.35rem 0 0; font-size: 0.85rem; }
 .disposal-waste-classes {
@@ -1228,12 +1232,15 @@ body.gate .gate-tagline {
   .basemap-picker select { min-height: 1.65rem; height: 1.65rem; max-width: 10.5rem; }
   .overlay-toggle { min-height: 2rem; }
   .offline-pack .ghost { min-height: 1.65rem; padding: 0.15rem 0.1rem; font-size: 0.72rem; }
-  .well-map .leaflet-bottom.leaflet-right {
-    bottom: 0.35rem;
-    right: 0.2rem;
+  .well-map .leaflet-bottom.leaflet-right,
+  .well-map .leaflet-top.leaflet-right {
+    top: 0;
+    bottom: auto;
   }
-  .well-map .leaflet-top.leaflet-right .leaflet-control-attribution {
-    margin: 0.35rem 0.2rem 0 0;
+  .well-map .leaflet-control-attribution {
+    margin: 0.45rem 0.7rem 0 0;
+    max-width: min(11rem, 62vw);
+    font-size: 0.52rem;
   }
   .well-map {
     flex: 1 1 auto;
