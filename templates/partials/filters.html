@@ -27,7 +27,7 @@
             <input type="checkbox" name="op" value="{{ op.number }}"
                    {% if op.active %}checked{% endif %}
                    hx-get="/search"
-                   hx-include="#search-form"
+                   hx-include="#search-form, #column-filters"
                    hx-target="#results"
                    hx-push-url="true"
                    hx-indicator="#spinner"
@@ -38,7 +38,7 @@
           <button type="submit" class="filter-remove chip-x" name="remove_op" value="{{ op.number }}"
                   aria-label="Remove {{ op.name }} filter"
                   hx-get="/search"
-                  hx-include="#search-form"
+                  hx-include="#search-form, #column-filters"
                   hx-target="#results"
                   hx-push-url="true"
                   hx-indicator="#spinner">×</button>
@@ -51,7 +51,7 @@
             <input type="checkbox" name="use_name" value="1"
                    {% if name_on %}checked{% endif %}
                    hx-get="/search"
-                   hx-include="#search-form"
+                   hx-include="#search-form, #column-filters"
                    hx-target="#results"
                    hx-push-url="true"
                    hx-indicator="#spinner"
@@ -62,7 +62,7 @@
           <button type="submit" class="filter-remove chip-x" name="remove_name" value="1"
                   aria-label="Remove name filter"
                   hx-get="/search"
-                  hx-include="#search-form"
+                  hx-include="#search-form, #column-filters"
                   hx-target="#results"
                   hx-push-url="true"
                   hx-indicator="#spinner">×</button>
@@ -75,7 +75,7 @@
             <input type="checkbox" name="use_api" value="1"
                    {% if api_on %}checked{% endif %}
                    hx-get="/search"
-                   hx-include="#search-form"
+                   hx-include="#search-form, #column-filters"
                    hx-target="#results"
                    hx-push-url="true"
                    hx-indicator="#spinner"
@@ -86,7 +86,7 @@
           <button type="submit" class="filter-remove chip-x" name="remove_api" value="1"
                   aria-label="Remove API filter"
                   hx-get="/search"
-                  hx-include="#search-form"
+                  hx-include="#search-form, #column-filters"
                   hx-target="#results"
                   hx-push-url="true"
                   hx-indicator="#spinner">×</button>

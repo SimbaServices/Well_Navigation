@@ -4,8 +4,9 @@
 const SHELL = "wellnav-shell-v13";
 const PRECACHE = [
   "/",
-  "/static/css/app.css?v=mapchrome5",
+  "/static/css/app.css?v=colfilter1",
   "/static/js/map.js?v=mobile9",
+  "/static/js/column-filter.js?v=1",
   "/static/js/disposal-ux.js?v=3",
   "/static/js/offline-map.js?v=1",
   "/static/js/sw-register.js?v=2",

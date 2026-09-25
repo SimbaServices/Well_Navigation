@@ -20,15 +20,28 @@ def _insert_well(
     county: str,
     operator: str,
     operator_number: str,
+    symbol: str | None = None,
+    well_type: str | None = None,
 ) -> None:
     conn.execute(
         f"""
         INSERT INTO {wells_table("tx")}(
             api, api8, well_name, well_no, lease_name, county, operator,
-            operator_number, first_seen_at, last_seen_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 't', 't', 't')
+            operator_number, symbol, well_type, first_seen_at, last_seen_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 't', 't', 't')
         """,
-        (f"42{api8}", api8, well_name, well_no, lease_name, county, operator, operator_number),
+        (
+            f"42{api8}",
+            api8,
+            well_name,
+            well_no,
+            lease_name,
+            county,
+            operator,
+            operator_number,
+            symbol,
+            well_type,
+        ),
     )
 
 
@@ -217,6 +230,146 @@ class SearchFiltersTest(unittest.TestCase):
         self.assertEqual(wells[0]["well_name"], "PERMIT ONLY")
         self.assertEqual(wells[1]["record_kind"], "as_drilled")
         self.assertEqual(wells[2]["record_kind"], "as_drilled")
+
+    def test_column_filters_are_per_column_and_combined(self) -> None:
+        _insert_well(
+            self.conn,
+            api8="12531136",
+            well_name="BULLDOG #1",
+            lease_name="BULLDOG",
+            well_no="1",
+            county="DICKENS",
+            operator="CANAN MOWREY OPERATING, LLC",
+            operator_number="111",
+            symbol="Plugged Oil Well",
+        )
+        _insert_well(
+            self.conn,
+            api8="22735080",
+            well_name="BULLDOG #1",
+            lease_name="BULLDOG",
+            well_no="1",
+            county="HOWARD",
+            operator="ELEMENT PETROLEUM OPERATING",
+            operator_number="222",
+            symbol="Oil Well",
+        )
+        self.conn.commit()
+
+        by_county = self.repo.search(name="BULLDOG", column_filters={"county": "Howard, TX"})
+        self.assertEqual([well["api"] for well in by_county["wells"]], ["22735080"])
+
+        by_operator = self.repo.search(name="BULLDOG", column_filters={"operator": "canan"})
+        self.assertEqual([well["api"] for well in by_operator["wells"]], ["12531136"])
+        self.assertEqual(
+            self.repo.search(name="BULLDOG", column_filters={"county": "canan"})["wells"],
+            [],
+        )
+
+        both = self.repo.search(
+            name="BULLDOG",
+            column_filters={"county": "DICKENS", "operator": "MOWREY"},
+        )
+        self.assertEqual([well["api"] for well in both["wells"]], ["12531136"])
+
+        by_api = self.repo.search(column_filters={"api": "42-125-31136"})
+        self.assertEqual([well["api"] for well in by_api["wells"]], ["12531136"])
+
+        plugged = self.repo.search(name="BULLDOG", column_filters={"status": "PA"})
+        self.assertEqual([well["api"] for well in plugged["wells"]], ["12531136"])
+        producing = self.repo.search(name="BULLDOG", column_filters={"status": "producing"})
+        self.assertEqual([well["api"] for well in producing["wells"]], ["22735080"])
+
+    def test_status_column_sql_matches_labels(self) -> None:
+        from wellnav.well_status import status_label, status_match_sql
+
+        samples = [
+            ("Plugged Oil Well", ""),
+            ("Oil Well", ""),
+            ("Active", "Oil"),
+            ("Salt Water Disposal", ""),
+            ("Temporarily Abandoned", ""),
+            ("Shut-in Gas Well", ""),
+        ]
+        sql = status_match_sql("well")
+        for index, (symbol, well_type) in enumerate(samples, start=1):
+            api8 = f"9000000{index}"
+            _insert_well(
+                self.conn,
+                api8=api8,
+                well_name=symbol or "UNNAMED",
+                lease_name="",
+                well_no="",
+                county="REEVES",
+                operator="VTX",
+                operator_number="101377",
+                symbol=symbol,
+                well_type=well_type,
+            )
+            self.conn.commit()
+            label = self.conn.execute(
+                f"SELECT ({sql}) AS label FROM {wells_table('tx')} WHERE api8 = ?",
+                (api8,),
+            ).fetchone()["label"]
+            self.assertEqual(
+                label,
+                status_label(symbol, well_type=well_type),
+                f"{symbol!r} / {well_type!r}",
+            )
+
+
+class ColumnFilterTemplateTests(unittest.TestCase):
+    def test_header_filter_is_hidden_until_opened(self) -> None:
+        from jinja2 import Environment, FileSystemLoader
+
+        from wellnav.db import ROOT
+
+        env = Environment(loader=FileSystemLoader(str(ROOT / "templates")), autoescape=True)
+        env.globals.update(
+            filter_href=lambda *args, **kwargs: "/search",
+            sort_href=lambda *args, **kwargs: "/search?sort=name",
+            well_href=lambda well: "/well/1",
+            filter_query=lambda *args, **kwargs: "",
+        )
+        well = {
+            "api": "12531136",
+            "api_display": "42-125-31136",
+            "state": "tx",
+            "well_name": "BULLDOG #1",
+            "well_no": "1",
+            "lease_name": "BULLDOG",
+            "county": "DICKENS",
+            "operator": "CANAN MOWREY OPERATING, LLC",
+            "status_label": "PA · Plugged Oil Well",
+            "symbol": "Plugged Oil Well",
+            "record_kind": "as_drilled",
+            "wellhead_lat": None,
+            "wellhead_lon": None,
+            "toe_lat": None,
+            "toe_lon": None,
+        }
+        html = env.get_template("partials/wells.html").render(
+            wells=[well],
+            filters={},
+            column_filters={"operator": "CANAN"},
+            start=1,
+            end=1,
+            total=1,
+            page_size=50,
+            offset=0,
+            mode="name",
+            state="tx",
+            sort="status",
+            dir="asc",
+            subtitle='Name “bulldog”',
+        )
+        self.assertIn('data-sort="status"', html)
+        self.assertIn("col-status", html)
+        self.assertIn('data-col-filter="operator"', html)
+        self.assertIn('class="col-filter" action="/search" method="get" hidden', html)
+        self.assertIn('value="CANAN"', html)
+        self.assertIn("col-filter-dot", html)
+        self.assertNotIn(">Filter<", html.split("<form", 1)[0])
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=mapchrome5">
+  <link rel="stylesheet" href="/static/css/app.css?v=colfilter1">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -155,6 +155,11 @@
           {% include 'partials/filters.html' %}
         </div>
       </form>
+      <div id="column-filters" hidden>
+        {% for key, value in (column_filters|default({}, true)).items() if value %}
+          <input type="hidden" name="cf_{{ key }}" value="{{ value }}">
+        {% endfor %}
+      </div>
       <div id="operator-suggest"></div>
       <p class="hint hint-name">Add an operator filter, then search by well name to narrow those wells.</p>
       <p class="hint hint-api">Add an operator filter, then search by API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
@@ -253,6 +258,7 @@
   <script src="/static/js/offline-map.js?v=1"></script>
   <script src="/static/js/disposal-ux.js?v=3"></script>
   <script src="/static/js/map.js?v=mobile9"></script>
+  <script src="/static/js/column-filter.js?v=1"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

@@ -157,6 +157,19 @@ def parse_filters(source) -> dict:
     }
 
 
+COLUMN_FILTER_KEYS = ("name", "api", "status", "operator", "lease", "county")
+
+
+def parse_column_filters(source) -> dict[str, str]:
+    """Per-column text filters from cf_* query fields. Blank values are omitted."""
+    found: dict[str, str] = {}
+    for key in COLUMN_FILTER_KEYS:
+        value = _one(source, f"cf_{key}")
+        if value:
+            found[key] = value[:80]
+    return found
+
+
 def empty_filters() -> dict:
     return {
         "operators": [],

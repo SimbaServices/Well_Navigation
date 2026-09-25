@@ -1,7 +1,14 @@
 import unittest
 from urllib.parse import parse_qs
 
-from wellnav.filters import apply_search_input, empty_filters, parse_filters, search_kwargs, subtitle
+from wellnav.filters import (
+    apply_search_input,
+    empty_filters,
+    parse_column_filters,
+    parse_filters,
+    search_kwargs,
+    subtitle,
+)
 from wellnav.operators import normalize_operator_name
 
 
@@ -64,6 +71,15 @@ class FilterParseTests(unittest.TestCase):
         parsed = parse_qs(filter_query(filters, mode="name", offset=0))
         self.assertEqual(parsed["op"], ["123"])
         self.assertEqual(parsed["name"], ["UNI"])
+
+    def test_column_filters_drop_blanks_and_cap_length(self) -> None:
+        parsed = parse_column_filters(
+            Params(cf_operator="  OXY  ", cf_county="", cf_name="N" * 90, cf_api="42-003")
+        )
+        self.assertEqual(parsed["operator"], "OXY")
+        self.assertNotIn("county", parsed)
+        self.assertEqual(len(parsed["name"]), 80)
+        self.assertEqual(parsed["api"], "42-003")
 
     def test_case_and_id_variants_collapse_to_one_operator(self) -> None:
         filters = parse_filters(

@@ -399,11 +399,76 @@ table.wells th.save-col, table.wells td.save-cell { width: 5.2rem; text-align: c
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 0.85rem;
   gap: 0.28rem;
   cursor: pointer;
 }
 .sort-link:hover, .sort-link.is-active { color: var(--accent); }
 .sort-ind { font-size: 0.7rem; }
+.sort-idle { opacity: 0; }
+.col-head-wrap { position: relative; }
+.col-head { display: flex; align-items: center; gap: 0.15rem; }
+.col-filter-toggle {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.col-filter-toggle:hover,
+.col-filter-toggle:focus-visible,
+th[aria-sort="ascending"] .col-filter-toggle,
+th[aria-sort="descending"] .col-filter-toggle,
+.col-filter-toggle:has(.col-filter-dot) { color: var(--accent); }
+.col-filter-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.col-head-wrap:hover .sort-idle,
+.col-head-wrap:focus-within .sort-idle { opacity: 0.55; }
+.col-filter-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: 0 0 auto;
+}
+.col-filter {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 0.15rem);
+  left: 0;
+  width: 11rem;
+  max-width: 70vw;
+  padding: 0.28rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+.col-filter[hidden] { display: none !important; }
+.col-filter input {
+  width: 100%;
+  margin: 0;
+  padding: 0.28rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+}
+.col-filter input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.col-filter input::placeholder { color: var(--muted); }
+table.wells th.col-sortable:nth-last-child(-n+2) .col-filter { left: auto; right: 0; }
+.pager:empty, .pager[hidden] { display: none; }
 .well-row { cursor: pointer; }
 .well-row.is-mapped { background: rgba(124, 179, 106, 0.08); }
 .well-row.is-selected { background: rgba(212, 160, 23, 0.14); box-shadow: inset 3px 0 0 var(--accent); }

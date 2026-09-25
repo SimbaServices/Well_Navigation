@@ -62,3 +62,64 @@ def status_label(
     if text.lower() in _ACTIVE and kind:
         return f"{text} · {kind}"
     return detail
+
+
+def status_match_sql(record_kind: str) -> str:
+    """SQL expression that mirrors status_label() for column text filters."""
+    if record_kind == "permit":
+        return """
+        CASE lower(trim(coalesce(status, '')))
+          WHEN 'cancelled' THEN 'Canceled permit'
+          WHEN 'expired' THEN 'Expired permit'
+          ELSE CASE
+            WHEN trim(coalesce(symbol, '')) != '' THEN trim(symbol)
+            ELSE 'Permitted location'
+          END
+        END
+        """
+    blob = "lower(trim(coalesce(symbol, '')) || ' ' || trim(coalesce(well_type, '')))"
+    compact = f"replace(replace({blob}, ' ', ''), '-', '')"
+    detail = "coalesce(nullif(trim(symbol), ''), nullif(trim(well_type), ''), '')"
+    injection = (
+        f"instr({blob}, 'inject') > 0 OR instr({blob}, 'disposal') > 0 "
+        f"OR instr({blob}, 'swd') > 0 OR instr({blob}, 'salt water') > 0"
+    )
+    producing = (
+        "'oil well', 'gas well', 'oil/gas well', 'oil / gas well', "
+        "'oil', 'gas', 'oil/gas', 'oil and gas', 'co2', 'c02'"
+    )
+    active = "'active', 'producing', 'completed', 'producing well'"
+    return f"""
+    CASE
+      WHEN instr({compact}, 'plugged') > 0 THEN 'PA · ' || {detail}
+      WHEN instr({compact}, 'temporar') > 0 THEN 'TA · ' || {detail}
+      WHEN instr({compact}, 'shutin') > 0 THEN 'Shut-in · ' || {detail}
+      WHEN {injection} THEN 'Injector · ' || CASE
+        WHEN trim(coalesce(well_type, '')) != '' AND (
+          instr(lower(well_type), 'inject') > 0
+          OR instr(lower(well_type), 'disposal') > 0
+          OR instr(lower(well_type), 'swd') > 0
+          OR instr(lower(well_type), 'salt water') > 0
+        ) THEN trim(well_type)
+        ELSE {detail}
+      END
+      WHEN lower(trim(coalesce(symbol, ''))) IN ('oil well', 'gas well', 'oil/gas well', 'oil / gas well')
+        THEN 'Producing · ' || trim(symbol)
+      WHEN lower(trim(coalesce(symbol, ''))) IN ({active})
+        AND (
+          trim(coalesce(well_type, '')) = ''
+          OR lower(trim(well_type)) IN ({producing})
+          OR (
+            lower(trim(well_type)) LIKE '% well'
+            AND (instr(lower(well_type), 'oil') > 0 OR instr(lower(well_type), 'gas') > 0)
+          )
+        )
+        THEN 'Producing · ' || coalesce(nullif(trim(well_type), ''), trim(symbol))
+      WHEN lower(trim(coalesce(well_type, ''))) IN ('oil well', 'gas well', 'oil/gas well', 'oil / gas well')
+        THEN 'Producing · ' || trim(well_type)
+      WHEN lower(trim(coalesce(symbol, ''))) IN ({active})
+        AND trim(coalesce(well_type, '')) != ''
+        THEN trim(symbol) || ' · ' || trim(well_type)
+      ELSE {detail}
+    END
+    """

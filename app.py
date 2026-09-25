@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import os
 from pathlib import Path
@@ -33,10 +34,12 @@ from wellnav.auth import (
 )
 from wellnav.phone_auth import PHONE_AUTH
 from wellnav.filters import (
+    COLUMN_FILTER_KEYS,
     apply_search_input,
     empty_filters,
     filter_query,
     has_filter_chips,
+    parse_column_filters,
     parse_filters,
     search_kwargs,
     subtitle as filter_subtitle,
@@ -223,12 +226,31 @@ def render(name: str, request: Request | None = None, **context) -> str:
     return templates.get_template(name).render(context)
 
 
+def column_filter_state(columns: dict[str, str] | None) -> str:
+    """Hidden inputs that keep per-column text filters across sort, paging, and chips."""
+    inputs = []
+    for key in COLUMN_FILTER_KEYS:
+        value = (columns or {}).get(key) or ""
+        if not value:
+            continue
+        inputs.append(
+            f'<input type="hidden" name="cf_{html.escape(key, quote=True)}" '
+            f'value="{html.escape(value, quote=True)}">'
+        )
+    return (
+        '<div id="column-filters" hidden hx-swap-oob="outerHTML">'
+        + "".join(inputs)
+        + "</div>"
+    )
+
+
 def page(
     request: Request,
     *,
     results_html: str = "",
     map_html: str = "",
     filters: dict | None = None,
+    column_filters: dict | None = None,
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
@@ -239,6 +261,7 @@ def page(
             results_html=results_html,
             map_html=map_html,
             filters=filters or empty_filters(),
+            column_filters=column_filters or {},
         ),
     )
 
@@ -279,13 +302,17 @@ def fragment_or_page(
     nav: bool = False,
     clear_suggest: bool = False,
     filters: dict | None = None,
+    column_filters: dict | None = None,
     retarget: str | None = None,
 ) -> HTMLResponse:
     if is_htmx(request):
+        body = html
+        if column_filters is not None:
+            body += column_filter_state(column_filters)
         response = HTMLResponse(
             with_oob(
                 request,
-                html,
+                body,
                 nav=nav,
                 clear_suggest=clear_suggest,
                 filters=filters,
@@ -294,7 +321,13 @@ def fragment_or_page(
         if retarget:
             response.headers["HX-Retarget"] = retarget
         return response
-    return page(request, results_html=html, map_html=map_html, filters=filters)
+    return page(
+        request,
+        results_html=html,
+        map_html=map_html,
+        filters=filters,
+        column_filters=column_filters,
+    )
 
 
 def redirect_to(request: Request, url: str) -> HTMLResponse | RedirectResponse:
@@ -906,6 +939,12 @@ async def search(request: Request) -> HTMLResponse:
         return await disposal_search(request)
     filters = parse_filters(source)
     committing = data.get("commit") == "1"
+    column_filters = (
+        {}
+        if committing or data.get("clear_filters") == "1"
+        else parse_column_filters(source)
+    )
+    column_partial = is_htmx(request) and request.headers.get("x-column-filter") == "1"
     added_operator = bool(data.get("add_op_number") or data.get("add_op_name"))
     clear_query = committing or added_operator
     error = None
@@ -942,6 +981,7 @@ async def search(request: Request) -> HTMLResponse:
                 html,
                 clear_suggest=False,
                 filters=filters,
+                column_filters=column_filters,
                 retarget="#operator-suggest",
             )
     elif committing and mode in {"name", "api"} and q:
@@ -964,6 +1004,8 @@ async def search(request: Request) -> HTMLResponse:
         "clear_query": clear_query,
         "sort": sort,
         "dir": direction,
+        "column_filters": column_filters,
+        "column_partial": column_partial,
     }
     state = request_state_token(data) if data.get("state") else request_state_token(request)
     request.state.app_state = state
@@ -995,9 +1037,12 @@ async def search(request: Request) -> HTMLResponse:
             offset=offset,
             sort=sort,
             direction=direction,
+            column_filters=column_filters,
         )
         if (
-            result["total"] == 0
+            not column_filters
+            and not column_partial
+            and result["total"] == 0
             and mode == "name"
             and q
             and not context["lease_no"]
@@ -1017,12 +1062,17 @@ async def search(request: Request) -> HTMLResponse:
                     offset=offset,
                     sort=sort,
                     direction=direction,
+                    column_filters=column_filters,
                 )
                 context["subtitle"] = f"Lease {leases[0]['name']}"
             elif len(leases) > 1:
                 html = render("partials/leases.html", request, leases=leases, query=q)
                 return fragment_or_page(
-                    request, html, clear_suggest=True, filters=filters
+                    request,
+                    html,
+                    clear_suggest=True,
+                    filters=filters,
+                    column_filters=column_filters,
                 )
         if result["total"] == 0 and counts["total"] == 0:
             context["subtitle"] = "Local database is empty — run python -m wellnav.ingest load-texas"
@@ -1043,6 +1093,7 @@ async def search(request: Request) -> HTMLResponse:
                     context["district"],
                     offset,
                     page_size,
+                    ",".join(f"{key}={column_filters[key]}" for key in COLUMN_FILTER_KEYS if column_filters.get(key)),
                 ),
                 {
                     "wells": result["wells"],
@@ -1073,8 +1124,14 @@ async def search(request: Request) -> HTMLResponse:
         error=error,
         **context,
     )
+    if column_partial:
+        return HTMLResponse(html + column_filter_state(column_filters))
     return fragment_or_page(
-        request, html, clear_suggest=True, filters=filters
+        request,
+        html,
+        clear_suggest=True,
+        filters=filters,
+        column_filters=column_filters,
     )
 
 

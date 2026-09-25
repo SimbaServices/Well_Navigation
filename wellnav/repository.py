@@ -18,7 +18,7 @@ from wellnav.states import (
     wells_table,
 )
 from wellnav.operators import collapse_operators, normalize_operator_name
-from wellnav.well_status import status_label
+from wellnav.well_status import status_label, status_match_sql
 
 
 def _states_arg(state: str | list[str] | None) -> list[str]:
@@ -55,6 +55,57 @@ _SORT_COLUMNS = {
     "operator": "operator",
     "county": "county",
 }
+
+
+def _contains_like(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def _county_needle(value: str) -> str:
+    text = value.strip()
+    if "," in text:
+        head, tail = text.split(",", 1)
+        if len(tail.strip()) <= 2:
+            return head.strip()
+    return text
+
+
+def _column_filters_sql(columns: dict[str, str] | None, *, kind: str) -> tuple[str, list]:
+    """AND clauses that match the text shown in one results column."""
+    columns = columns or {}
+    clauses: list[str] = []
+    args: list = []
+
+    def contains(expr: str, value: str) -> None:
+        clauses.append(f"({expr}) LIKE ? ESCAPE '\\'")
+        args.append(_contains_like(value))
+
+    name = (columns.get("name") or "").strip()
+    if name:
+        contains("well_name", name)
+    api = (columns.get("api") or "").strip()
+    if api:
+        digits = "".join(ch for ch in api if ch.isdigit())
+        if digits:
+            contains("replace(coalesce(api, '') || coalesce(api8, ''), '-', '')", digits)
+        else:
+            clauses.append("1=0")
+    status = (columns.get("status") or "").strip()
+    if status:
+        contains(status_match_sql(kind), status)
+    operator = (columns.get("operator") or "").strip()
+    if operator:
+        contains("operator", operator)
+    lease = (columns.get("lease") or "").strip()
+    if lease:
+        contains("lease_name", lease)
+    county = _county_needle(columns.get("county") or "")
+    if county:
+        contains("county", county)
+    if not clauses:
+        return "", []
+    return " AND ".join(clauses), args
 
 
 def _order_sql(sort: str, direction: str) -> str:
@@ -212,6 +263,7 @@ class WellRepository:
         api: str = "",
         sort: str = "name",
         direction: str = "asc",
+        column_filters: dict[str, str] | None = None,
     ) -> dict:
         states = _states_arg(state)
         well_where, well_args = self._filters(
@@ -236,6 +288,14 @@ class WellRepository:
             name=name,
             api=api,
         )
+        well_extra, well_extra_args = _column_filters_sql(column_filters, kind="well")
+        permit_extra, permit_extra_args = _column_filters_sql(column_filters, kind="permit")
+        if well_extra:
+            well_where = f"({well_where}) AND {well_extra}"
+            well_args = [*well_args, *well_extra_args]
+        if permit_extra:
+            permit_where = f"({permit_where}) AND {permit_extra}"
+            permit_args = [*permit_args, *permit_extra_args]
         parts: list[str] = []
         args: list = []
         for code in states:
