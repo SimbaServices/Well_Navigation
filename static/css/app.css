@@ -809,6 +809,12 @@ button.well-name-link {
   border-radius: 12px;
   border: 1px solid var(--line);
 }
+/* Pipeline drawing is hit-tested from the map click. The canvas must not
+   swallow taps meant for disposal markers in the phone WebViews. */
+.leaflet-pipelines-pane,
+.leaflet-pipelines-pane canvas {
+  pointer-events: none;
+}
 .map-footer {
   display: flex;
   align-items: center;

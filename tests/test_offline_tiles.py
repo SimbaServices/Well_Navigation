@@ -58,7 +58,7 @@ class OfflineRoutesTest(unittest.TestCase):
         self.assertIn("keyup[this.value.trim().length>=2]", index)
         worker = (root / "static" / "js" / "sw.js").read_text(encoding="utf-8")
         self.assertIn('pathname === "/sw.js"', worker)
-        self.assertIn("wellnav-shell-v15", worker)
+        self.assertIn("wellnav-shell-v16", worker)
         self.assertIn('name="scope"', index)
         self.assertIn('name="state"', index)
         self.assertNotIn('name="scope" value="wells"', index)

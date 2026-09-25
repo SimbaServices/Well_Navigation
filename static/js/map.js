@@ -661,6 +661,12 @@ function pipelineHitPx() {
   return coarsePointer() ? 28 : 12;
 }
 
+function disposalHitPx() {
+  // Fingers miss a 6px dot. On a phone, a tap near the site should select it
+  // instead of the pipeline underneath.
+  return coarsePointer() ? 36 : 8;
+}
+
 function pipelineStyle(feature) {
   const props = feature.properties || {};
   const group = props.commodity_group || "other";
@@ -886,8 +892,8 @@ function pointerOnMapChrome(event) {
   return !!target.closest(".leaflet-marker-icon, .leaflet-popup, .leaflet-control, .leaflet-tooltip");
 }
 
-function pointHitsMarker(latlng) {
-  if (!map || !latlng) return false;
+function pointHitsLayer(root, latlng) {
+  if (!map || !root || !latlng) return false;
   const point = map.latLngToLayerPoint(latlng);
   let hit = false;
   const visit = (layer) => {
@@ -904,9 +910,41 @@ function pointHitsMarker(latlng) {
       }
     }
   };
-  visit(wellLayer);
-  visit(disposalLayer);
+  visit(root);
   return hit;
+}
+
+function nearestDisposal(latlng, maxPx) {
+  if (!map || !disposalLayer || !disposalEnabled()) return null;
+  const target = map.latLngToLayerPoint(latlng);
+  let best = null;
+  let bestDist = maxPx;
+  disposalLayer.eachLayer((layer) => {
+    if (typeof layer.getLatLng !== "function") return;
+    const dist = map.latLngToLayerPoint(layer.getLatLng()).distanceTo(target);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = { layer, dist };
+    }
+  });
+  return best;
+}
+
+function selectDisposalFromLayer(layer) {
+  const feature = layer && layer.feature;
+  if (!feature) return;
+  const props = feature.properties || {};
+  const here = typeof layer.getLatLng === "function" ? layer.getLatLng() : null;
+  selectDisposalSite(
+    {
+      ...props,
+      id: feature.id ?? props.id,
+      lat: props.lat != null ? props.lat : here && here.lat,
+      lon: props.lon != null ? props.lon : here && here.lng,
+    },
+    { fromMarker: true }
+  );
+  if (typeof layer.openPopup === "function") layer.openPopup();
 }
 
 function nearestPipeline(latlng, maxPx) {
@@ -924,7 +962,7 @@ function nearestPipeline(latlng, maxPx) {
         const dist = point.distanceTo(target);
         if (dist < bestDist) {
           bestDist = dist;
-          best = { layer, feature: layer.feature, point };
+          best = { layer, feature: layer.feature, point, dist };
         }
       }
       return;
@@ -939,7 +977,12 @@ function nearestPipeline(latlng, maxPx) {
 }
 
 function pickPipelineAt(event) {
-  if (!event || !event.latlng || pointerOnMapChrome(event) || pointHitsMarker(event.latlng)) return;
+  if (!event || !event.latlng || pointerOnMapChrome(event) || pointHitsLayer(wellLayer, event.latlng)) return;
+  const disposal = nearestDisposal(event.latlng, disposalHitPx());
+  if (disposal) {
+    selectDisposalFromLayer(disposal.layer);
+    return;
+  }
   const hit = nearestPipeline(event.latlng, pipelineHitPx());
   if (!hit || !hit.feature) return;
   const snapped = hit.point ? map.layerPointToLatLng(hit.point) : event.latlng;
@@ -1233,9 +1276,10 @@ function disposalPopup(props) {
 }
 
 function disposalMarkerStyle(selected) {
+  const grow = coarsePointer() ? 4 : 0;
   return selected
-    ? { radius: 8, color: "#1a1404", fillColor: "#e08a5c", fillOpacity: 1, weight: 2 }
-    : { radius: 6, color: "#3a2218", fillColor: "#c45c3a", fillOpacity: 0.92, weight: 1 };
+    ? { radius: 8 + grow, color: "#1a1404", fillColor: "#e08a5c", fillOpacity: 1, weight: 2 }
+    : { radius: 6 + grow, color: "#3a2218", fillColor: "#c45c3a", fillOpacity: 0.92, weight: 1 };
 }
 
 function disposalFeatureId(feature) {
@@ -1266,14 +1310,18 @@ function ensureDisposalLayer() {
   if (!map) return null;
   if (!map.getPane("disposal")) {
     map.createPane("disposal");
-    map.getPane("disposal").style.zIndex = 360;
+    map.getPane("disposal").style.zIndex = 410;
   }
   if (!disposalLayer) {
     disposalLayer = L.geoJSON(null, {
       pane: "disposal",
       pointToLayer(feature, latlng) {
         const selected = disposalFocus && disposalFeatureId(feature) === String(disposalFocus.id);
-        return L.circleMarker(latlng, disposalMarkerStyle(selected));
+        return L.circleMarker(latlng, {
+          ...disposalMarkerStyle(selected),
+          pane: "disposal",
+          interactive: true,
+        });
       },
       onEachFeature(feature, layer) {
         const props = feature.properties || {};
@@ -1293,10 +1341,7 @@ function ensureDisposalLayer() {
           L.DomEvent.stop(event);
           if (event.originalEvent) L.DomEvent.stop(event.originalEvent);
           ignoreDisposalDismiss = true;
-          selectDisposalSite(
-            { ...props, id: feature.id ?? props.id },
-            { fromMarker: true }
-          );
+          selectDisposalFromLayer(layer);
           window.setTimeout(() => {
             ignoreDisposalDismiss = false;
           }, 0);
@@ -1733,7 +1778,7 @@ function ensureMap() {
   map.createPane("pipelines");
   map.getPane("pipelines").style.zIndex = 350;
   map.createPane("disposal");
-  map.getPane("disposal").style.zIndex = 360;
+  map.getPane("disposal").style.zIndex = 410;
   map.createPane("pipeline-pin");
   map.getPane("pipeline-pin").style.zIndex = 450;
   setBasemap(preferredBasemap(), { persist: false });
@@ -1743,7 +1788,8 @@ function ensureMap() {
   bindOfflinePack();
   observeMapSize(el);
   map.on("click", (event) => {
-    disposalPopupPinned = false;
+    const disposal = event && event.latlng && nearestDisposal(event.latlng, disposalHitPx());
+    if (!disposal) disposalPopupPinned = false;
     pickPipelineAt(event);
   });
   map.on("moveend", schedulePipelines);
