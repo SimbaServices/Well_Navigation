@@ -220,7 +220,10 @@
       if (parts.length < 2) throw new Error(`Line ${index + 1}: expected lat,lng.`);
       const lat = Number(parts[0]);
       const lng = Number(parts[1]);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error(`Line ${index + 1}: expected lat,lng.`);
+      }
+      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
         throw new Error(`Line ${index + 1}: coordinates are out of range.`);
       }
       points.push([lng, lat]);
@@ -337,13 +340,6 @@
     else if (Object.prototype.hasOwnProperty.call(data, "latitude")) applyFix(data);
   }
 
-  function addPoint(latLng) {
-    coordinates.push([latLng.lng, latLng.lat]);
-    renderRoute();
-    syncText();
-    saveRoute();
-  }
-
   function undoPoint() {
     if (!coordinates.length) return;
     coordinates.pop();
@@ -353,17 +349,36 @@
   }
 
   let clickTimer = 0;
-  map.on("click", (event) => {
+  let recentAdds = 0;
+
+  function cancelPendingClicks() {
     window.clearTimeout(clickTimer);
-    const latLng = event.latlng;
+    clickTimer = 0;
+    recentAdds = 0;
+  }
+
+  map.on("click", (event) => {
+    coordinates.push([event.latlng.lng, event.latlng.lat]);
+    recentAdds += 1;
+    renderRoute();
+    syncText();
+    window.clearTimeout(clickTimer);
     clickTimer = window.setTimeout(() => {
       clickTimer = 0;
-      addPoint(latLng);
-    }, 280);
+      recentAdds = 0;
+      saveRoute();
+    }, 550);
   });
   map.on("dblclick", () => {
     window.clearTimeout(clickTimer);
     clickTimer = 0;
+    const remove = Math.min(recentAdds, coordinates.length);
+    recentAdds = 0;
+    if (!remove) return;
+    coordinates.splice(coordinates.length - remove, remove);
+    renderRoute();
+    syncText();
+    saveRoute();
   });
 
   document.getElementById("apply").addEventListener("click", () => {
@@ -374,6 +389,7 @@
       setMessage(error.message || "Could not read that route.");
       return;
     }
+    cancelPendingClicks();
     coordinates = next;
     renderRoute();
     syncText();
@@ -382,9 +398,13 @@
     saveRoute();
   });
 
-  undoButton.addEventListener("click", undoPoint);
+  undoButton.addEventListener("click", () => {
+    cancelPendingClicks();
+    undoPoint();
+  });
   clearButton.addEventListener("click", () => {
     if (!coordinates.length) return;
+    cancelPendingClicks();
     coordinates = [];
     renderRoute();
     syncText();
@@ -392,6 +412,12 @@
   });
 
   document.getElementById("play").addEventListener("click", () => {
+    if (clickTimer) {
+      window.clearTimeout(clickTimer);
+      clickTimer = 0;
+      recentAdds = 0;
+      saveRoute();
+    }
     routeChain.then(() => sendSimulation("play"));
   });
   document.getElementById("pause").addEventListener("click", () => sendSimulation("pause"));
