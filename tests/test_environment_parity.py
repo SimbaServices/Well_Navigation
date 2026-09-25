@@ -1,9 +1,9 @@
-"""Environment parity: Near me / wait reports / map UX must match everywhere.
+"""Environment parity: wait reports and map UX must match everywhere.
 
 Web production, iOS store WebView, Android store WebView, and local/dev all
 load the same workspace document and scripts. __WN_STORE / store_client may
 only affect service-worker registration, billing checkout, and third-party
-analytics — never disposal search, geolocation near-me, wait reports, or map UX.
+analytics — never disposal search, wait reports, or map UX.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ WORKSPACE_ASSETS = (
     "leaflet.js",
     "leaflet.css",
     "sw-register.js",
+    "column-filter.js",
 )
 
 PRODUCT_UX_GATED_PATTERNS = (
@@ -76,9 +77,10 @@ class EnvironmentParityTest(unittest.TestCase):
         for asset in WORKSPACE_ASSETS:
             self.assertIn(asset, index, f"index.html must load {asset} for every environment")
 
-        self.assertIn('value="near"', index)
-        self.assertIn("Near me", index)
-        self.assertIn('value="radium_near"', index)
+        self.assertNotIn('value="near"', index)
+        self.assertNotIn("Near me", index)
+        self.assertNotIn('value="radium_near"', index)
+        self.assertNotIn("Radium near me", index)
         self.assertIn("disposal-ux.js", index)
         self.assertNotIn("{% if store_client %}", index)
         self.assertNotIn("{% if not store_client %}", index)
@@ -86,7 +88,7 @@ class EnvironmentParityTest(unittest.TestCase):
     def test_service_worker_precache_matches_index_asset_urls(self) -> None:
         index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
         worker = (ROOT / "static" / "js" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("wellnav-shell-v13", worker)
+        self.assertIn("wellnav-shell-v14", worker)
         self.assertIn("disposal-ux.js", worker)
 
         hrefs = re.findall(r'(?:href|src)="(/static/[^"]+)"', index)
@@ -104,6 +106,7 @@ class EnvironmentParityTest(unittest.TestCase):
                     "htmx.min.js",
                     "leaflet.css",
                     "leaflet.js",
+                    "column-filter.js",
                 )
             )
         ]
@@ -132,8 +135,8 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("apiFetch", disposal)
         self.assertIn("same-origin", disposal)
         self.assertIn("disposal-wait", disposal)
-        self.assertIn("near", disposal)
-        self.assertIn("radium_near", disposal)
+        self.assertNotIn("radium_near", disposal)
+        self.assertNotIn("bindNearSearch", disposal)
 
     def test_store_boot_only_arms_credentials_and_service_worker(self) -> None:
         boot = (ROOT / "templates" / "partials" / "store_boot.js").read_text(encoding="utf-8")
@@ -165,8 +168,13 @@ class EnvironmentParityTest(unittest.TestCase):
         ios = (ROOT / "ios" / "WellNavigation" / "WebContainer.swift").read_text(encoding="utf-8")
         self.assertIn("setGeolocationEnabled(true)", android)
         self.assertIn("onGeolocationPermissionsShowPrompt", android)
+        self.assertIn("setSupportMultipleWindows(true)", android)
+        self.assertIn("onCreateWindow", android)
+        self.assertIn("maps.apple.com", android)
+        self.assertIn("permit PDFs, maps", android)
         self.assertIn("CLLocationManager", ios)
         self.assertIn("navigator.geolocation", ios)
+        self.assertIn("permit PDFs, maps", ios)
 
     def test_wait_and_near_routes_are_not_store_gated(self) -> None:
         app_src = (ROOT / "app.py").read_text(encoding="utf-8")

@@ -1,3 +1,4 @@
+{% set starred = (well.state|default('tx') ~ ':' ~ well.api) in saved_apis|default([]) or well.api in saved_apis|default([]) %}
 {% if user %}
   <form class="save-form"
         action="/saved/{{ well.api }}"
@@ -18,12 +19,25 @@
     <input type="hidden" name="operator" value="{{ well.operator or '' }}">
     <input type="hidden" name="state" value="{{ well.state or 'tx' }}">
     <input type="hidden" name="variant" value="{{ variant or 'row' }}">
-    {% if (well.state|default('tx') ~ ':' ~ well.api) in saved_apis or well.api in saved_apis %}
+    {% if variant == 'row' %}
+      <button type="submit" class="save-btn save-star{% if starred %} on{% endif %}"
+              title="{{ 'Remove from saved wells' if starred else 'Save this well' }}"
+              aria-label="{{ 'Remove from saved wells' if starred else 'Save this well' }}"
+              aria-pressed="{{ 'true' if starred else 'false' }}">{% if starred %}★{% else %}☆{% endif %}</button>
+    {% elif starred %}
       <button type="submit" class="save-btn on" title="Remove from saved wells" aria-pressed="true">★ Saved</button>
     {% else %}
       <button type="submit" class="save-btn" title="Save this well" aria-pressed="false">☆ Save</button>
     {% endif %}
   </form>
+{% elif variant == 'row' %}
+  <a class="save-btn save-star"
+     href="/login?next=/well/{{ well.api }}"
+     hx-get="/login?next=/well/{{ well.api }}"
+     hx-target="#results"
+     hx-push-url="true"
+     title="Sign in to save wells"
+     aria-label="Sign in to save wells">☆</a>
 {% else %}
   <a class="save-btn"
      href="/login?next=/well/{{ well.api }}"

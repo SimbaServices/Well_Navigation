@@ -221,25 +221,14 @@ class DisposalNearestTests(unittest.TestCase):
             )
             self.assertEqual(too_far, [])
 
-            via_search = search_sites(
-                "",
-                mode="near",
-                lat=29.7604,
-                lon=-95.3698,
-                limit=2,
-                path=db_path,
+            self.assertEqual(
+                search_sites("", mode="near", path=db_path),
+                [],
             )
-            self.assertEqual(len(via_search), 2)
-            self.assertEqual(via_search[0]["id"], 10)
-
-            via_radium = search_sites(
-                "",
-                mode="radium_near",
-                lat=31.9973,
-                lon=-102.0779,
-                path=db_path,
+            self.assertEqual(
+                search_sites("", mode="radium_near", path=db_path),
+                [],
             )
-            self.assertEqual([row["id"] for row in via_radium], [12])
 
 
 class DriveMinutesTests(unittest.TestCase):

@@ -215,8 +215,6 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="name"]:checked) .ph-disp-name { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="operator"]:checked) .ph-disp-op { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="permit"]:checked) .ph-disp-permit { display: block; }
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) .ph-disp-near { display: block; }
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) .ph-disp-radium { display: block; }
 .search-form:has(select[name=scope] option[value="wells"]:checked) .modes-pipelines,
 .search-form:has(select[name=scope] option[value="wells"]:checked) .modes-disposal { display: none; }
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) .modes-wells,
@@ -227,8 +225,7 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked) #active-filters { display: none; }
 .query-field:has(input:not(:placeholder-shown)) .ph { display: none !important; }
 .hint-api, .hint-operator, .hint-pipe-op, .hint-pipe-name,
-.hint-disp-name, .hint-disp-op, .hint-disp-permit,
-.hint-disp-near, .hint-disp-radium { display: none; }
+.hint-disp-name, .hint-disp-op, .hint-disp-permit { display: none; }
 .search-form:has([name=mode][value="api"]:checked) .hint-name,
 .search-form:has([name=mode][value="operator"]:checked) .hint-name,
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) .hint-name,
@@ -254,13 +251,6 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="name"]:checked) ~ .hint-disp-name { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="operator"]:checked) ~ .hint-disp-op { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="permit"]:checked) ~ .hint-disp-permit { display: block; }
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) ~ .hint-disp-near { display: block; }
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) ~ .hint-disp-radium { display: block; }
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="near"]:checked) .query-field input,
-.search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="radium_near"]:checked) .query-field input {
-  opacity: 0.55;
-  pointer-events: none;
-}
 .search-form:has(select[name=scope] option[value="wells"]:checked):not(:has([name=mode][value="operator"]:checked)) + #operator-suggest { display: none; }
 #active-filters { display: contents; }
 #operator-suggest { margin-top: 0.15rem; }
@@ -390,7 +380,12 @@ table.wells { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 table.wells th, table.wells td { text-align: left; padding: 0.55rem 0.45rem; border-bottom: 1px solid var(--line); }
 table.wells th { color: var(--muted); font-weight: 600; }
 table.wells th.map-col, table.wells td.map-col { width: 2.6rem; text-align: center; }
-table.wells th.save-col, table.wells td.save-cell { width: 5.2rem; text-align: center; }
+table.wells th.save-col, table.wells td.save-cell {
+  width: 1.8rem;
+  text-align: right;
+  padding-left: 0.15rem;
+  padding-right: 0.35rem;
+}
 .save-status { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--ink); }
 .save-status:empty { display: none; }
 .save-status .text-link { margin-left: 0.35rem; }
@@ -657,7 +652,6 @@ button.well-name-link {
 .well-map .leaflet-control-attribution a {
   color: inherit;
 }
-.disposal-near-status:not([hidden]) { margin: 0.35rem 0 0; font-size: 0.85rem; }
 .disposal-waste-classes {
   margin: 0.15rem 0 0.35rem;
   font-size: 0.85rem;
@@ -1174,6 +1168,25 @@ body.gate .gate-tagline {
   align-items: center;
 }
 .save-btn.on { background: #3d2e0a; color: var(--accent); border-color: var(--accent); }
+.save-btn.save-star {
+  background: transparent;
+  border: 0;
+  padding: 0.05rem 0.15rem;
+  color: var(--muted);
+  opacity: 0.4;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.well-row:hover .save-btn.save-star,
+.save-btn.save-star:hover,
+.save-btn.save-star:focus-visible { opacity: 0.9; color: var(--ink); border-color: transparent; }
+.save-btn.save-star.on,
+.save-btn.save-star.on:hover {
+  opacity: 1;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+}
 .map-actions { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.7rem; }
 .map-chrome[data-focus="idle"] #map-title { display: none; }
 .map-chrome[data-focus="pipeline"] #map-title,

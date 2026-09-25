@@ -24,7 +24,6 @@
             <th>Operator</th>
             <th>Permit</th>
             <th>Accepted waste</th>
-            {% if disp_mode in ['near', 'radium_near'] %}<th>Distance</th>{% endif %}
             <th>County</th>
             <th>Navigate</th>
           </tr>
@@ -57,15 +56,6 @@
                   {{ row.permit_type_label or '—' }}
                 {% endif %}
               </td>
-              {% if disp_mode in ['near', 'radium_near'] %}
-                <td class="mono">
-                  {% if row.distance_mi is defined %}
-                    {{ '%.1f'|format(row.distance_mi) }} mi
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
-              {% endif %}
               <td>{{ row.county or '—' }}{% if row.district %} · Dist {{ row.district }}{% endif %}</td>
               <td class="nav-col">
                 <a class="route apple compact"
@@ -83,6 +73,6 @@
       </table>
     </div>
   {% elif not error %}
-    <div class="empty">Search RRC commercial waste disposal sites by facility, operator, permit, county, or near your location.</div>
+    <div class="empty">Search RRC commercial waste disposal sites by facility, operator, permit, or county.</div>
   {% endif %}
 </div>

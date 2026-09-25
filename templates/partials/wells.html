@@ -105,7 +105,6 @@
         <td class="map-col">
           <button type="button" class="map-toggle" title="Add to map">Pin</button>
         </td>
-        <td class="save-cell">{% with variant='row' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
         <td>
           <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
           {% if well.record_kind == "permit" %}
@@ -117,6 +116,7 @@
         <td class="col-operator hide-phone">{{ well.operator }}</td>
         <td class="hide-phone">{{ well.lease_name }}</td>
         <td>{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
+        <td class="save-cell">{% with variant='row' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
       </tr>
     {% endfor %}
   {% endif %}
@@ -144,13 +144,13 @@
       <thead>
         <tr>
           <th class="map-col">Pin</th>
-          <th class="save-col">Save</th>
           {{ col("Well name", "name") }}
           {{ col("API", "api") }}
           {{ col("Status", "status", "hide-phone") }}
           {{ col("Operator", "operator", "hide-phone") }}
           {{ col("Lease", "lease", "hide-phone") }}
           {{ col("County", "county") }}
+          <th class="save-col"><span class="sr-only">Save</span></th>
         </tr>
       </thead>
       {{ well_rows() }}

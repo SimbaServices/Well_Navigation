@@ -19,8 +19,8 @@ android {
         applicationId = "services.simba.wellnav"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.8"
+        versionCode = 11
+        versionName = "1.10"
     }
 
     signingConfigs {

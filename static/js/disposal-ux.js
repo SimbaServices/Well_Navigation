@@ -1,10 +1,7 @@
-/* Disposal near-me search, map-pin enrichment, and wait-time reporting UI.
+/* Disposal map-pin enrichment and wait-time reporting UI.
    Environment-agnostic: same behavior on web, iOS/Android store WebViews, and local/dev.
    Never branch on __WN_STORE / user-agent for product UX. */
 (function () {
-  const RADIUM_MODE = "radium_near";
-  const NEAR_MODE = "near";
-
   function $(id) {
     return document.getElementById(id);
   }
@@ -73,99 +70,13 @@
         (err) => {
           const msg =
             err && err.code === 1
-              ? "Location permission was denied. Allow location to find disposal sites near you."
+              ? "Location permission was denied."
               : "Could not read your current location.";
           reject(new Error(msg));
         },
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
       );
     });
-  }
-
-  function dispMode() {
-    const checked = document.querySelector('input[name="disp_mode"]:checked');
-    return checked ? checked.value : "name";
-  }
-
-  function needsLocationMode(mode) {
-    return mode === NEAR_MODE || mode === RADIUM_MODE;
-  }
-
-    async function runNearSearch(form) {
-    const mode = dispMode();
-    if (!needsLocationMode(mode)) return false;
-    const status = $("disposal-near-status");
-    if (status) {
-      status.hidden = false;
-      status.textContent = "Getting your location…";
-    }
-    try {
-      const coords = await getPosition();
-      let latInput = form.querySelector('input[name="lat"]');
-      let lonInput = form.querySelector('input[name="lon"]');
-      if (!latInput) {
-        latInput = document.createElement("input");
-        latInput.type = "hidden";
-        latInput.name = "lat";
-        form.appendChild(latInput);
-      }
-      if (!lonInput) {
-        lonInput = document.createElement("input");
-        lonInput.type = "hidden";
-        lonInput.name = "lon";
-        form.appendChild(lonInput);
-      }
-      latInput.value = String(coords.latitude);
-      lonInput.value = String(coords.longitude);
-      if (status) {
-        status.textContent =
-          mode === RADIUM_MODE
-            ? "Searching radium / NORM disposal facilities near you…"
-            : "Searching disposal facilities near you…";
-      }
-      return true;
-    } catch (err) {
-      if (status) status.textContent = err.message || String(err);
-      const results = $("results");
-      if (results) {
-        results.innerHTML =
-          '<div class="banner error">' +
-          (err.message || "Location required for near-me search.") +
-          "</div>";
-      }
-      return false;
-    }
-  }
-
-  function bindNearSearch() {
-    const form = $("search-form");
-    if (!form || form.dataset.nearBound === "1") return;
-    form.dataset.nearBound = "1";
-    form.addEventListener(
-      "submit",
-      (event) => {
-        const scope = form.querySelector('select[name="scope"]');
-        if (!scope || scope.value !== "disposal") return;
-        const mode = dispMode();
-        if (!needsLocationMode(mode)) return;
-        event.preventDefault();
-        event.stopPropagation();
-        runNearSearch(form).then((ok) => {
-          if (!ok) return;
-          if (window.htmx) {
-            window.htmx.ajax("GET", form.getAttribute("action") || "/search", {
-              source: form,
-              target: "#results",
-              values: Object.fromEntries(new FormData(form).entries()),
-              swap: "innerHTML",
-            });
-          } else {
-            form.submit();
-          }
-        });
-      },
-      true
-    );
   }
 
   function wasteClassText(site) {
@@ -571,12 +482,10 @@
     onDisposalSelected,
     hideWaitPanel,
     loadWaitSummary,
-    bindNearSearch,
     wasteClassText,
   };
 
   function boot() {
-    bindNearSearch();
     bindDirectionEstimates();
     ensureWaitPanel();
   }

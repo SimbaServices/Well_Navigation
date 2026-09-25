@@ -1,5 +1,5 @@
 /* Store WebView boot only: credentials + kill service workers.
-   Do NOT gate product UX (Near me, wait reports, map, disposal) on __WN_STORE.
+   Do NOT gate product UX (wait reports, map, disposal) on __WN_STORE.
    Look / features must match web production and local/dev. */
 (function () {
   var ua = navigator.userAgent || "";

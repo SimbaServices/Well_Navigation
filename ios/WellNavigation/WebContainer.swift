@@ -56,7 +56,7 @@ struct WebContainer: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     // Keep in sync with templates/partials/store_boot.js.
-    // Do not gate Near me / wait / map UX on __WN_STORE.
+    // Do not gate wait reports or map UX on __WN_STORE.
     private static let storeBootScript = """
     (function () {
       var ua = navigator.userAgent || "";
@@ -108,7 +108,7 @@ struct WebContainer: UIViewRepresentable {
         /// Retained for the WebView lifetime. WKWebView's Geolocation API uses the
         /// host app's Core Location When In Use authorization (Info.plist usage
         /// string). Holding a manager keeps the framework active when the page
-        /// calls navigator.geolocation for disposal-facility near-me search.
+        /// calls navigator.geolocation to estimate drive time for disposal directions.
         private let locationManager = CLLocationManager()
 
         init(startURL: URL) {
@@ -116,7 +116,7 @@ struct WebContainer: UIViewRepresentable {
             super.init()
             locationManager.delegate = self
             // Prompt When In Use so WKWebView navigator.geolocation can resolve
-            // near-me / radium-near disposal searches. WebKit shares this status.
+            // drive-time estimates when opening disposal directions. WebKit shares this status.
             if locationManager.authorizationStatus == .notDetermined {
                 locationManager.requestWhenInUseAuthorization()
             }
@@ -147,6 +147,11 @@ struct WebContainer: UIViewRepresentable {
                 decisionHandler(.allow)
                 return
             }
+            // https links off the app host open in Safari (permit PDFs, maps).
+            let topLevel = navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true
+            if topLevel, url.scheme?.lowercased() == "https" {
+                UIApplication.shared.open(url)
+            }
             decisionHandler(.cancel)
         }
 
@@ -160,6 +165,8 @@ struct WebContainer: UIViewRepresentable {
                 UIApplication.shared.open(browserURL(url))
             } else if let url = navigationAction.request.url, isAllowed(url) {
                 webView.load(URLRequest(url: url))
+            } else if let url = navigationAction.request.url, url.scheme?.lowercased() == "https" {
+                UIApplication.shared.open(url)
             }
             return nil
         }

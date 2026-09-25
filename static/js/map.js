@@ -2152,7 +2152,7 @@ function markRowsSaved(apis) {
     const btn = row.querySelector(".save-form .save-btn");
     if (!btn) return;
     btn.classList.add("on");
-    btn.textContent = "★ Saved";
+    btn.textContent = btn.classList.contains("save-star") ? "★" : "★ Saved";
     btn.setAttribute("aria-pressed", "true");
     btn.title = "Remove from saved wells";
   });

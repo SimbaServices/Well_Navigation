@@ -11,6 +11,7 @@ import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Message
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
@@ -83,6 +84,8 @@ class MainActivity : AppCompatActivity() {
         settings.allowContentAccess = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         settings.setGeolocationEnabled(true)
+        settings.setSupportMultipleWindows(true)
+        settings.javaScriptCanOpenWindowsAutomatically = true
         settings.userAgentString = settings.userAgentString + " WellNavigation/1.0 (Android; store)"
 
         val prefs = getSharedPreferences("wellnav", MODE_PRIVATE)
@@ -119,6 +122,37 @@ class MainActivity : AppCompatActivity() {
                         ),
                     )
                 }
+
+                override fun onCreateWindow(
+                    view: WebView,
+                    isDialog: Boolean,
+                    isUserGesture: Boolean,
+                    resultMsg: Message,
+                ): Boolean {
+                    val clicked = view.hitTestResult.extra
+                    val direct = clicked?.let { raw -> runCatching { Uri.parse(raw) }.getOrNull() }
+                    if (direct != null && !direct.scheme.isNullOrEmpty()) {
+                        if (!handleUrl(direct)) view.loadUrl(direct.toString())
+                        return false
+                    }
+                    val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                    val popup = WebView(this@MainActivity)
+                    popup.webViewClient =
+                        object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                popupView: WebView,
+                                request: WebResourceRequest,
+                            ): Boolean {
+                                val target = request.url
+                                if (!handleUrl(target)) webView.loadUrl(target.toString())
+                                popupView.post { popupView.destroy() }
+                                return true
+                            }
+                        }
+                    transport.webView = popup
+                    resultMsg.sendToTarget()
+                    return true
+                }
             }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -153,18 +187,23 @@ class MainActivity : AppCompatActivity() {
             openExternal(url)
             return true
         }
-        if (host.contains("maps.google.") || (host.endsWith("google.com") && url.path?.contains("/maps") == true)) {
-            openExternal(url)
-            return true
-        }
-        if (isStripeHost(host) || wantsSystemBrowser(url)) {
+        if (isMapHost(host, url) || isStripeHost(host) || wantsSystemBrowser(url)) {
             openExternal(stripExternalFlag(url))
             return true
         }
         if (scheme == "https" && host in ALLOWED_HOSTS) {
             return false
         }
+        // https links off the app host open in the system browser (permit PDFs, maps).
+        if (scheme == "https" && host.isNotEmpty()) {
+            openExternal(url)
+        }
         return true
+    }
+
+    private fun isMapHost(host: String, url: Uri): Boolean {
+        if (host == "maps.apple.com" || host.contains("maps.google.")) return true
+        return host.endsWith("google.com") && url.path?.contains("/maps") == true
     }
 
     private fun openExternal(url: Uri) {
@@ -236,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         private val ALLOWED_HOSTS = setOf("wellnav.simba.services")
 
         // Keep in sync with templates/partials/store_boot.js.
-        // Do not gate Near me / wait / map UX on __WN_STORE.
+        // Do not gate wait reports or map UX on __WN_STORE.
         private const val STORE_BOOT_JS = """
             (function () {
               var ua = navigator.userAgent || "";

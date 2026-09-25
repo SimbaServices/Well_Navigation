@@ -318,24 +318,9 @@ def search_sites(
     *,
     mode: str = "name",
     limit: int = 80,
-    lat: float | None = None,
-    lon: float | None = None,
-    max_km: float | None = None,
     path: Path | None = None,
 ) -> list[dict]:
     kind = (mode or "name").strip().lower()
-    if kind in {"near", "radium_near"}:
-        if lat is None or lon is None:
-            raise ValueError("lat and lon are required for nearest disposal search")
-        return nearest_sites(
-            float(lat),
-            float(lon),
-            limit=limit,
-            radium_only=(kind == "radium_near"),
-            max_km=max_km,
-            path=path,
-        )
-
     needle = (q or "").strip()
     if len(needle) < 2:
         return []

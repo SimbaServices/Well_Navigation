@@ -1674,8 +1674,6 @@ async def disposal_suggest(request: Request) -> HTMLResponse:
 
     q = request.query_params.get("q", "").strip()
     kind = request.query_params.get("disp_mode") or "name"
-    if kind in {"near", "radium_near"}:
-        return fragment_or_page(request, "")
     hits = search_sites(q, mode=kind, limit=20)
     html = render(
         "partials/disposal_suggest.html",
@@ -1698,7 +1696,7 @@ def _parse_optional_float(raw: str | None, *, name: str) -> float | None:
 
 
 async def disposal_search(request: Request) -> HTMLResponse:
-    from wellnav.disposal import get_site, nearest_sites, search_sites, stats
+    from wellnav.disposal import get_site, search_sites, stats
 
     source = await _request_source(request)
     data = {key: str(value or "").strip() for key, value in source.items()}
@@ -1720,30 +1718,6 @@ async def disposal_search(request: Request) -> HTMLResponse:
             auto_map = True
         else:
             error = "That waste disposal site was not found in the local overlay."
-    elif disp_mode in {"near", "radium_near"}:
-        try:
-            lat = _parse_optional_float(data.get("lat"), name="lat")
-            lon = _parse_optional_float(data.get("lon"), name="lon")
-            max_km = _parse_optional_float(data.get("max_km"), name="max_km")
-            if lat is None or lon is None:
-                raise ValueError("lat and lon are required for nearest disposal search")
-            rows = nearest_sites(
-                lat,
-                lon,
-                limit=int(data.get("limit") or 20),
-                radium_only=(disp_mode == "radium_near"),
-                max_km=max_km,
-            )
-        except ValueError as exc:
-            error = str(exc)
-            rows = []
-        if not error and not rows:
-            if disp_mode == "radium_near":
-                error = "No radium / NORM disposal sites found near that location."
-            else:
-                error = "No commercial waste disposal sites found near that location."
-        elif len(rows) == 1:
-            auto_map = True
     elif len(q) < 2:
         if stored == 0:
             error = "Local disposal overlay is empty — run python -m wellnav.ingest load-disposal"
@@ -1779,10 +1753,6 @@ def _disposal_subtitle(*, q: str = "", rows: list[dict] | None = None, disp_mode
         if site.get("permit_no"):
             bits.append(site["permit_no"])
         return " · ".join(bits)
-    if disp_mode == "radium_near":
-        return "Nearest radium / NORM sites"
-    if disp_mode == "near":
-        return "Nearest disposal sites"
     labels = {"operator": "Operator", "permit": "Permit", "county": "County"}
     label = labels.get(disp_mode, "Facility")
     if q:

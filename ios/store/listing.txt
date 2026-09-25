@@ -19,8 +19,8 @@ Support URL: https://wellnav.simba.services
 Marketing URL: https://wellnav.simba.services
 Support email: wellnav@simba.services
 
-Version: 1.5
-Build: 7 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 7.
+Version: 1.7
+Build: 9 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 9.
 
 Description (App Store Connect, 4000-character limit):
 Well Navigation is a public App Store app for oil and gas professionals—not an internal employee-only tool and not limited to one company. Any oil and gas professional can create an account with a work email. Sign in to search and map wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana.
@@ -69,8 +69,8 @@ Data collected, not used for tracking, not used for third-party advertising:
 - User ID — linked, App Functionality
 - Other user content (saved wells) — linked, App Functionality
 - IP address — not linked, App Functionality
-- Precise Location — not linked, App Functionality (optional; near-me disposal search only)
-- Coarse Location — not linked, App Functionality (optional; near-me disposal search only)
+- Precise Location — not linked, App Functionality (optional; drive-time estimate when opening disposal directions)
+- Coarse Location — not linked, App Functionality (optional; drive-time estimate when opening disposal directions)
 No tracking. No advertising. No advertising identifier. Product Page Optimization / SKAdNetwork: none.
 
 Export compliance: ITSAppUsesNonExemptEncryption is false (HTTPS only). In App Store Connect answer that the app uses encryption only for HTTPS / standard encryption.
