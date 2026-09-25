@@ -2325,6 +2325,7 @@ function disposalPopup(props) {
   ].filter(Boolean);
   return locationPopupHtml({
     title: props.facility || props.permit_no || "Waste disposal site",
+    operator: props.operator || "",
     lines,
     pointLabel: "Waste site",
     lat: props.lat,
@@ -2880,7 +2881,7 @@ function ensureMap() {
 function wellheadPopup(well) {
   return locationPopupHtml({
     title: well.name || formatApi(well.api, well.state),
-    detail: wellSubtitle(well),
+    operator: well.operator || "",
     pointLabel: "Wellhead",
     showPointLabel: false,
     showCoords: false,
@@ -2949,6 +2950,7 @@ function upsertOverlay(well, selected) {
     }).bindPopup(
       locationPopupHtml({
         title: well.name || "Toe / bottom hole",
+        operator: well.operator || "",
         lines: well.name
           ? ["Toe / bottom hole", "RRC default mapped point"]
           : ["RRC default mapped point"],
@@ -3050,11 +3052,9 @@ function locationPopupHtml(place) {
   let html = parts.join("<br>");
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
   if (!hasCoords) return html;
-  const detail = [place.detail, ...(place.lines || [])].filter(Boolean).join("\n");
   html += mapsShareMarkup({
     title: place.title || place.pointLabel || "Location",
-    detail,
-    pointLabel: place.pointLabel || "Location",
+    operator: place.operator || "",
     lat,
     lon,
     disposalId: place.disposalId || "",
@@ -3070,7 +3070,6 @@ function attrText(value) {
 function mapsShareMarkup(place) {
   const lat = Number(place.lat);
   const lon = Number(place.lon);
-  const coords = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
   const apple = `https://maps.apple.com/?daddr=${lat},${lon}`;
   const google = `https://maps.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
   const disposalId = place.disposalId ? attrText(place.disposalId) : "";
@@ -3079,9 +3078,7 @@ function mapsShareMarkup(place) {
   const prompt = compact ? "" : `<p class="loc-share-prompt"></p>`;
   return (
     `<div class="loc-share${compact ? " loc-share-compact" : ""}" data-share-title="${attrText(place.title || "Location")}"` +
-    ` data-share-detail="${attrText(place.detail || "")}"` +
-    ` data-share-point="${attrText(place.pointLabel || "Location")}"` +
-    ` data-share-coords="${attrText(coords)}"` +
+    ` data-share-operator="${attrText(place.operator || "")}"` +
     ` data-share-apple="${attrText(apple)}"` +
     ` data-share-google="${attrText(google)}"` +
     (disposalId ? ` data-share-disposal-id="${disposalId}"` : "") +
@@ -3106,6 +3103,7 @@ function pipelinePinPopup(pin) {
   if (pin.commodity) lines.push(pin.commodity);
   return locationPopupHtml({
     title,
+    operator: pin.operator || "",
     lines,
     pointLabel: "Pipeline point",
     showPointLabel: title !== "Pipeline point",
@@ -3115,17 +3113,13 @@ function pipelinePinPopup(pin) {
 }
 
 function locationShareBody(root, platform) {
-  const title = root.dataset.shareTitle || "Location";
-  const detail = root.dataset.shareDetail || "";
-  const point = root.dataset.sharePoint || "Location";
-  const coords = root.dataset.shareCoords || "";
+  const name = (root.dataset.shareTitle || "Location").trim();
+  const operator = (root.dataset.shareOperator || "").trim();
   const link = platform === "google" ? root.dataset.shareGoogle : root.dataset.shareApple;
-  const platformName = platform === "google" ? "Google Maps" : "Apple Maps";
-  const lines = [title];
-  if (detail) lines.push(detail);
-  if (coords) lines.push(`${point}: ${coords}`);
-  lines.push("", platformName, link || "");
-  return lines.join("\n").replace(/\n/g, "\r\n");
+  const lines = [name];
+  if (operator && operator !== name) lines.push(operator);
+  lines.push(link || "");
+  return lines.join("\r\n");
 }
 
 function prefersIosSms() {
