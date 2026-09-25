@@ -14,6 +14,7 @@
     const value = input.value.trim();
     if (!value) {
       if (hidden) hidden.remove();
+      markToggle(input);
       return;
     }
     if (!hidden) {
@@ -23,6 +24,22 @@
       root.appendChild(hidden);
     }
     hidden.value = value;
+    markToggle(input);
+  }
+
+  function markToggle(input) {
+    const toggle = input.closest("th") && input.closest("th").querySelector("[data-col-filter]");
+    if (!toggle) return;
+    const dot = toggle.querySelector(".col-filter-dot");
+    const active = input.value.trim().length > 0;
+    if (active && !dot) {
+      const mark = document.createElement("span");
+      mark.className = "col-filter-dot";
+      mark.setAttribute("aria-hidden", "true");
+      toggle.appendChild(mark);
+    } else if (!active && dot) {
+      dot.remove();
+    }
   }
 
   function closeFilters(exceptForm) {
