@@ -17,7 +17,7 @@
     const link = doc.createElement("link");
     link.id = "wellnav-replay-css";
     link.rel = "stylesheet";
-    link.href = "/static/css/app.css?v=offline1";
+    link.href = "/static/css/app.css?v=crisp1";
     (doc.head || doc.documentElement).appendChild(link);
   }
 

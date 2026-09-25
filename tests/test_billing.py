@@ -110,6 +110,8 @@ class BillingHelperTests(unittest.TestCase):
         self.assertTrue(is_billing_path("/org/members/3/role"))
         self.assertTrue(is_billing_path("/account/delete"))
         self.assertTrue(is_billing_path("/ux/recordings"))
+        self.assertTrue(is_billing_path("/feedback"))
+        self.assertTrue(is_billing_path("/feedback/4/delete"))
         self.assertFalse(is_billing_path("/search"))
         self.assertTrue(is_public_path("/billing/webhook"))
         self.assertTrue(is_public_path("/billing/success"))

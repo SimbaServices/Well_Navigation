@@ -15,7 +15,7 @@ struct ContentView: View {
                     .ignoresSafeArea()
                 if !network.isOnline {
                     VStack {
-                        Text("Offline — saved map tiles and pinned wells still work")
+                        Text("Offline — saved routes, pins, and map tiles still work")
                             .font(.footnote.weight(.medium))
                             .foregroundStyle(Color(red: 0.83, green: 0.63, blue: 0.09))
                             .multilineTextAlignment(.center)

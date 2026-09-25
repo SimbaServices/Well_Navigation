@@ -2,9 +2,10 @@
    Esri and public OSM tiles are never written here (provider terms). */
 (function (global) {
   const DB_NAME = "wellnav-offline";
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const TILES = "tiles";
   const OVERLAYS = "overlays";
+  const ROUTES = "routes";
   const MIN_Z = 6;
   const MAX_Z = 16;
   const MAX_PACK_TILES = 1800;
@@ -27,6 +28,9 @@
         }
         if (!db.objectStoreNames.contains(OVERLAYS)) {
           db.createObjectStore(OVERLAYS, { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains(ROUTES)) {
+          db.createObjectStore(ROUTES, { keyPath: "id" });
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -128,8 +132,119 @@
     });
   }
 
+  async function clear() {
+    const db = await openDb();
+    const tx = db.transaction([TILES, OVERLAYS, ROUTES], "readwrite");
+    tx.objectStore(TILES).clear();
+    tx.objectStore(OVERLAYS).clear();
+    tx.objectStore(ROUTES).clear();
+    await txDone(tx);
+  }
+
+  async function saveRoutes(routes) {
+    const db = await openDb();
+    const tx = db.transaction(ROUTES, "readwrite");
+    const store = tx.objectStore(ROUTES);
+    store.clear();
+    (routes || []).forEach((route, order) => {
+      if (!route || !route.id) return;
+      store.put({ ...route, order, savedAt: Date.now() });
+    });
+    await txDone(tx);
+  }
+
+  async function loadRoutes() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(ROUTES, "readonly").objectStore(ROUTES).getAll();
+      req.onsuccess = () => {
+        const rows = req.result || [];
+        rows.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        resolve(rows);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function deleteRoute(id) {
+    const db = await openDb();
+    const tx = db.transaction(ROUTES, "readwrite");
+    tx.objectStore(ROUTES).delete(id);
+    await txDone(tx);
+  }
+
+  function distanceMeters(lat1, lon1, lat2, lon2) {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const phi1 = toRad(lat1);
+    const phi2 = toRad(lat2);
+    const dphi = toRad(lat2 - lat1);
+    const dlmb = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dphi / 2) ** 2 +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(dlmb / 2) ** 2;
+    return 2 * 6371000 * Math.asin(Math.min(1, Math.sqrt(Math.max(0, a))));
+  }
+
+  function bearingDeg(lat1, lon1, lat2, lon2) {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const phi1 = toRad(lat1);
+    const phi2 = toRad(lat2);
+    const dlmb = toRad(lon2 - lon1);
+    const y = Math.sin(dlmb) * Math.cos(phi2);
+    const x =
+      Math.cos(phi1) * Math.sin(phi2) -
+      Math.sin(phi1) * Math.cos(phi2) * Math.cos(dlmb);
+    return (Math.atan2(y, x) * 180) / Math.PI;
+  }
+
+  function directCoordinates(lat1, lon1, lat2, lon2) {
+    const dist = distanceMeters(lat1, lon1, lat2, lon2);
+    const steps = dist < 1 ? 1 : Math.max(1, Math.min(64, Math.ceil(dist / 400)));
+    const coords = [];
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      coords.push([lon1 + (lon2 - lon1) * t, lat1 + (lat2 - lat1) * t]);
+    }
+    return coords;
+  }
+
+  function directRoutes(origin, destinations) {
+    return (destinations || []).map((dest) => {
+      const lat = Number(dest.lat);
+      const lon = Number(dest.lon);
+      return {
+        id: dest.id,
+        label: dest.label || "Pinned location",
+        kind: dest.kind || "pin",
+        lat,
+        lon,
+        origin: { lat: origin.lat, lon: origin.lon },
+        coordinates: directCoordinates(origin.lat, origin.lon, lat, lon),
+        distance_m: distanceMeters(origin.lat, origin.lon, lat, lon),
+        duration_s: null,
+        bearing: bearingDeg(origin.lat, origin.lon, lat, lon),
+        mode: "direct",
+      };
+    });
+  }
+
+  async function routeCount() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(ROUTES, "readonly").objectStore(ROUTES).count();
+      req.onsuccess = () => resolve(req.result || 0);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   async function usage() {
     const tiles = await tileCount();
+    let routes = 0;
+    try {
+      routes = await routeCount();
+    } catch {
+      routes = 0;
+    }
     let bytes = tiles * 28000;
     if (navigator.storage && navigator.storage.estimate) {
       try {
@@ -139,15 +254,7 @@
         /* ignore */
       }
     }
-    return { tiles, bytes };
-  }
-
-  async function clear() {
-    const db = await openDb();
-    const tx = db.transaction([TILES, OVERLAYS], "readwrite");
-    tx.objectStore(TILES).clear();
-    tx.objectStore(OVERLAYS).clear();
-    await txDone(tx);
+    return { tiles, routes, bytes };
   }
 
   async function putOverlay(kind, payload, bounds) {
@@ -230,6 +337,45 @@
     return { tiles: n, minZ, maxZ };
   }
 
+  async function downloadTiles(tiles, opts) {
+    const list = Array.isArray(tiles) ? tiles : [];
+    if (!list.length) return { tiles: 0 };
+    downloadAbort = new AbortController();
+    const signal = downloadAbort.signal;
+    const onProgress = opts && opts.onProgress ? opts.onProgress : () => {};
+    let done = 0;
+    try {
+      for (const tile of list) {
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+        const z = Number(tile.z);
+        const x = Number(tile.x);
+        const y = Number(tile.y);
+        if (![z, x, y].every(Number.isFinite)) {
+          done += 1;
+          continue;
+        }
+        const key = tileKey(z, x, y);
+        const have = await getTile(key);
+        if (!have) {
+          const url = `/offline/tiles/${z}/${y}/${x}`;
+          const resp = await fetch(url, { signal, credentials: "same-origin" });
+          if (resp.status === 404) {
+            done += 1;
+            onProgress({ done, total: list.length, zoom: z });
+            continue;
+          }
+          if (!resp.ok) throw new Error(`Tile download failed (${resp.status}).`);
+          await putTile(key, await resp.blob());
+        }
+        done += 1;
+        onProgress({ done, total: list.length, zoom: z });
+      }
+    } finally {
+      downloadAbort = null;
+    }
+    return { tiles: list.length };
+  }
+
   function isOnline() {
     return navigator.onLine !== false;
   }
@@ -254,9 +400,16 @@
     putTile,
     usage,
     clear,
+    saveRoutes,
+    loadRoutes,
+    deleteRoute,
+    directRoutes,
+    distanceMeters,
+    bearingDeg,
     putOverlay,
     getOverlay,
     downloadArea,
+    downloadTiles,
     cancelDownload,
     isOnline,
     cacheableBasemap,

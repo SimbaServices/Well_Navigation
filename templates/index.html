@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=locshare2">
+  <link rel="stylesheet" href="/static/css/app.css?v=routes1">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -19,7 +19,7 @@
 </head>
 <body>
   <div id="net-banner" class="net-banner" hidden>
-    Offline — pinned wells and saved USGS tiles still work. Search needs a connection.
+    Offline — pinned locations, saved routes, and USGS tiles still work. Search needs a connection.
   </div>
   <header class="topbar">
     <div class="brand">
@@ -206,10 +206,11 @@
               </span>
               <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
               <div class="offline-pack">
-                <button type="button" class="ghost" id="offline-save">Save this view</button>
+                <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
+                <button type="button" class="ghost" id="offline-save">Save for offline</button>
                 <span class="info-tip">
-                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
+                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>
                 </span>
                 <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
                 <p id="offline-status" class="muted"></p>
@@ -228,6 +229,7 @@
           <div id="pipeline-owners" class="pipeline-owners" hidden></div>
           <p id="disposal-status" class="muted pipeline-status"></p>
           <ul id="mapped-list" class="mapped-list"></ul>
+          <ul id="offline-routes" class="offline-routes" hidden aria-label="Routes to pinned locations"></ul>
           <div class="map-footer">
             <div id="map-coords" class="coord-bar"></div>
             <div id="nav-links" class="route-row"></div>
@@ -238,13 +240,11 @@
     </section>
     </div>
   </main>
-  <footer class="site-footer">
-    {% include 'partials/legal_footer.html' %}
-  </footer>
 
-  <script src="/static/js/offline-map.js?v=1"></script>
+  <script src="/static/js/auth-remember.js?v=1"></script>
+  <script src="/static/js/offline-map.js?v=2"></script>
   <script src="/static/js/disposal-ux.js?v=4"></script>
-  <script src="/static/js/map.js?v=locshare3"></script>
+  <script src="/static/js/map.js?v=routes1"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

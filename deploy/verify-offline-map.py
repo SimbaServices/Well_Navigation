@@ -79,7 +79,7 @@ def main() -> None:
 
     code, _, body = fetch(f"{BASE}/privacy")
     privacy = body.decode("utf-8", "replace")
-    require(code == 200 and "Save this view" in privacy, f"privacy offline copy {code}")
+    require(code == 200 and "Save for offline" in privacy, f"privacy offline copy {code}")
 
     code, headers, _ = fetch(f"{BASE}/offline/tiles/12/1/1")
     loc = headers.get("Location") or headers.get("location") or ""
@@ -103,7 +103,7 @@ def main() -> None:
         home = body.decode("utf-8", "replace")
         require(code == 200 and 'id="offline-save"' in home, f"home offline button {code}")
         require("offline-map.js" in home and "/static/vendor/leaflet/leaflet.js" in home, "home vendor scripts")
-        require("Save this view" in home, "home save label")
+        require("Save for offline" in home, "home save label")
 
         code, headers, tile = fetch(f"{BASE}/offline/tiles/12/{y}/{x}", cookie=cookie)
         ctype = headers.get("Content-Type") or headers.get("content-type") or ""

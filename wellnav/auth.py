@@ -42,6 +42,10 @@ SCRYPT_R = 8
 SCRYPT_P = 1
 SCRYPT_DKLEN = 32
 SESSION_COOKIE = "wellnav"
+# Stay signed in across browser and app restarts until the user signs out.
+# Browsers cap a persistent cookie at 400 days. SessionMiddleware reissues it
+# on each response, so an active session keeps rolling forward.
+SESSION_MAX_AGE = 60 * 60 * 24 * 400
 OTP_TTL_SECONDS = 10 * 60
 OTP_RESEND_SECONDS = 60
 OTP_MAX_SENDS_PER_HOUR = 5

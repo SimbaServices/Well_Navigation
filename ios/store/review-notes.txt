@@ -26,7 +26,7 @@ We will attach a screen recording captured on a physical iPhone running the late
 The recording begins before the home-screen icon tap so launch is in frame, then shows a typical user flow:
 - Launch the app from the SpringBoard icon
 - Sign in as appreview@simba.services (this workspace is already entitled)
-- Search for a well, open results, pin a well on the map, tap Save this view
+- Search for a well, open results, pin a well on the map, tap Save for offline
 - Open Account and confirm there is no StoreKit purchase and no card form
 - Sign out, then Create account with a separate disposable work email, password, and the emailed 6-digit code
 - A new organization has no seats yet, so that account may see a notice that seats are managed on the website in Safari. The recording does not purchase seats and does not enter a card.
@@ -45,7 +45,7 @@ Purpose: Well Navigation helps oil and gas professionals find and map wells, pip
 
 Problem it solves: Regulatory well, pipeline, and disposal records are scattered across state and federal public sources. Field and office staff need one signed-in search and map instead of jumping between portals and spreadsheets.
 
-Value: Search by lease/well name, API number, or operator; pin wells on a map; open Apple Maps or Google Maps for turn-by-turn; before losing signal, tap Save this view to keep USGS tiles and pinned wells on the device.
+Value: Search by lease/well name, API number, or operator; pin wells on a map; open Apple Maps or Google Maps for turn-by-turn; before losing signal, tap Save for offline to keep USGS tiles and pinned wells on the device.
 
 Target audience: Oil and gas professionals (operators, land, field, HSE, consultants) who need TX / NM / OK / LA public well and infrastructure records. Catalog coverage is Texas, New Mexico, Oklahoma, and Louisiana only.
 
@@ -65,7 +65,7 @@ Steps for the reviewer:
 1. Install the build from TestFlight / App Review.
 2. Open Well Navigation → Sign in.
 3. Enter appreview@simba.services and the demo password. This account can search immediately. No payment.
-4. Search wells (for example by API or lease name), open a result, pin on the map, optionally tap Save this view.
+4. Search wells (for example by API or lease name), open a result, pin on the map, optionally tap Save for offline.
 5. Open Account. There is no in-app purchase and no card form.
 
 A newly registered organization cannot search until an admin buys seats on the website. Reviewers should not create an account to reach search, and should not pay. Registration and account deletion are in the screen recording, using a disposable account that is deleted at the end. Do NOT delete appreview@simba.services.
@@ -88,7 +88,7 @@ Well and infrastructure public data compiled by the service (not a proprietary t
 - NETL ArcGIS services (neighbor / pipeline context)
 - BSEE and BOEM public well / mapping datasets
 - FracFocus public disclosure downloads
-- USGS The National Map basemap tiles (basemap.nationalmap.gov) — may be saved on device after Save this view
+- USGS The National Map basemap tiles (basemap.nationalmap.gov) — may be saved on device after Save for offline
 - Esri ArcGIS Online basemap tiles (server.arcgisonline.com) — Imagery, Streets, Topo; online-only (terms disallow caching)
 - OpenStreetMap tiles (tile.openstreetmap.org)
 - Apple Maps and Google Maps — opened via system deep links for turn-by-turn (not embedded purchase)
@@ -109,14 +109,14 @@ Catalog coverage (wells, pipelines, disposal sites) is Texas, New Mexico, Oklaho
 ================================================================================
 Well Navigation compiles publicly available government and open oil-and-gas datasets for workplace lookup. It does not operate wells, does not drill or produce, and does not provide engineering, surveying, or land-title certification. Locations are not a substitute for a One Call / 811 locate, an as-built survey, or operator drawings.
 
-Esri basemap tiles are online-only because Esri’s terms disallow caching them; USGS National Map tiles may be saved on the device after the user taps Save this view. The app does not license or redistribute a proprietary third-party commercial well database.
+Esri basemap tiles are online-only because Esri’s terms disallow caching them; USGS National Map tiles may be saved on the device after the user taps Save for offline. The app does not license or redistribute a proprietary third-party commercial well database.
 
 We are not claiming a special RRC (or other agency) authorization letter beyond ordinary public-data use of published government sources.
 
 ================================================================================
 Prevent common issues (preemptive)
 ================================================================================
-Guideline 2.1 — bugs: Before resubmit, the developer must install the candidate build from TestFlight on a physical iPhone (and iPad if the App Store Connect destinations include iPad) running the latest iOS, and walk registration, sign-in, search, map / Save this view, Account (no IAP), and disposable-account deletion. That physical-device smoke test cannot be performed from this Windows workspace; it is a required operator step before clicking Submit for Review.
+Guideline 2.1 — bugs: Before resubmit, the developer must install the candidate build from TestFlight on a physical iPhone (and iPad if the App Store Connect destinations include iPad) running the latest iOS, and walk registration, sign-in, search, map / Save for offline, Account (no IAP), and disposable-account deletion. That physical-device smoke test cannot be performed from this Windows workspace; it is a required operator step before clicking Submit for Review.
 
 Guideline 2.1 — access: One account type (work email + password). Demo credentials are in the Notes / username-password fields above. Do not delete appreview@simba.services. Use a separate disposable account for the deletion portion of the recording.
 
@@ -130,4 +130,4 @@ Sign in with Apple: Not offered — login is email/password only (no third-party
 
 Export compliance: HTTPS only. ITSAppUsesNonExemptEncryption is false.
 
-Wrapper: Not a general-purpose browser — no address bar; host allow-list is wellnav.simba.services. Native value beyond the website: offline USGS tiles and pinned wells after Save this view, plus a native splash and offline banner.
+Wrapper: Not a general-purpose browser — no address bar; host allow-list is wellnav.simba.services. Native value beyond the website: offline USGS tiles and pinned wells after Save for offline, plus a native splash and offline banner.

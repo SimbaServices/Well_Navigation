@@ -88,7 +88,7 @@ class EnvironmentParityTest(unittest.TestCase):
     def test_service_worker_precache_matches_index_asset_urls(self) -> None:
         index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
         worker = (ROOT / "static" / "js" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("wellnav-shell-v19", worker)
+        self.assertIn("wellnav-shell-v25", worker)
         self.assertIn("disposal-ux.js", worker)
         script = (ROOT / "static" / "js" / "map.js").read_text(encoding="utf-8")
         self.assertIn('{"X-Live-Filter":"1"}', script)
@@ -96,6 +96,7 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn('addEventListener("dblclick", onLocationShareDblClick, true)', script)
         self.assertIn('a.target = "_blank"', script)
         self.assertIn("maps.apple.com", script)
+        self.assertIn("mailto:?", script)
 
         hrefs = re.findall(r'(?:href|src)="(/static/[^"]+)"', index)
         required = [

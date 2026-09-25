@@ -13,7 +13,7 @@ Search commercial waste, UIC, and salt-water disposal sites by facility, operato
 MAP AND FIELD USE
 Pin wells from search, including wellhead and toe coordinates when available. Switch base layers among Esri Imagery, Streets, Topo, OpenStreetMap, and USGS Topo. Toggle pipeline and waste-site overlays. Open Google Maps for turn-by-turn.
 
-Before you lose signal, tap Save this view to keep USGS tiles plus the last pipeline and waste overlay for that area on the device. Pinned wells stay available offline. Search and new lookups still need a connection. Esri layers stay online-only.
+Before you lose signal, pin one or more spots and tap Save for offline. That keeps a route from your location to each pin, plus USGS tiles along those routes, on the device. Search and new lookups still need a connection. Esri layers stay online-only.
 
 YOUR WORKSPACE
 Save wells to your account, reopen recent searches, and manage your team. People on the same company email domain share one organization. Admins assign seats and roles. Delete your account anytime from Account → Delete account.

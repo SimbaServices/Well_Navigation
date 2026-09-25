@@ -35,6 +35,9 @@ const BASEMAP_LABELS = {
 };
 
 const STORAGE_KEY = "wellnav.mappedWells";
+const ROUTE_PINS_KEY = "wellnav.routePins";
+const MAX_ROUTE_PINS = 12;
+const ROUTE_COLORS = ["#d4a017", "#7cb36a", "#7aa2e3", "#e0893a", "#c45c3a", "#6ec8d4"];
 const VIEW_KEY = "wellnav.mapView";
 const PANE_PREF = "wellnav.workspacePane";
 const PHONE_PANE = "(max-width: 960px)";
@@ -75,10 +78,11 @@ const MAP_CHROME_HTML = `
       </span>
       <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
       <div class="offline-pack">
-        <button type="button" class="ghost" id="offline-save">Save this view</button>
+        <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
+        <button type="button" class="ghost" id="offline-save">Save for offline</button>
         <span class="info-tip">
-          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About saved maps">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Save USGS topo tiles for this view before you lose signal. Esri layers need a network.</span>
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>
         </span>
         <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
         <p id="offline-status" class="muted"></p>
@@ -97,6 +101,7 @@ const MAP_CHROME_HTML = `
     <div id="pipeline-owners" class="pipeline-owners" hidden></div>
     <p id="disposal-status" class="muted pipeline-status"></p>
     <ul id="mapped-list" class="mapped-list"></ul>
+    <ul id="offline-routes" class="offline-routes" hidden aria-label="Routes to pinned locations"></ul>
     <div class="map-footer">
       <div id="map-coords" class="coord-bar"></div>
       <div id="nav-links" class="route-row"></div>
@@ -125,6 +130,14 @@ const overlays = new Map();
 let pipelinePin = null;
 let pipelinePinMarker = null;
 let pinChrome = false;
+let routePinLayer = null;
+let routeLineLayer = null;
+let userLocationMarker = null;
+let locationWatchId = null;
+let lastUserLatLng = null;
+let pinMode = false;
+let savedRoutes = [];
+let routesReady = null;
 
 function searchInputEl() {
   return document.getElementById("q");
@@ -488,6 +501,18 @@ function setOfflineStatus(text) {
   if (el) el.textContent = text || "";
 }
 
+function offlinePackSummary(info, online) {
+  const routes = info && info.routes ? info.routes : 0;
+  const tiles = info && info.tiles ? info.tiles : 0;
+  if (!routes && !tiles) {
+    return online ? "" : "No saved map on this device.";
+  }
+  const bits = [];
+  if (routes) bits.push(`${routes} route${routes === 1 ? "" : "s"}`);
+  if (tiles) bits.push(`${tiles.toLocaleString()} USGS tiles (${formatBytes(info.bytes)})`);
+  return `${bits.join(" · ")} on this device.`;
+}
+
 async function refreshOfflineStatus() {
   const clearBtn = document.getElementById("offline-clear");
   const saveBtn = document.getElementById("offline-save");
@@ -499,75 +524,666 @@ async function refreshOfflineStatus() {
   if (saveBtn && saveBtn.dataset.busy === "1") return;
   try {
     const info = await offline.usage();
-    if (clearBtn) clearBtn.hidden = !info.tiles;
-    if (!info.tiles) {
-      setOfflineStatus(offline.isOnline() ? "" : "No saved map tiles on this device.");
-      return;
-    }
-    setOfflineStatus(
-      `${info.tiles.toLocaleString()} USGS tiles on this device (${formatBytes(info.bytes)}).`
-    );
+    if (clearBtn) clearBtn.hidden = !(info.tiles || info.routes);
+    setOfflineStatus(offlinePackSummary(info, offline.isOnline()));
   } catch {
     setOfflineStatus("");
   }
 }
 
+function loadRoutePins() {
+  try {
+    const raw = localStorage.getItem(ROUTE_PINS_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(data)) return [];
+    return data.filter(
+      (pin) =>
+        pin &&
+        pin.id &&
+        Number.isFinite(Number(pin.lat)) &&
+        Number.isFinite(Number(pin.lon))
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveRoutePins(pins) {
+  try {
+    localStorage.setItem(ROUTE_PINS_KEY, JSON.stringify(pins));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function safeRouteId(prefix, raw) {
+  const body = String(raw || "")
+    .replace(/[^A-Za-z0-9._-]/g, "")
+    .slice(0, 64);
+  return `${prefix}:${body || "spot"}`.slice(0, 80);
+}
+
+function inOfflineCoverage(lat, lon) {
+  const box = window.WellnavOffline;
+  if (!box) return true;
+  return lat >= box.SOUTH && lat <= box.NORTH && lon >= box.WEST && lon <= box.EAST;
+}
+
+function collectRouteDestinations() {
+  const out = [];
+  const seen = new Set();
+  let omitted = 0;
+  const push = (item) => {
+    if (!item || seen.has(item.id)) return false;
+    const lat = Number(item.lat);
+    const lon = Number(item.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+    if (!inOfflineCoverage(lat, lon)) return false;
+    seen.add(item.id);
+    if (out.length >= MAX_ROUTE_PINS) {
+      omitted += 1;
+      return false;
+    }
+    out.push({
+      id: item.id,
+      kind: item.kind || "pin",
+      label: String(item.label || "Pinned location").slice(0, 80),
+      lat,
+      lon,
+    });
+    return true;
+  };
+  const store = loadStore();
+  const order = store.selected
+    ? [store.selected, ...store.order.filter((id) => id !== store.selected)]
+    : store.order.slice();
+  order.forEach((api) => {
+    const well = store.wells[api];
+    if (!well) return;
+    push({
+      id: safeRouteId("well", api),
+      kind: "well",
+      label: well.name || formatApi(api),
+      lat: well.lat,
+      lon: well.lon,
+    });
+  });
+  if (disposalFocus && Number.isFinite(disposalFocus.lat) && Number.isFinite(disposalFocus.lon)) {
+    push({
+      id: safeRouteId("disposal", disposalFocus.id || `${disposalFocus.lat},${disposalFocus.lon}`),
+      kind: "disposal",
+      label: disposalFocus.name || "Waste site",
+      lat: disposalFocus.lat,
+      lon: disposalFocus.lon,
+    });
+  }
+  if (pipelinePin && Number.isFinite(pipelinePin.lat) && Number.isFinite(pipelinePin.lon)) {
+    push({
+      id: safeRouteId(
+        "pipeline",
+        `${Number(pipelinePin.lat).toFixed(5)}_${Number(pipelinePin.lon).toFixed(5)}`
+      ),
+      kind: "pipeline",
+      label: pipelinePin.operator || pipelinePin.system || "Pipeline point",
+      lat: pipelinePin.lat,
+      lon: pipelinePin.lon,
+    });
+  }
+  loadRoutePins().forEach((pin) => {
+    push({
+      id: pin.id,
+      kind: "pin",
+      label: pin.label || "Pinned spot",
+      lat: pin.lat,
+      lon: pin.lon,
+    });
+  });
+  return { destinations: out, omitted };
+}
+
+function compassLabel(deg) {
+  const names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const wrapped = ((Number(deg) % 360) + 360) % 360;
+  return names[Math.round(wrapped / 45) % 8];
+}
+
+function formatRouteDistance(meters) {
+  const m = Number(meters);
+  if (!Number.isFinite(m)) return "";
+  const miles = m / 1609.344;
+  if (miles < 0.1) return `${Math.max(1, Math.round(m * 3.28084))} ft`;
+  if (miles < 10) return `${miles.toFixed(1)} mi`;
+  return `${Math.round(miles)} mi`;
+}
+
+function formatRouteMinutes(seconds) {
+  const s = Number(seconds);
+  if (!Number.isFinite(s) || s <= 0) return "";
+  const mins = Math.max(1, Math.round(s / 60));
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return rem ? `${h}h ${rem}m` : `${h}h`;
+}
+
+function userLocationIcon() {
+  return L.divIcon({
+    className: "user-location-icon",
+    html: '<span class="user-location-dot"></span>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+function routePinIcon() {
+  return L.divIcon({
+    className: "route-pin-icon",
+    html: '<span class="route-pin-dot"></span>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
+function ensureRouteLayers() {
+  if (!map) return;
+  if (!map.getPane("offline-routes")) {
+    map.createPane("offline-routes");
+    map.getPane("offline-routes").style.zIndex = 430;
+  }
+  if (!routeLineLayer) routeLineLayer = L.layerGroup().addTo(map);
+  if (!routePinLayer) routePinLayer = L.layerGroup().addTo(map);
+}
+
+function drawUserLocation() {
+  if (!map || !lastUserLatLng || typeof L === "undefined") return;
+  const ll = [lastUserLatLng.lat, lastUserLatLng.lon];
+  if (!userLocationMarker) {
+    userLocationMarker = L.marker(ll, {
+      icon: userLocationIcon(),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 1200,
+    }).addTo(map);
+  } else {
+    userLocationMarker.setLatLng(ll);
+  }
+}
+
+function watchUserLocation() {
+  if (!navigator.geolocation || locationWatchId != null) return;
+  locationWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      lastUserLatLng = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      drawUserLocation();
+      renderOfflineRouteList();
+    },
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 25000 }
+  );
+}
+
+function stopUserLocation() {
+  if (locationWatchId != null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(locationWatchId);
+  }
+  locationWatchId = null;
+  lastUserLatLng = null;
+  if (userLocationMarker && map) map.removeLayer(userLocationMarker);
+  userLocationMarker = null;
+}
+
+function currentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not available on this device."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => {
+        const msg =
+          err && err.code === 1
+            ? "Location permission was denied."
+            : "Could not read your current location.";
+        reject(new Error(msg));
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 }
+    );
+  });
+}
+
+function drawRoutePins() {
+  if (!map || typeof L === "undefined") return;
+  ensureRouteLayers();
+  routePinLayer.clearLayers();
+  loadRoutePins().forEach((pin) => {
+    const marker = L.marker([Number(pin.lat), Number(pin.lon)], { icon: routePinIcon(), title: pin.label });
+    marker.bindPopup(
+      locationPopupHtml({
+        title: pin.label || "Pinned spot",
+        pointLabel: "Pinned spot",
+        showPointLabel: false,
+        lat: Number(pin.lat),
+        lon: Number(pin.lon),
+      }),
+      locationPopupOptions({ compact: true })
+    );
+    routePinLayer.addLayer(marker);
+  });
+}
+
+function drawOfflineRoutes(routes, { fit = false } = {}) {
+  savedRoutes = Array.isArray(routes) ? routes : [];
+  if (!map || typeof L === "undefined") return;
+  ensureRouteLayers();
+  routeLineLayer.clearLayers();
+  const all = [];
+  savedRoutes.forEach((route, index) => {
+    const latlngs = (route.coordinates || [])
+      .filter((pair) => Array.isArray(pair) && pair.length >= 2)
+      .map((pair) => [Number(pair[1]), Number(pair[0])])
+      .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
+    if (latlngs.length < 2) return;
+    const color = ROUTE_COLORS[index % ROUTE_COLORS.length];
+    route.color = color;
+    const line = L.polyline(latlngs, {
+      pane: "offline-routes",
+      color,
+      weight: 4,
+      opacity: 0.92,
+      dashArray: route.mode === "direct" ? "7 6" : null,
+      interactive: false,
+    });
+    routeLineLayer.addLayer(line);
+    all.push(...latlngs);
+  });
+  if (fit && all.length && map) {
+    const bounds = L.latLngBounds(all);
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
+  }
+  renderOfflineRouteList();
+}
+
+function routeRows() {
+  const byId = new Map();
+  loadRoutePins().forEach((pin) => {
+    byId.set(pin.id, {
+      id: pin.id,
+      label: pin.label || "Pinned spot",
+      lat: Number(pin.lat),
+      lon: Number(pin.lon),
+      kind: "pin",
+      saved: false,
+    });
+  });
+  savedRoutes.forEach((route) => {
+    byId.set(route.id, { ...route, saved: true });
+  });
+  return [...byId.values()];
+}
+
+function renderOfflineRouteList() {
+  const list = document.getElementById("offline-routes");
+  if (!list) return;
+  const rows = routeRows();
+  list.replaceChildren();
+  list.hidden = !rows.length;
+  const offline = window.WellnavOffline;
+  rows.forEach((row, index) => {
+    const li = document.createElement("li");
+    li.className = "mapped-item";
+    const swatch = document.createElement("i");
+    swatch.className = "route-swatch";
+    swatch.style.background = row.color || ROUTE_COLORS[index % ROUTE_COLORS.length];
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "mapped-item-select";
+    const liveMeters =
+      lastUserLatLng && offline
+        ? offline.distanceMeters(lastUserLatLng.lat, lastUserLatLng.lon, row.lat, row.lon)
+        : null;
+    const dist = formatRouteDistance(liveMeters != null ? liveMeters : row.distance_m);
+    const heading = compassLabel(
+      lastUserLatLng && offline
+        ? offline.bearingDeg(lastUserLatLng.lat, lastUserLatLng.lon, row.lat, row.lon)
+        : row.bearing
+    );
+    const minutes = formatRouteMinutes(row.duration_s);
+    const detail = [dist, heading, minutes].filter(Boolean).join(" · ");
+    pick.textContent = detail ? `${row.label || "Pinned location"} — ${detail}` : row.label || "Pinned location";
+    if (!row.saved) pick.title = "Save for offline to keep a route to this pin.";
+    else if (row.mode === "direct") pick.title = "Direct line. A road route was not available.";
+    else pick.title = "Road route from your location when this pack was saved.";
+    pick.addEventListener("click", () => focusRouteRow(row));
+    li.append(swatch, pick);
+    if (row.kind === "pin") {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "mapped-item-remove";
+      remove.setAttribute("aria-label", `Remove ${row.label || "pin"}`);
+      remove.textContent = "×";
+      remove.addEventListener("click", (event) => {
+        event.stopPropagation();
+        removeRoutePin(row.id);
+      });
+      li.appendChild(remove);
+    }
+    list.appendChild(li);
+  });
+}
+
+function focusRouteRow(row) {
+  if (!map || !Number.isFinite(Number(row.lat)) || !Number.isFinite(Number(row.lon))) return;
+  const points = [[Number(row.lat), Number(row.lon)]];
+  (row.coordinates || []).forEach((pair) => {
+    if (Array.isArray(pair) && pair.length >= 2) points.push([Number(pair[1]), Number(pair[0])]);
+  });
+  if (lastUserLatLng) points.push([lastUserLatLng.lat, lastUserLatLng.lon]);
+  if (points.length === 1) {
+    map.setView(points[0], 14);
+    return;
+  }
+  const bounds = L.latLngBounds(points.filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1])));
+  if (bounds.isValid()) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
+}
+
+function addRoutePin(latlng) {
+  if (!latlng) return;
+  const lat = Number(latlng.lat);
+  const lon = Number(latlng.lng != null ? latlng.lng : latlng.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (!inOfflineCoverage(lat, lon)) {
+    setOfflineStatus("That spot is outside Texas, New Mexico, Oklahoma, and Louisiana.");
+    return;
+  }
+  const pins = loadRoutePins();
+  const offline = window.WellnavOffline;
+  const duplicate = pins.some(
+    (pin) => offline && offline.distanceMeters(lat, lon, Number(pin.lat), Number(pin.lon)) < 25
+  );
+  if (duplicate) {
+    setOfflineStatus("That spot is already pinned.");
+    return;
+  }
+  if (pins.length >= MAX_ROUTE_PINS) {
+    setOfflineStatus("You can pin up to 12 spots. Remove one to add another.");
+    return;
+  }
+  const id = safeRouteId("pin", `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`);
+  pins.push({
+    id,
+    kind: "pin",
+    label: pins.length ? `Pinned spot ${pins.length + 1}` : "Pinned spot",
+    lat,
+    lon,
+  });
+  saveRoutePins(pins);
+  drawRoutePins();
+  renderOfflineRouteList();
+  setOfflineStatus("Pin added. Save for offline to keep a route from your location.");
+}
+
+async function removeRoutePin(id) {
+  saveRoutePins(loadRoutePins().filter((pin) => pin.id !== id));
+  savedRoutes = savedRoutes.filter((route) => route.id !== id);
+  const offline = window.WellnavOffline;
+  if (offline) {
+    try {
+      await offline.deleteRoute(id);
+    } catch {
+      /* ignore */
+    }
+  }
+  drawRoutePins();
+  drawOfflineRoutes(savedRoutes);
+  if (!savedRoutes.length) stopUserLocation();
+}
+
+function setPinMode(on) {
+  pinMode = !!on;
+  const btn = document.getElementById("offline-pin");
+  if (btn) {
+    btn.classList.toggle("is-on", pinMode);
+    btn.setAttribute("aria-pressed", pinMode ? "true" : "false");
+    btn.textContent = pinMode ? "Done pinning" : "Pin spot";
+  }
+  const mapEl = document.getElementById("well-map");
+  if (mapEl) mapEl.classList.toggle("is-pinning", pinMode);
+}
+
+function boundsOfDestinations(origin, destinations) {
+  let west = origin.lon;
+  let east = origin.lon;
+  let south = origin.lat;
+  let north = origin.lat;
+  destinations.forEach((dest) => {
+    west = Math.min(west, dest.lon);
+    east = Math.max(east, dest.lon);
+    south = Math.min(south, dest.lat);
+    north = Math.max(north, dest.lat);
+  });
+  return { west: west - 0.02, south: south - 0.02, east: east + 0.02, north: north + 0.02 };
+}
+
+async function storeAndDrawRoutes(routes, { fit = false } = {}) {
+  const offline = window.WellnavOffline;
+  if (offline) await offline.saveRoutes(routes);
+  drawOfflineRoutes(routes, { fit });
+  watchUserLocation();
+  drawUserLocation();
+}
+
+async function saveCurrentView(saveBtn) {
+  const offline = window.WellnavOffline;
+  const bounds = map.getBounds();
+  const result = await offline.downloadArea(
+    {
+      west: bounds.getWest(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      north: bounds.getNorth(),
+    },
+    {
+      zoom: map.getZoom(),
+      onProgress({ done, total }) {
+        saveBtn.textContent = `Saving ${done}/${total}…`;
+      },
+    }
+  );
+  setOfflineStatus(
+    `Saved this view (${result.tiles.toLocaleString()} USGS tiles). Pin a spot or a well to also keep a route.`
+  );
+}
+
+async function saveOfflineRoutes(saveBtn, destinations, omitted = 0) {
+  const offline = window.WellnavOffline;
+  setOfflineStatus("Finding your location…");
+  const origin = await currentPosition();
+  lastUserLatLng = origin;
+  drawUserLocation();
+  if (!offline.isOnline()) {
+    const routes = offline.directRoutes(origin, destinations);
+    await storeAndDrawRoutes(routes, { fit: true });
+    setOfflineStatus(
+      "Offline — showing a direct line to each pin. Connect and save again for road routes and map tiles."
+    );
+    return;
+  }
+  saveBtn.textContent = "Routing…";
+  let pack = null;
+  let responseError = null;
+  try {
+    const resp = await fetch("/offline/routes", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ origin, destinations }),
+    });
+    const body = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      responseError = new Error(body.error || "Could not build routes.");
+      responseError.status = resp.status;
+    } else {
+      pack = body;
+    }
+  } catch (err) {
+    responseError = err;
+  }
+  if (!pack) {
+    if (responseError && responseError.status === 400) throw responseError;
+    const routes = offline.directRoutes(origin, destinations);
+    await storeAndDrawRoutes(routes, { fit: true });
+    try {
+      await offline.downloadArea(boundsOfDestinations(origin, destinations), {
+        zoom: map.getZoom(),
+        onProgress({ done, total }) {
+          saveBtn.textContent = `Saving ${done}/${total}…`;
+        },
+      });
+      setOfflineStatus("Saved direct routes and map tiles. A road route was unavailable.");
+    } catch (tileErr) {
+      const message = tileErr && tileErr.message ? tileErr.message : "Map tiles were not saved.";
+      setOfflineStatus(`Saved direct routes on this device. ${message}`);
+    }
+    return;
+  }
+  const routes = Array.isArray(pack.routes) ? pack.routes : [];
+  await storeAndDrawRoutes(routes, { fit: true });
+  const tiles = Array.isArray(pack.tiles) ? pack.tiles : [];
+  if (tiles.length) {
+    try {
+      await offline.downloadTiles(tiles, {
+        onProgress({ done, total }) {
+          saveBtn.textContent = `Saving ${done}/${total}…`;
+        },
+      });
+    } catch (tileErr) {
+      if (tileErr && tileErr.name === "AbortError") throw tileErr;
+      const message = tileErr && tileErr.message ? tileErr.message : "Map tiles were not saved.";
+      setOfflineStatus(`Saved ${routes.length} route${routes.length === 1 ? "" : "s"} on this device. ${message}`);
+      return;
+    }
+  }
+  const directCount = routes.filter((route) => route.mode === "direct").length;
+  const routeLabel = `${routes.length} route${routes.length === 1 ? "" : "s"}`;
+  const tileLabel = tiles.length ? ` and ${tiles.length.toLocaleString()} USGS tiles` : "";
+  let note = `Saved ${routeLabel}${tileLabel}.`;
+  if (directCount) {
+    note += directCount === routes.length ? " Road routes were unavailable, so these are direct lines." : ` ${directCount} use a direct line.`;
+  }
+  if (pack.truncated) note += " Some farther zoom levels were left out to keep the pack a practical size.";
+  if (omitted) note += ` ${omitted} extra pin${omitted === 1 ? "" : "s"} did not fit in this pack.`;
+  setOfflineStatus(note);
+}
+
+function ensureOfflineControls() {
+  const actions = document.querySelector(".map-actions");
+  if (actions && !document.getElementById("offline-save")) {
+    const wrap = document.createElement("div");
+    wrap.className = "offline-pack";
+    wrap.innerHTML =
+      '<button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>' +
+      '<button type="button" class="ghost" id="offline-save">Save for offline</button>' +
+      '<span class="info-tip">' +
+      '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>' +
+      '<span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the USGS tiles along those routes. Esri layers need a network.</span>' +
+      "</span>" +
+      '<button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>' +
+      '<p id="offline-status" class="muted"></p>';
+    actions.appendChild(wrap);
+  }
+  if (!document.getElementById("offline-routes")) {
+    const list = document.createElement("ul");
+    list.id = "offline-routes";
+    list.className = "offline-routes";
+    list.hidden = true;
+    list.setAttribute("aria-label", "Routes to pinned locations");
+    const anchor = document.getElementById("mapped-list") || document.getElementById("well-map");
+    if (anchor) anchor.insertAdjacentElement("afterend", list);
+  }
+}
+
+function restoreOfflineRoutePack() {
+  drawRoutePins();
+  setPinMode(pinMode);
+  const offline = window.WellnavOffline;
+  if (!offline) return;
+  if (!routesReady) {
+    routesReady = offline
+      .loadRoutes()
+      .then((routes) => {
+        savedRoutes = Array.isArray(routes) ? routes : [];
+        drawOfflineRoutes(savedRoutes);
+        if (savedRoutes.length) watchUserLocation();
+      })
+      .catch(() => {
+        routesReady = null;
+      });
+    return;
+  }
+  drawOfflineRoutes(savedRoutes);
+  drawUserLocation();
+}
+
 function bindOfflinePack() {
+  ensureOfflineControls();
   const saveBtn = document.getElementById("offline-save");
   const clearBtn = document.getElementById("offline-clear");
+  const pinBtn = document.getElementById("offline-pin");
   const offline = window.WellnavOffline;
   if (!saveBtn || !offline || saveBtn.dataset.bound === "1") {
     refreshOfflineStatus();
+    renderOfflineRouteList();
     return;
   }
   saveBtn.dataset.bound = "1";
   saveBtn.addEventListener("click", async () => {
     if (!map || saveBtn.dataset.busy === "1") return;
-    if (!offline.isOnline()) {
-      setOfflineStatus("Connect to download tiles, then you can use them offline.");
+    const packed = collectRouteDestinations();
+    const destinations = packed.destinations;
+    if (!destinations.length && !offline.isOnline()) {
+      setOfflineStatus("Connect to download tiles. Pin a location to keep a route for offline use.");
       return;
     }
-    const bounds = map.getBounds();
     saveBtn.dataset.busy = "1";
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
+    let keepStatus = false;
     try {
-      const result = await offline.downloadArea(
-        {
-          west: bounds.getWest(),
-          south: bounds.getSouth(),
-          east: bounds.getEast(),
-          north: bounds.getNorth(),
-        },
-        {
-          zoom: map.getZoom(),
-          onProgress({ done, total }) {
-            saveBtn.textContent = `Saving ${done}/${total}…`;
-          },
-        }
-      );
-      setOfflineStatus(
-        `Saved ${result.tiles.toLocaleString()} USGS tiles (z${result.minZ}–${result.maxZ}).`
-      );
+      if (!destinations.length) {
+        await saveCurrentView(saveBtn);
+        keepStatus = true;
+      } else {
+        await saveOfflineRoutes(saveBtn, destinations, packed.omitted);
+        keepStatus = true;
+      }
       if (clearBtn) clearBtn.hidden = false;
     } catch (err) {
+      keepStatus = true;
       if (err && err.name === "AbortError") {
         setOfflineStatus("Save cancelled.");
       } else {
-        setOfflineStatus(err && err.message ? err.message : "Could not save this view.");
+        setOfflineStatus(err && err.message ? err.message : "Could not save for offline use.");
       }
     } finally {
       saveBtn.dataset.busy = "0";
       saveBtn.disabled = false;
-      saveBtn.textContent = "Save this view";
-      refreshOfflineStatus();
+      saveBtn.textContent = "Save for offline";
+      if (!keepStatus) refreshOfflineStatus();
     }
   });
+  if (pinBtn && pinBtn.dataset.bound !== "1") {
+    pinBtn.dataset.bound = "1";
+    pinBtn.addEventListener("click", () => setPinMode(!pinMode));
+  }
   if (clearBtn && clearBtn.dataset.bound !== "1") {
     clearBtn.dataset.bound = "1";
     clearBtn.addEventListener("click", async () => {
-      if (!window.confirm("Remove saved map tiles and offline overlays from this device?")) return;
+      if (!window.confirm("Remove saved map tiles and offline routes from this device? Pins stay until you remove them.")) return;
       await offline.clear();
+      savedRoutes = [];
+      drawOfflineRoutes([]);
+      stopUserLocation();
       refreshOfflineStatus();
     });
   }
@@ -1670,6 +2286,7 @@ function ensureChromeNodes() {
     const legend = document.getElementById("disposal-legend");
     (legend || mapEl).insertAdjacentElement("afterend", status);
   }
+  ensureOfflineControls();
 }
 
 function ensureMapChrome() {
@@ -1726,6 +2343,9 @@ function destroyMap() {
   pipelinePinMarker = null;
   pipelinePin = null;
   pinChrome = false;
+  routePinLayer = null;
+  routeLineLayer = null;
+  userLocationMarker = null;
   if (map) {
     try {
     map.remove();
@@ -1752,6 +2372,7 @@ function ensureMap() {
     observeMapSize(el);
     schedulePipelines();
     scheduleDisposal();
+    restoreOfflineRoutePack();
     window.setTimeout(() => {
       if (map) map.invalidateSize({ animate: false });
     }, 80);
@@ -1786,9 +2407,17 @@ function ensureMap() {
   bindOfflinePack();
   observeMapSize(el);
   map.on("click", (event) => {
+    if (pinMode) {
+      addRoutePin(event.latlng);
+      return;
+    }
     const disposal = event && event.latlng && nearestDisposal(event.latlng, disposalHitPx());
     if (!disposal) disposalPopupPinned = false;
     pickPipelineAt(event);
+  });
+  map.on("contextmenu", (event) => {
+    if (event.originalEvent) event.originalEvent.preventDefault();
+    addRoutePin(event.latlng);
   });
   map.on("moveend", schedulePipelines);
   map.on("zoomend", schedulePipelines);
@@ -1799,6 +2428,7 @@ function ensureMap() {
   if (!loadStore().order.length) restoreMapView();
   schedulePipelines();
   scheduleDisposal();
+  restoreOfflineRoutePack();
   window.setTimeout(() => {
     if (map) map.invalidateSize({ animate: false });
   }, 80);
@@ -1808,9 +2438,11 @@ function ensureMap() {
 function wellheadPopup(well) {
   return locationPopupHtml({
     title: well.name || formatApi(well.api, well.state),
-    lines: well.status ? [well.status] : [],
     detail: wellSubtitle(well),
     pointLabel: "Wellhead",
+    showPointLabel: false,
+    showCoords: false,
+    compact: true,
     lat: well.lat,
     lon: well.lon,
   });
@@ -1839,7 +2471,7 @@ function upsertOverlay(well, selected) {
   let layer = overlays.get(well.api);
   if (!layer) {
     const head = L.circleMarker([well.lat, well.lon], markerStyle(selected))
-      .bindPopup(wellheadPopup(well), locationPopupOptions());
+      .bindPopup(wellheadPopup(well), locationPopupOptions({ compact: true }));
     head.on("click", () => selectWell(well.api));
     wellLayer.addLayer(head);
     layer = { head, toe: null, line: null };
@@ -1942,19 +2574,20 @@ function coordChip(title, lat, lon, hint) {
   return chip;
 }
 
-function locationPopupOptions() {
+function locationPopupOptions(opts = {}) {
   const phone = window.matchMedia("(max-width: 960px)").matches;
   const mapEl = document.getElementById("well-map");
-  const bottomPad = phone && mapEl ? Math.max(120, Math.round(mapEl.clientHeight * 0.38)) : 16;
+  const sheetPad = phone && mapEl ? Math.max(120, Math.round(mapEl.clientHeight * 0.38)) : 16;
+  const bottomPad = opts.compact ? (phone ? 28 : 12) : sheetPad;
   return {
-    className: "loc-popup",
+    className: opts.compact ? "loc-popup loc-popup-compact" : "loc-popup",
     autoClose: true,
     closeOnClick: true,
     closeOnEscapeKey: true,
-    maxWidth: 300,
+    maxWidth: opts.compact ? 220 : 300,
     autoPan: true,
-    autoPanPaddingTopLeft: [16, 16],
-    autoPanPaddingBottomRight: [16, bottomPad],
+    autoPanPaddingTopLeft: opts.compact ? [8, 8] : [16, 16],
+    autoPanPaddingBottomRight: [opts.compact ? 8 : 16, bottomPad],
   };
 }
 
@@ -1963,13 +2596,17 @@ function locationPopupHtml(place) {
   const lon = Number(place.lon);
   const parts = [];
   if (place.title) parts.push(`<strong>${escapeHtml(place.title)}</strong>`);
-  (place.lines || []).forEach((line) => {
-    if (line) parts.push(escapeHtml(line));
-  });
-  if (place.pointLabel && place.showPointLabel !== false) parts.push(escapeHtml(place.pointLabel));
-  const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
-  if (hasCoords) parts.push(escapeHtml(`${lat.toFixed(6)}, ${lon.toFixed(6)}`));
+  if (!place.compact) {
+    (place.lines || []).forEach((line) => {
+      if (line) parts.push(escapeHtml(line));
+    });
+    if (place.pointLabel && place.showPointLabel !== false) parts.push(escapeHtml(place.pointLabel));
+    if (Number.isFinite(lat) && Number.isFinite(lon) && place.showCoords !== false) {
+      parts.push(escapeHtml(`${lat.toFixed(6)}, ${lon.toFixed(6)}`));
+    }
+  }
   let html = parts.join("<br>");
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
   if (!hasCoords) return html;
   const detail = [place.detail, ...(place.lines || [])].filter(Boolean).join("\n");
   html += mapsShareMarkup({
@@ -1979,6 +2616,7 @@ function locationPopupHtml(place) {
     lat,
     lon,
     disposalId: place.disposalId || "",
+    compact: !!place.compact,
   });
   return html;
 }
@@ -1994,8 +2632,11 @@ function mapsShareMarkup(place) {
   const apple = `https://maps.apple.com/?daddr=${lat},${lon}`;
   const google = `https://maps.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
   const disposalId = place.disposalId ? attrText(place.disposalId) : "";
+  const compact = !!place.compact;
+  const textLabel = compact ? "Text" : "Text message";
+  const prompt = compact ? "" : `<p class="loc-share-prompt"></p>`;
   return (
-    `<div class="loc-share" data-share-title="${attrText(place.title || "Location")}"` +
+    `<div class="loc-share${compact ? " loc-share-compact" : ""}" data-share-title="${attrText(place.title || "Location")}"` +
     ` data-share-detail="${attrText(place.detail || "")}"` +
     ` data-share-point="${attrText(place.pointLabel || "Location")}"` +
     ` data-share-coords="${attrText(coords)}"` +
@@ -2008,9 +2649,9 @@ function mapsShareMarkup(place) {
     `<button type="button" class="route google" data-share-platform="google" aria-pressed="false" title="Double-click to open Google Maps">Google Maps</button>` +
     `</div>` +
     `<div class="loc-share-via" hidden>` +
-    `<p class="loc-share-prompt"></p>` +
+    prompt +
     `<div class="loc-share-actions">` +
-    `<a class="ghost" data-share-via="sms">Text message</a>` +
+    `<a class="ghost" data-share-via="sms">${textLabel}</a>` +
     `<a class="ghost" data-share-via="email">Email</a>` +
     `</div></div></div>`
   );
@@ -2197,7 +2838,7 @@ function updateChrome(store) {
       if (disposalFocus.permit) bits.push(disposalFocus.permit);
       if (disposalFocus.county) bits.push(`${disposalFocus.county} County`);
       sub.textContent = bits.length ? bits.join(" · ") : "Commercial waste disposal";
-    } else if (selected) sub.textContent = wellSubtitle(selected);
+    } else if (selected) sub.textContent = "";
     else if (store.order.length) sub.textContent = "Select a well to route.";
     else sub.textContent = "Pin wells from search to show them on the map.";
   }
@@ -2244,11 +2885,6 @@ function updateChrome(store) {
       coords.appendChild(coordChip("Pipeline", pipelinePin.lat, pipelinePin.lon, "Pinned point"));
     } else if (disposalFocus) {
       coords.appendChild(coordChip("Waste site", disposalFocus.lat, disposalFocus.lon, "WGS84"));
-    } else if (selected) {
-      coords.appendChild(coordChip("Wellhead", selected.lat, selected.lon, "WGS84"));
-      if (hasToe(selected)) {
-        coords.appendChild(coordChip("Toe", selected.toeLat, selected.toeLon));
-      }
     }
   }
 

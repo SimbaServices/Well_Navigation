@@ -2,12 +2,7 @@
   <div class="map-head">
     <div>
       <h2 id="map-title">{{ well.well_name }}</h2>
-      <p id="map-sub" class="muted">
-        {{ well.api_display }}
-        {% if well.lease_name %} · {{ well.lease_name }}{% endif %}
-        {% if well.county %} · {{ well.county }}{% if well.state %} {{ well.state|upper }}{% endif %}{% endif %}
-        {% if well.operator %} · {{ well.operator }}{% endif %}
-      </p>
+      <p id="map-sub" class="muted"></p>
     </div>
     <div class="map-actions">
       {% with variant='detail' %}{% include 'partials/save_button.html' %}{% endwith %}
@@ -65,24 +60,7 @@
   <ul id="mapped-list" class="mapped-list"></ul>
 
   <div class="map-footer">
-    <div id="map-coords" class="coord-bar">
-      {% if location.found and location.wellhead %}
-        <div class="coord-chip">
-          <span class="coord-chip-label">Wellhead</span>
-          <span class="mono">{{ "%.6f"|format(location.wellhead.lat) }}, {{ "%.6f"|format(location.wellhead.lon) }}</span>
-          <span class="muted">WGS84</span>
-        </div>
-        {% if location.toe %}
-          <div class="coord-chip">
-            <span class="coord-chip-label">Toe</span>
-            <span class="mono">{{ "%.6f"|format(location.toe.lat) }}, {{ "%.6f"|format(location.toe.lon) }}</span>
-          </div>
-        {% endif %}
-      {% endif %}
-    </div>
+    <div id="map-coords" class="coord-bar"></div>
     <div id="nav-links" class="route-row"></div>
   </div>
-  {% if location.note %}
-    <p class="note">{{ location.note }}{% if location.from_cache %} <span class="pill">cached</span>{% endif %}</p>
-  {% endif %}
 </div>

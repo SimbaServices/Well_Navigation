@@ -11,7 +11,7 @@ struct OfflineView: View {
             Text("No network")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(Color(red: 0.91, green: 0.93, blue: 0.85))
-            Text("Search needs a connection. If you already saved a map view, open the app again when you have signal once, then the USGS tiles and pinned wells stay available offline.")
+            Text("Search needs a connection. If you already saved routes, open the app again when you have signal once, then the pins, routes, and USGS tiles stay available offline.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color(red: 0.60, green: 0.64, blue: 0.53))
                 .padding(.horizontal, 28)

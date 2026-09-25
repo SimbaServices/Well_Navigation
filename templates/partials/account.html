@@ -30,6 +30,8 @@
          hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">History</a>
       <a href="/org" class="ghost"
          hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team</a>
+      <a href="/feedback" class="ghost"
+         hx-get="/feedback" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Testing feedback</a>
     </nav>
 
     <form class="account-signout" action="/logout" method="post" hx-post="/logout">
@@ -41,16 +43,14 @@
          hx-get="/account/delete" hx-target="#results" hx-push-url="true">Delete account</a>
     </section>
 
-    <p class="account-legal hint">
-      <a href="/privacy" class="text-link">Privacy</a>
-      ·
-      <a href="/terms" class="text-link">Terms</a>
-    </p>
-
     {% if can_record_ux and not store_client %}
     <h3>UX recordings</h3>
     <p class="muted">Simba Services only. Signed-in workspace sessions are saved on the server. Watch here, or run <code>deploy\pull-recordings.ps1</code> to copy them and open the local player.</p>
     {% include 'partials/ux_recordings.html' %}
     {% endif %}
+
+    <div class="account-legal">
+      {% include 'partials/legal_footer.html' %}
+    </div>
   {% endif %}
 </div>

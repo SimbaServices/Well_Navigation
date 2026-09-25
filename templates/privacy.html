@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#12160f">
   <title>Privacy policy · Well Navigation</title>
-  <link rel="stylesheet" href="/static/css/app.css?v=ios3">
+  <link rel="stylesheet" href="/static/css/app.css?v=crisp1">
   <link rel="apple-touch-icon" href="/static/app-icon.png">
   {% include 'partials/hotjar.html' %}
 </head>
@@ -45,6 +45,7 @@
       <ul>
         <li>Wells you save.</li>
         <li>Recent searches and a short-lived lookup cache used to speed up the product.</li>
+        <li>Testing notes you post on your organization's feedback board (the note, an optional place in the app, your email, and the time). People in that organization can read them.</li>
       </ul>
       <h4>Technical logs</h4>
       <ul>
@@ -54,7 +55,7 @@
       <ul>
         <li>We do not sell personal information.</li>
         <li>We do not use third-party advertising or analytics SDKs in the iOS or Google Play apps. Website analytics (Hotjar and/or Microsoft Clarity) run on wellnav.simba.services only, not inside those apps.</li>
-        <li>Those apps do not request access to your contacts, photos, or microphone. Device location is optional and asked only when you open directions to a disposal site, so the app can estimate drive time. Map pins otherwise use well, pipeline, and waste-site coordinates from public regulatory sources, not your GPS.</li>
+        <li>Those apps do not request access to your contacts, photos, or microphone. Device location is optional. It is used when you save offline routes to pinned places, and when you open directions to a disposal site so the app can estimate drive time. Map pins otherwise use well, pipeline, and waste-site coordinates from public regulatory sources.</li>
         <li>We do not collect mobile numbers in the current Service.</li>
         <li>Payment card numbers are not collected in the iOS or Google Play apps. Well Navigation is a paid workplace product. Billing is handled on the website in Safari or Chrome, not as an in-app purchase.</li>
       </ul>
@@ -66,14 +67,15 @@
         <li>Send verification and password-reset codes by email.</li>
         <li>Remember saved wells and recent lookups.</li>
         <li>Let coworkers on the same email domain share an organization.</li>
-        <li>Optional device location only when you open directions to a disposal site, to estimate drive time.</li>
+        <li>Show testing feedback to the rest of your organization.</li>
+        <li>Optional device location when you save offline routes to pinned places, and when you open directions to a disposal site, to estimate drive time. That GPS fix is not stored on our server.</li>
         <li>Operate, secure, and troubleshoot the Service.</li>
         <li>Understand website usage with Hotjar, Microsoft Clarity, and Contentsquare (page views, clicks, and optional session replay on wellnav.simba.services).</li>
       </ul>
       <p>The iOS and Google Play apps load the same signed-in workspace over HTTPS. They are not general-purpose browsers and have no address bar.</p>
 
       <h3>4. Cookies and session</h3>
-      <p>We use a session cookie to keep you signed in after you enter your email and password. The website may also set Hotjar, Microsoft Clarity, or Contentsquare cookies for usage analytics. We do not use advertising cookies. The iOS and Google Play apps do not load those scripts.</p>
+      <p>A session cookie keeps you signed in after you enter your email and password, including after you close the website or the iOS and Google Play apps. That cookie lasts until you sign out, and it is refreshed while you use the Service. Sign out ends the session. If you check Remember me, this device stores your email and password so the sign-in form can be filled in after you sign out. That copy stays on the device. It is removed when you sign in with Remember me unchecked, when you set a new password, or when you delete your account. The website may also set Hotjar, Microsoft Clarity, or Contentsquare cookies for usage analytics. We do not use advertising cookies. The iOS and Google Play apps do not load those scripts.</p>
 
       <h3>5. Sharing</h3>
       <p>We share information only as needed to run the Service:</p>
@@ -81,7 +83,7 @@
         <li><strong>Organization admins</strong> on your email domain can see your email and role, manage seats, and change your role or remove you from the organization. They cannot delete your account for you; you delete it yourself.</li>
         <li><strong>Payments</strong> use Stripe on the website (Safari or Chrome) for MP Solutions. Stripe receives the card or wallet details you enter. We receive subscription status, seat quantity, and billing email — not your full card number. The iOS and Google Play apps do not open Stripe Checkout or collect cards.</li>
         <li><strong>Email delivery</strong> uses our mail host (mail.simba.services) to send verification codes.</li>
-        <li><strong>Maps</strong> in the browser or app load map tiles from providers such as Esri, OpenStreetMap, or USGS. Those providers may receive the tile request from your device. If you tap <strong>Save this view</strong>, USGS tiles and the last pipeline/waste-site overlay for that area are stored on your device so the map still works without a signal. Esri tiles are not stored. You can remove that cache with <strong>Clear saved maps</strong>.</li>
+        <li><strong>Maps</strong> in the browser or app load map tiles from providers such as Esri, OpenStreetMap, or USGS. Those providers may receive the tile request from your device. If you tap <strong>Save for offline</strong>, the app stores USGS tiles along the routes from your location to each pinned place, plus those route lines, on your device so the map still works without a signal. To build a driving route, our server sends the start and destination coordinates to the Open Source Routing Machine (<code>router.project-osrm.org</code>), which uses OpenStreetMap roads. We do not keep that location on the server. If a road route is unavailable, the app stores a direct line on your device instead. Esri tiles are not stored. You can remove the saved tiles and routes with <strong>Clear saved maps</strong>.</li>
         <li><strong>Hotjar, Microsoft Clarity, and Contentsquare</strong> on the website receive page views, clicks, and session recordings so we can improve the product. Those scripts are not loaded in the iOS or Google Play apps.</li>
         <li><strong>Simba Services UX recordings</strong> automatically capture signed-in workspace sessions for @simba.services accounts so we can review the product. Those files are stored on our server. They are not used for customer billing. Passwords are masked.</li>
         <li>We may disclose information if required by law or to protect the Service, our users, or the public.</li>
@@ -89,7 +91,7 @@
       <p>We do not sell or rent personal information, and we do not share it for cross-context behavioral advertising.</p>
 
       <h3>6. Retention</h3>
-      <p>We keep account and workspace data while your account is open. Lookup cache entries expire on a short schedule. Server logs are kept only as long as needed for operations and security. When you delete your account, we remove your login, saved wells, and search/cache history associated with that account. Organization records that other people still use are kept. Residual copies may remain in encrypted backups for a limited period until those backups rotate.</p>
+      <p>We keep account and workspace data while your account is open. Lookup cache entries expire on a short schedule. Server logs are kept only as long as needed for operations and security. When you delete your account, we remove your login, saved wells, and search/cache history associated with that account. Testing notes stay on your organization's board so the team keeps that feedback; you or an organization admin can remove a note from the board. Organization records that other people still use are kept. Residual copies may remain in encrypted backups for a limited period until those backups rotate.</p>
 
       <h3>7. Account deletion and your choices</h3>
       <p>You can delete your account on the website or in the iOS or Google Play app: open <a href="/account">Account</a>, choose <strong>Delete account</strong>, enter your password, and type DELETE. That permanently removes your login, saved wells, and search history. Other people in your organization keep their own accounts.</p>

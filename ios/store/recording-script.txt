@@ -31,7 +31,7 @@ C. Typical feature flow (still appreview@)
    - Search for a well (lease/well name, API, or operator)
    - Open results; select a well
    - Pin / show on map
-   - Tap Save this view (USGS offline pack + pinned wells)
+   - Tap Save for offline (routes from your location to pinned places, plus USGS tiles)
    - Briefly show map layers if useful (Esri / OSM / USGS)
 
 D. No in-app purchase (still appreview@)

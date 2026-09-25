@@ -8,6 +8,8 @@
        hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
     <a href="/org" class="ghost"
        hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team</a>
+    <a href="/feedback" class="ghost"
+       hx-get="/feedback" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Feedback</a>
     {% if workspace and not workspace.complimentary and (not workspace.allowed or user.is_admin) %}
     <a href="/billing" class="ghost"
        hx-get="/billing" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Billing</a>

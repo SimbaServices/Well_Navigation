@@ -3,10 +3,12 @@ from __future__ import annotations
 import re
 import sqlite3
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from wellnav.accounts import UserStore
 from wellnav.auth import (
+    SESSION_MAX_AGE,
     is_public_path,
     mask_phone,
     normalize_phone,
@@ -52,6 +54,7 @@ class PhoneHelperTests(unittest.TestCase):
         self.assertTrue(is_public_path("/billing/success"))
         self.assertFalse(is_public_path("/billing"))
         self.assertFalse(is_public_path("/offline/tiles/12/1/1"))
+        self.assertFalse(is_public_path("/offline/routes"))
         self.assertFalse(is_public_path("/"))
         self.assertFalse(is_public_path("/search"))
         self.assertFalse(is_public_path("/account/delete"))
@@ -158,6 +161,16 @@ class GateTests(unittest.TestCase):
         login = client.get("/login")
         self.assertEqual(login.status_code, 200)
         self.assertIn("Sign in", login.text)
+        self.assertIn('name="remember"', login.text)
+        self.assertIn("Remember me", login.text)
+        self.assertIn("/static/js/auth-remember.js", login.text)
+        script = client.get("/static/js/auth-remember.js")
+        self.assertEqual(script.status_code, 200)
+        self.assertIn("wellnav.remember", script.text)
+        self.assertIn('data-remember', script.text)
+        self.assertIn('forget', script.text)
+        index = (Path(__file__).resolve().parents[1] / "templates" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("auth-remember.js", index)
         self.assertIn("/static/vendor/htmx.min.js", login.text)
         self.assertNotIn("unpkg.com", login.text)
         self.assertNotIn("id=\"search-form\"", login.text)
@@ -166,6 +179,8 @@ class GateTests(unittest.TestCase):
         self.assertEqual(privacy.status_code, 200)
         self.assertIn("Account deletion", privacy.text)
         self.assertIn("Privacy", privacy.text)
+        self.assertIn("Remember me", privacy.text)
+        self.assertIn("session cookie", privacy.text.lower())
         terms = client.get("/terms")
         self.assertEqual(terms.status_code, 200)
         self.assertIn("Terms and conditions", terms.text)
@@ -422,3 +437,41 @@ class SingleSessionTests(unittest.TestCase):
             still.status_code == 200
             or (still.status_code == 303 and not still.headers["location"].startswith("/login"))
         )
+
+    def test_session_cookie_lasts_until_sign_out(self) -> None:
+        from starlette.testclient import TestClient
+
+        from app import app
+
+        client = TestClient(app, follow_redirects=False)
+        signed = self._sign_in(client)
+        self.assertEqual(signed.status_code, 303)
+        cookies = signed.headers.get_list("set-cookie")
+        self.assertTrue(
+            any(item.startswith("wellnav=") and f"Max-Age={SESSION_MAX_AGE}" in item for item in cookies)
+        )
+        home = client.get("/")
+        self.assertTrue(
+            home.status_code == 200
+            or (home.status_code == 303 and not home.headers["location"].startswith("/login"))
+        )
+        signed_out = client.post("/logout")
+        self.assertEqual(signed_out.status_code, 303)
+        self.assertEqual(signed_out.headers["location"], "/login")
+        again = client.get("/")
+        self.assertEqual(again.status_code, 303)
+        self.assertTrue(again.headers["location"].startswith("/login"))
+
+    def test_delete_account_clears_remembered_login(self) -> None:
+        from starlette.testclient import TestClient
+
+        from app import app
+
+        client = TestClient(app, follow_redirects=False)
+        self.assertEqual(self._sign_in(client).status_code, 303)
+        deleted = client.post(
+            "/account/delete",
+            data={"password": "password12", "confirm": "DELETE"},
+        )
+        self.assertEqual(deleted.status_code, 303)
+        self.assertEqual(deleted.headers["location"], "/login?forget=1")

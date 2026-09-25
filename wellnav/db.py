@@ -254,6 +254,18 @@ def init_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_pending_signups_username ON pending_signups(username);
         CREATE INDEX IF NOT EXISTS idx_pending_signups_phone ON pending_signups(phone);
         CREATE INDEX IF NOT EXISTS idx_otp_phone_sent ON otp_challenges(phone, sent_at);
+        CREATE TABLE IF NOT EXISTS org_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            user_id INTEGER,
+            author_email TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            place TEXT NOT NULL DEFAULT '',
+            body TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (org_id) REFERENCES organizations(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_org_feedback_org ON org_feedback(org_id, created_at DESC, id DESC);
         """
     )
     _ensure_column(conn, "users", "phone", "TEXT")

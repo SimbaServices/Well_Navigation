@@ -12,7 +12,7 @@ The wrapper does not tear down the WebView when cellular drops. Offline mapping 
 
 1. Open the Map tab while you still have signal.
 2. Pin the wells you need.
-3. Tap **Save this view**. That stores USGS topo/imagery tiles plus the last pipeline and waste-site overlay for that area on the device.
+3. Tap **Save for offline**. That stores a route from your location to each pin, plus USGS topo/imagery tiles along those routes, on the device.
 4. Esri layers stay online-only — their terms do not allow us to cache them. When you go offline the map switches to the saved USGS tiles.
 5. Apple Maps / Google Maps links still open the system apps.
 
@@ -31,8 +31,8 @@ Paste copy from `ios/store/listing.txt`. Age-rating answers: `ios/store/age-rati
 7. Export compliance: HTTPS only (`ITSAppUsesNonExemptEncryption` is false).
 8. Screenshots: real in-app shots from `ios/store/screenshots/` (search, results, map, account — not splash-only). Upload paths in `ios/store/listing.txt` (`upload-iphone/` or `upload-iphone-1242/`, plus `ipad-13-*`).
 9. App Review Information: paste `ios/store/review-notes.txt` into **both** the Resolution Center reply and the Notes field. Demo user `appreview@simba.services`; password from `ios/store/review-notes.local.txt` (gitignored) or `C:\Simba\wellnav-app-review-login.txt` — never commit it. Sign-in: open app → Sign in → work email and password. Account deletion: Account → Delete account → password → type DELETE. Do **not** delete `appreview@simba.services`.
-10. Guideline 2.1 recording: follow `ios/store/recording-script.txt` on a **physical** iPhone on the latest iOS (Simulator rejected). Start recording before the icon tap. Sign in as `appreview@simba.services` for search, map, and Save this view. Register and delete a **disposable** account only. Do not buy seats in the recording. No video file in the repo.
-11. Before Submit for Review: TestFlight smoke test on a physical iPhone (and iPad if that destination is enabled) on the latest iOS — sign in as the demo account, search, Save this view, Account (no IAP), then register and delete a disposable account.
+10. Guideline 2.1 recording: follow `ios/store/recording-script.txt` on a **physical** iPhone on the latest iOS (Simulator rejected). Start recording before the icon tap. Sign in as `appreview@simba.services` for search, map, and Save for offline. Register and delete a **disposable** account only. Do not buy seats in the recording. No video file in the repo.
+11. Before Submit for Review: TestFlight smoke test on a physical iPhone (and iPad if that destination is enabled) on the latest iOS — sign in as the demo account, search, Save for offline, Account (no IAP), then register and delete a disposable account.
 
 ## Before you archive
 

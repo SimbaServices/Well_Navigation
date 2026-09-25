@@ -108,7 +108,7 @@ struct WebContainer: UIViewRepresentable {
         /// Retained for the WebView lifetime. WKWebView's Geolocation API uses the
         /// host app's Core Location When In Use authorization (Info.plist usage
         /// string). Holding a manager keeps the framework active when the page
-        /// calls navigator.geolocation to estimate drive time for disposal directions.
+        /// calls navigator.geolocation for offline routes and disposal drive time.
         private let locationManager = CLLocationManager()
 
         init(startURL: URL) {
@@ -116,7 +116,7 @@ struct WebContainer: UIViewRepresentable {
             super.init()
             locationManager.delegate = self
             // Prompt When In Use so WKWebView navigator.geolocation can resolve
-            // drive-time estimates when opening disposal directions. WebKit shares this status.
+            // offline routes and disposal drive-time estimates. WebKit shares this status.
             if locationManager.authorizationStatus == .notDetermined {
                 locationManager.requestWhenInUseAuthorization()
             }
@@ -169,6 +169,11 @@ struct WebContainer: UIViewRepresentable {
                 UIApplication.shared.open(url)
             }
             return nil
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // Touch the cookie store so the sign-in cookie is written before the app is closed.
+            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { _ in }
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
@@ -243,7 +248,7 @@ struct WebContainer: UIViewRepresentable {
                 <div style="font-size:40px;color:#d4a017">◆</div>
                 <h1>Can't reach Well Navigation</h1>
                 <p>\(Self.escape(message))</p>
-                <p>If you already opened the app once, saved USGS map tiles and pinned wells stay on this device. Search still needs a connection.</p>
+                <p>If you already opened the app once, saved routes, pins, and USGS map tiles stay on this device. Search still needs a connection.</p>
                 <p><a href="\(startURL.absoluteString)">Try again</a></p>
               </div>
             </body></html>

@@ -158,6 +158,12 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 return handleUrl(request.url)
             }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                // WebView keeps new cookies in memory until flush. Without this,
+                // closing the app drops the sign-in session.
+                CookieManager.getInstance().flush()
+            }
         }
 
         onBackPressedDispatcher.addCallback(
@@ -173,7 +179,21 @@ class MainActivity : AppCompatActivity() {
         watchNetwork()
     }
 
+    override fun onPause() {
+        if (::webView.isInitialized) {
+            CookieManager.getInstance().flush()
+            webView.onPause()
+        }
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::webView.isInitialized) webView.onResume()
+    }
+
     override fun onDestroy() {
+        if (::webView.isInitialized) CookieManager.getInstance().flush()
         networkCallback?.let { callback ->
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(callback)
         }

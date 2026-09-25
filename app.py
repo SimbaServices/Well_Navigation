@@ -21,7 +21,9 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from wellnav.accounts import CACHE, LOCATION_TTL, OPERATOR_TTL, SAVED, SEARCH_TTL, USERS
+from wellnav.feedback import FEEDBACK, KINDS
 from wellnav.auth import (
+    SESSION_MAX_AGE,
     clear_otp_session,
     current_user_id,
     is_public_path,
@@ -61,6 +63,7 @@ from wellnav.billing import (
     update_subscription_seats,
     workspace_for,
 )
+from wellnav.offline_routes import parse_pack_request, plan_offline_routes
 from wellnav.offline_tiles import usgs_url, validate_tile
 from wellnav.recordings import (
     append_chunk,
@@ -564,7 +567,7 @@ async def account_delete(request: Request) -> HTMLResponse | RedirectResponse:
         html = render("partials/delete_account.html", request, error=error)
         return fragment_or_page(request, html, clear_suggest=True)
     logout_user(request)
-    return redirect_to(request, "/login")
+    return redirect_to(request, "/login?forget=1")
 
 
 async def privacy(request: Request) -> HTMLResponse:
@@ -573,6 +576,60 @@ async def privacy(request: Request) -> HTMLResponse:
 
 async def terms(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "terms.html", view_ctx(request))
+
+
+def _feedback_html(
+    request: Request,
+    user: dict,
+    *,
+    error: str | None = None,
+    draft: dict | None = None,
+) -> str:
+    org = USERS.org(user.get("org_id")) if user.get("org_id") else None
+    messages, truncated = FEEDBACK.list_for(user) if org else ([], False)
+    return render(
+        "partials/feedback.html",
+        request,
+        org=org,
+        messages=messages,
+        truncated=truncated,
+        kinds=KINDS,
+        error=error,
+        draft=draft or {},
+    )
+
+
+async def feedback_panel(request: Request) -> HTMLResponse:
+    user = current_user(request)
+    if not user:
+        return login_required_html(request)
+    html = _feedback_html(request, user)
+    return fragment_or_page(request, html, clear_suggest=True)
+
+
+async def feedback_create(request: Request) -> HTMLResponse:
+    user = current_user(request)
+    if not user:
+        return login_required_html(request)
+    data = await _form_params(request)
+    _, error = FEEDBACK.post(
+        user,
+        kind=data.get("kind", ""),
+        place=data.get("place", ""),
+        body=data.get("body", ""),
+    )
+    draft = data if error else {}
+    html = _feedback_html(request, user, error=error, draft=draft)
+    return fragment_or_page(request, html, clear_suggest=True)
+
+
+async def feedback_delete(request: Request) -> HTMLResponse:
+    user = current_user(request)
+    if not user:
+        return login_required_html(request)
+    _, error = FEEDBACK.delete(user, int(request.path_params["message_id"]))
+    html = _feedback_html(request, user, error=error)
+    return fragment_or_page(request, html, clear_suggest=True)
 
 
 async def org_panel(request: Request) -> HTMLResponse:
@@ -1801,6 +1858,19 @@ def web_manifest(_request: Request) -> FileResponse:
     )
 
 
+async def offline_routes(request: Request) -> JSONResponse:
+    """Driving or direct routes from the device location to each pinned place."""
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Expected a JSON body."}, status_code=400)
+    try:
+        origin, destinations = parse_pack_request(body)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    return JSONResponse(plan_offline_routes(origin, destinations))
+
+
 def offline_usgs_tile(request: Request) -> Response:
     try:
         z = int(request.path_params["z"])
@@ -1842,6 +1912,9 @@ app = Starlette(
         Route("/ux/recordings/{recording_id}", ux_recording_replay),
         Route("/privacy", privacy),
         Route("/terms", terms),
+        Route("/feedback", feedback_panel, methods=["GET"]),
+        Route("/feedback", feedback_create, methods=["POST"]),
+        Route("/feedback/{message_id:int}/delete", feedback_delete, methods=["POST"]),
         Route("/org", org_panel),
         Route("/org/members/{member_id:int}/remove", org_remove, methods=["POST"]),
         Route("/org/members/{member_id:int}/role", org_role, methods=["POST"]),
@@ -1889,6 +1962,7 @@ app = Starlette(
         Route("/healthz", healthz),
         Route("/sw.js", service_worker),
         Route("/manifest.webmanifest", web_manifest),
+        Route("/offline/routes", offline_routes, methods=["POST"]),
         Route("/offline/tiles/{z:int}/{y:int}/{x:int}", offline_usgs_tile),
         Mount("/static", StaticFiles(directory="static"), name="static"),
     ],
@@ -1901,7 +1975,7 @@ app = Starlette(
             session_cookie="wellnav",
             same_site="lax",
             https_only=(os.environ.get("WELLNAV_HTTPS") or "").strip().lower() in {"1", "true", "yes"},
-            max_age=60 * 60 * 24 * 30,
+            max_age=SESSION_MAX_AGE,
         ),
         Middleware(RequireSignInMiddleware),
     ],

@@ -1,0 +1,67 @@
+<div class="account-card feedback-board">
+  <h2>Testing feedback</h2>
+  {% if org %}
+    <p class="muted">Shared with <strong>{{ workspace.org_name if workspace else org.name }}</strong>. Everyone in this organization can read these notes. Use this board for bugs, ideas, and questions while you try the app.</p>
+  {% endif %}
+  {% if error %}
+    <div class="banner error">{{ error }}</div>
+  {% endif %}
+
+  {% if org %}
+    {% set draft = draft or {} %}
+    <form class="feedback-form" action="/feedback" method="post"
+          hx-post="/feedback" hx-target="#results" hx-indicator="#spinner">
+      <label>Type
+        <select name="kind" aria-label="Feedback type">
+          {% for key, label in kinds.items() %}
+            <option value="{{ key }}"{% if (draft.kind or 'bug') == key %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Where in the app
+        <input name="place" type="text" maxlength="80" value="{{ draft.place or '' }}"
+               placeholder="Search, map, team, billing…" autocomplete="off">
+      </label>
+      <label>What you found
+        <textarea name="body" maxlength="2000" required placeholder="What happened, and what did you expect?">{{ draft.body or '' }}</textarea>
+      </label>
+      <button type="submit" class="primary">Post note</button>
+    </form>
+
+    {% if messages %}
+      <ul class="feedback-list">
+        {% for message in messages %}
+          <li class="feedback-note">
+            <header>
+              <span class="feedback-kind">{{ message.kind_label }}</span>
+              <span class="muted">{{ message.created_at or "" }}</span>
+            </header>
+            <p class="feedback-meta muted">
+              <strong>{{ message.author }}</strong>{% if message.mine %} · You{% endif %}
+              {% if message.place %} · {{ message.place }}{% endif %}
+            </p>
+            <p class="feedback-body">{{ message.body }}</p>
+            {% if message.can_remove %}
+              <form action="/feedback/{{ message.id }}/delete" method="post"
+                    hx-post="/feedback/{{ message.id }}/delete"
+                    hx-target="#results" hx-indicator="#spinner">
+                <button type="submit" class="ghost danger-text">Remove</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% if truncated %}
+        <p class="muted">Showing the latest {{ messages|length }} notes.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">No testing notes yet. The first one shows up here for the whole organization.</p>
+    {% endif %}
+  {% endif %}
+
+  <div class="account-actions">
+    <a href="/" class="ghost">Back to search</a>
+    <a href="/account" class="ghost"
+       hx-get="/account" hx-target="#results" hx-push-url="true">Account</a>
+  </div>
+</div>

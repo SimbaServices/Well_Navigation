@@ -263,13 +263,14 @@ def workspace_for(user: dict | None, org: dict | None, members: list[dict] | Non
 
 
 def is_billing_path(path: str) -> bool:
-    if path in {"/billing", "/account", "/account/delete", "/org", "/logout"}:
+    if path in {"/billing", "/account", "/account/delete", "/org", "/logout", "/feedback"}:
         return True
     return (
         path.startswith("/billing/")
         or path.startswith("/org/")
         or path.startswith("/account/")
         or path.startswith("/ux/")
+        or path.startswith("/feedback/")
     )
 
 
