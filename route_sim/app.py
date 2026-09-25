@@ -6,13 +6,15 @@ import argparse
 import asyncio
 import contextlib
 import os
+from pathlib import Path
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, Response
-from starlette.routing import Route, WebSocketRoute
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from route_sim.gpx import route_gpx
@@ -21,6 +23,7 @@ from route_sim.simulator import TICK_SECONDS, Simulator
 
 SIM = Simulator()
 _CLIENTS: set[WebSocket] = set()
+_PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
 
 
 async def _json_object(request: Request) -> dict:
@@ -53,10 +56,6 @@ async def emit(force: bool = False) -> dict:
     if force or changed:
         await broadcast(payload)
     return payload
-
-
-async def index(_request: Request) -> PlainTextResponse:
-    return PlainTextResponse("Route simulator API\n")
 
 
 async def get_location(_request: Request) -> JSONResponse:
@@ -137,13 +136,13 @@ async def lifespan(_app: Starlette):
 
 app = Starlette(
     routes=[
-        Route("/", index),
         Route("/api/location", get_location, methods=["GET"]),
         Route("/api/route", get_route, methods=["GET"]),
         Route("/api/route", post_route, methods=["POST"]),
         Route("/api/simulation", post_simulation, methods=["POST"]),
         Route("/api/route.gpx", get_route_gpx, methods=["GET"]),
         WebSocketRoute("/ws", websocket_endpoint),
+        Mount("/", app=StaticFiles(directory=_PUBLIC_DIR, html=True), name="public"),
     ],
     middleware=[
         Middleware(
