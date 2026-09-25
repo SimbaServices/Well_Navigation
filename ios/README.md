@@ -27,7 +27,7 @@ Paste copy from `ios/store/listing.txt`. Age-rating answers: `ios/store/age-rati
 3. **No IAP. No Sign in with Apple.** Login is work email and password only. Public App Store distribution: any oil and gas professional can register with a work email (not an internal employee-only app).
 4. Privacy URL `https://wellnav.simba.services/privacy`. Terms `https://wellnav.simba.services/terms`. Support URL `https://wellnav.simba.services`.
 5. Age rating 4+ from `ios/store/age-rating.txt`. Category Business. Price Free. Copyright `2026 Simba Services`.
-6. Privacy nutrition: email, user ID, other user content (saved wells), IP address. No tracking. No advertising.
+6. Privacy nutrition: email, user ID, other user content (saved wells), IP address, optional precise and coarse location (near-me disposal search only). No tracking. No advertising.
 7. Export compliance: HTTPS only (`ITSAppUsesNonExemptEncryption` is false).
 8. Screenshots: real in-app shots from `ios/store/screenshots/` (search, results, map, account — not splash-only). Upload paths in `ios/store/listing.txt` (`upload-iphone/` or `upload-iphone-1242/`, plus `ipad-13-*`).
 9. App Review Information: paste `ios/store/review-notes.txt` into **both** the Resolution Center reply and the Notes field. Demo user `appreview@simba.services`; password from `ios/store/review-notes.local.txt` (gitignored) or `C:\Simba\wellnav-app-review-login.txt` — never commit it. Sign-in: open app → Sign in → work email and password. Account deletion: Account → Delete account → password → type DELETE. Do **not** delete `appreview@simba.services`.

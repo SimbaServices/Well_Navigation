@@ -33,7 +33,7 @@ Offline maps are handled by the **website**, not by Google Maps SDK:
 - Terms: `https://wellnav.simba.services/terms`
 - **Billing:** no Play Billing / no in-app products. Organization seats are a workplace subscription sold on the website (Google Play Payments policy enterprise / workplace exception). `@simba.services` accounts are complimentary.
 - Account deletion: Account → Delete account (same as iOS). Do not add Google Sign-In unless you also add it on the web.
-- Data safety: account email and user ID (app functionality, linked, not sold); other user content (saved wells); IP address in server logs. No advertising ID. No location. Approximate/precise location: not collected.
+- Data safety: account email and user ID (app functionality, linked, not sold); other user content (saved wells); IP address in server logs. No advertising ID. Optional approximate and precise location (app functionality, not linked, not sold), collected only when the user runs a near-me disposal search.
 - High-res icon: `android/store/icon-512.png` (also `static/app-icon.png` at 1024). Feature graphic: `android/store/feature-graphic.png`.
 - Screenshots: `android/store/screenshots/` — exact 9:16 24-bit PNG: phone 1080×1920, 7-inch 1440×2560, 10-inch 1800×3200. Recapture with `python android/store/capture-screenshots.py`. Paths are in `android/store/listing.txt`.
 - Content rating: IARC questionnaire — business utility, no user-generated social, no sharing location.

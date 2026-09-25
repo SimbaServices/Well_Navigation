@@ -69,6 +69,8 @@ Data collected, not used for tracking, not used for third-party advertising:
 - User ID — linked, App Functionality
 - Other user content (saved wells) — linked, App Functionality
 - IP address — not linked, App Functionality
+- Precise Location — not linked, App Functionality (optional; near-me disposal search only)
+- Coarse Location — not linked, App Functionality (optional; near-me disposal search only)
 No tracking. No advertising. No advertising identifier. Product Page Optimization / SKAdNetwork: none.
 
 Export compliance: ITSAppUsesNonExemptEncryption is false (HTTPS only). In App Store Connect answer that the app uses encryption only for HTTPS / standard encryption.
