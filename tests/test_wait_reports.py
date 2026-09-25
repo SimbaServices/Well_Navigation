@@ -110,6 +110,13 @@ class WaitReportsTests(unittest.TestCase):
         )
         self.assertEqual(estimated["wait_minutes"], 60)
         self.assertEqual(estimated["org_id"], 7)
+        with self.assertRaisesRegex(ValueError, "team membership"):
+            self._create(
+                report_kind="estimated",
+                arrival_at=_iso(self.now + timedelta(hours=1)),
+                departure_at=_iso(self.now + timedelta(hours=2)),
+                org_id=None,
+            )
 
     def test_actual_requires_departure(self) -> None:
         with self.assertRaisesRegex(ValueError, "departure"):

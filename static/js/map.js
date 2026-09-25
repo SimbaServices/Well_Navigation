@@ -1123,8 +1123,8 @@ function renderPipelineOwners(payload) {
   const dl = document.createElement("dl");
   const quality = payload.quality || "";
   const t4ish = !quality || quality.length <= 2;
-  // When a pin is active, title already shows operator — skip repeating it here.
-  if (!pinActive || !operator) {
+  // Skip Operator only when pin chrome title already surfaces it.
+  if (!pinActive || !(pipelinePin && pipelinePin.operator)) {
     ownerField(dl, t4ish ? "T-4 operator" : "Operator", operator);
   }
   ownerField(dl, "P-5 number", p5);
@@ -1923,10 +1923,12 @@ function updateChrome(store) {
   }
   if (sub) {
     if (showPin) {
-      // Keep subtitle short — ownership panel already lists operator/system/commodity.
-      sub.textContent = pipelinePin.system && pipelinePin.operator
-        ? "Pinned pipeline point"
-        : pipelinePin.system || pipelinePin.commodity || "Pinned pipeline point";
+      // Never repeat the chrome title (operator or system). Ownership panel lists the rest.
+      if (pipelinePin.operator && pipelinePin.system) {
+        sub.textContent = "Pinned pipeline point";
+      } else {
+        sub.textContent = pipelinePin.commodity || "Pinned pipeline point";
+      }
     } else if (disposalFocus) {
       // Waste classifications live in #disposal-waste-classes — keep subtitle lean.
       const bits = [];

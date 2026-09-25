@@ -35,7 +35,8 @@
     </div>
   </header>
 
-  <main class="workspace" data-pane="{{ 'map' if map_html else 'search' }}">
+  <main class="workspace" data-pane="{{ 'map' if map_html else 'search' }}"
+        data-has-org="{{ '1' if user and user.org_id else '0' }}">
     <div class="workspace-tabs" role="tablist" aria-label="Search and map">
       <button type="button" class="workspace-tab" id="tab-search" role="tab"
               aria-controls="search-panel" aria-selected="true" data-pane="search">
@@ -251,7 +252,7 @@
   </footer>
 
   <script src="/static/js/offline-map.js?v=1"></script>
-  <script src="/static/js/disposal-ux.js?v=2"></script>
+  <script src="/static/js/disposal-ux.js?v=3"></script>
   <script src="/static/js/map.js?v=mobile8"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

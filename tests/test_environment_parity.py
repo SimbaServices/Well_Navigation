@@ -80,13 +80,14 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("Near me", index)
         self.assertIn('value="radium_near"', index)
         self.assertIn("disposal-ux.js", index)
+        self.assertIn("data-has-org", index)
         self.assertNotIn("{% if store_client %}", index)
         self.assertNotIn("{% if not store_client %}", index)
 
     def test_service_worker_precache_matches_index_asset_urls(self) -> None:
         index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
         worker = (ROOT / "static" / "js" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("wellnav-shell-v12", worker)
+        self.assertIn("wellnav-shell-v13", worker)
         self.assertIn("disposal-ux.js", worker)
 
         hrefs = re.findall(r'(?:href|src)="(/static/[^"]+)"', index)
@@ -134,6 +135,8 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("disposal-wait", disposal)
         self.assertIn("near", disposal)
         self.assertIn("radium_near", disposal)
+        self.assertIn("hasOrgMembership", disposal)
+        self.assertIn("team membership", disposal)
 
     def test_store_boot_only_arms_credentials_and_service_worker(self) -> None:
         boot = (ROOT / "templates" / "partials" / "store_boot.js").read_text(encoding="utf-8")

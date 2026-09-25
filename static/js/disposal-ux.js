@@ -273,6 +273,11 @@
     return panel;
   }
 
+  function hasOrgMembership() {
+    const root = document.querySelector(".workspace");
+    return !!(root && root.getAttribute("data-has-org") === "1");
+  }
+
   function syncKindHints() {
     const kind =
       (document.querySelector('#disposal-wait-form input[name="report_kind"]:checked') || {}).value ||
@@ -289,8 +294,9 @@
     if (kind === "partial") {
       hint.textContent = "Arrival only. Time cannot be in the future.";
     } else if (kind === "estimated") {
-      hint.textContent =
-        "Estimated arrival and departure must both be in the future and within 24 hours of each other. Shared with your team.";
+      hint.textContent = hasOrgMembership()
+        ? "Estimated arrival and departure must both be in the future and within 24 hours of each other. Shared with your team."
+        : "Estimated reports are shared with your team. Join or create a team under Team before submitting an estimate.";
     } else {
       hint.textContent =
         "Actual visits need arrival and departure (no future times). Interval must be within 24 hours.";
@@ -304,6 +310,9 @@
     if (!arrivalIso) return "Arrival time is required.";
     const arrivalMs = Date.parse(arrivalIso);
     if (Number.isNaN(arrivalMs)) return "Arrival time must be a valid date.";
+    if (kind === "estimated" && !hasOrgMembership()) {
+      return "Estimated reports require a team membership. Open Team to join or create one.";
+    }
     if (kind === "partial") {
       if (departureIso) return "Arrival-only reports cannot include a departure time.";
       if (arrivalMs > now + skewMs) return "Arrival cannot be in the future for arrival-only reports.";
