@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=disposaltap1">
+  <link rel="stylesheet" href="/static/css/app.css?v=locshare2">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -150,8 +150,8 @@
         {% endfor %}
       </div>
       <div id="operator-suggest"></div>
-      <p class="hint hint-name">Add an operator filter, then search by well name to narrow those wells.</p>
-      <p class="hint hint-api">Add an operator filter, then search by API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
+      <p class="hint hint-name">The table filters as you type a well name. Add an operator filter to narrow those wells.</p>
+      <p class="hint hint-api">The table filters as you type an API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
       <p class="hint hint-operator">Add an operator filter. Pick another to add more, then search by well name to narrow those wells.</p>
       <p class="hint hint-pipe-op">Search Texas T-4, New Mexico EIA/BLM ROW, Oklahoma EIA, or Louisiana EIA/BSEE lines.</p>
       <p class="hint hint-pipe-name">Search by pipeline or system name. Click a match to zoom the overlay to those lines.</p>
@@ -244,7 +244,7 @@
 
   <script src="/static/js/offline-map.js?v=1"></script>
   <script src="/static/js/disposal-ux.js?v=4"></script>
-  <script src="/static/js/map.js?v=disposaltap1"></script>
+  <script src="/static/js/map.js?v=locshare2"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

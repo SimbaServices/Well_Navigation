@@ -1070,7 +1070,7 @@ function dropPipelinePin(latlng, props, layer) {
     pipelinePinMarker = L.marker(here, {
       pane: "pipeline-pin",
       keyboard: true,
-      title: "Pipeline point — click to remove",
+      title: "Pipeline point",
       riseOnHover: true,
       icon: L.divIcon({
         className: "pipeline-pin-wrap",
@@ -1079,13 +1079,13 @@ function dropPipelinePin(latlng, props, layer) {
         iconAnchor: [11, 26],
       }),
     });
-    pipelinePinMarker.on("click", (event) => {
-      L.DomEvent.stopPropagation(event);
-      if (event.originalEvent) L.DomEvent.stop(event.originalEvent);
-      clearPipelinePin();
-    });
+    pipelinePinMarker.bindPopup(pipelinePinPopup(pipelinePin), locationPopupOptions());
     pipelinePinMarker.addTo(map);
   }
+  if (pipelinePinMarker.getPopup()) {
+    pipelinePinMarker.setPopupContent(pipelinePinPopup(pipelinePin));
+  }
+  pipelinePinMarker.openPopup();
   updateChrome(loadStore());
 }
 
@@ -1262,17 +1262,19 @@ function disposalPopup(props) {
     Array.isArray(props.waste_classifications) && props.waste_classifications.length
       ? props.waste_classifications.join(" · ")
       : props.permit_type_label || props.permit_type || "";
-  const bits = [
-    `<strong>${escapeHtml(props.facility || props.permit_no || "Waste disposal site")}</strong>`,
-    props.operator ? escapeHtml(props.operator) : "",
-    props.permit_no ? `Permit ${escapeHtml(props.permit_no)}` : "",
-    waste ? `Accepted: ${escapeHtml(waste)}` : "",
-    props.county ? `${escapeHtml(props.county)} County` : "",
-    Number.isFinite(props.lat) && Number.isFinite(props.lon)
-      ? `${Number(props.lat).toFixed(6)}, ${Number(props.lon).toFixed(6)}`
-      : "",
+  const lines = [
+    props.operator || "",
+    props.permit_no ? `Permit ${props.permit_no}` : "",
+    waste ? `Accepted: ${waste}` : "",
+    props.county ? `${props.county} County` : "",
   ].filter(Boolean);
-  return bits.join("<br>");
+  return locationPopupHtml({
+    title: props.facility || props.permit_no || "Waste disposal site",
+    lines,
+    pointLabel: "Waste site",
+    lat: props.lat,
+    lon: props.lon,
+  });
 }
 
 function disposalMarkerStyle(selected) {
@@ -1325,12 +1327,7 @@ function ensureDisposalLayer() {
       },
       onEachFeature(feature, layer) {
         const props = feature.properties || {};
-        layer.bindPopup(disposalPopup(props), {
-          autoClose: true,
-          closeOnClick: true,
-          closeOnEscapeKey: true,
-          autoPan: false,
-        });
+        layer.bindPopup(disposalPopup(props), locationPopupOptions());
         layer.on("popupopen", () => {
           disposalPopupPinned = true;
         });
@@ -1808,12 +1805,14 @@ function ensureMap() {
 }
 
 function wellheadPopup(well) {
-  const name = escapeHtml(well.name || formatApi(well.api));
-  const status = escapeHtml(well.status || "");
-  const lines = [`<strong>${name}</strong>`];
-  if (status) lines.push(status);
-  lines.push("Wellhead", `${well.lat.toFixed(6)}, ${well.lon.toFixed(6)}`);
-  return lines.join("<br>");
+  return locationPopupHtml({
+    title: well.name || formatApi(well.api, well.state),
+    lines: well.status ? [well.status] : [],
+    detail: wellSubtitle(well),
+    pointLabel: "Wellhead",
+    lat: well.lat,
+    lon: well.lon,
+  });
 }
 
 function markerStyle(selected) {
@@ -1839,7 +1838,7 @@ function upsertOverlay(well, selected) {
   let layer = overlays.get(well.api);
   if (!layer) {
     const head = L.circleMarker([well.lat, well.lon], markerStyle(selected))
-      .bindPopup(wellheadPopup(well), { autoClose: true, closeOnClick: true });
+      .bindPopup(wellheadPopup(well), locationPopupOptions());
     head.on("click", () => selectWell(well.api));
     wellLayer.addLayer(head);
     layer = { head, toe: null, line: null };
@@ -1873,7 +1872,17 @@ function upsertOverlay(well, selected) {
       fillOpacity: 0.9,
       weight: 2,
     }).bindPopup(
-      `<strong>Toe / bottom hole</strong><br>${well.toeLat.toFixed(6)}, ${well.toeLon.toFixed(6)}<br>RRC default mapped point`
+      locationPopupHtml({
+        title: well.name || "Toe / bottom hole",
+        lines: well.name
+          ? ["Toe / bottom hole", "RRC default mapped point"]
+          : ["RRC default mapped point"],
+        pointLabel: "Toe",
+        showPointLabel: false,
+        lat: well.toeLat,
+        lon: well.toeLon,
+      }),
+      locationPopupOptions()
     );
     wellLayer.addLayer(layer.line);
     wellLayer.addLayer(layer.toe);
@@ -1932,19 +1941,170 @@ function coordChip(title, lat, lon, hint) {
   return chip;
 }
 
-function routeLink(kind, href, label, dataset) {
-  const a = document.createElement("a");
-  a.className = `route ${kind}`;
-  a.target = "_blank";
-  a.rel = "noopener";
-  a.href = href;
-  a.textContent = label;
-  if (dataset) {
-    Object.keys(dataset).forEach((key) => {
-      if (dataset[key] != null && dataset[key] !== "") a.dataset[key] = String(dataset[key]);
-    });
+function locationPopupOptions() {
+  const phone = window.matchMedia("(max-width: 960px)").matches;
+  const mapEl = document.getElementById("well-map");
+  const bottomPad = phone && mapEl ? Math.max(120, Math.round(mapEl.clientHeight * 0.38)) : 16;
+  return {
+    className: "loc-popup",
+    autoClose: true,
+    closeOnClick: true,
+    closeOnEscapeKey: true,
+    maxWidth: 300,
+    autoPan: true,
+    autoPanPaddingTopLeft: [16, 16],
+    autoPanPaddingBottomRight: [16, bottomPad],
+  };
+}
+
+function locationPopupHtml(place) {
+  const lat = Number(place.lat);
+  const lon = Number(place.lon);
+  const parts = [];
+  if (place.title) parts.push(`<strong>${escapeHtml(place.title)}</strong>`);
+  (place.lines || []).forEach((line) => {
+    if (line) parts.push(escapeHtml(line));
+  });
+  if (place.pointLabel && place.showPointLabel !== false) parts.push(escapeHtml(place.pointLabel));
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+  if (hasCoords) parts.push(escapeHtml(`${lat.toFixed(6)}, ${lon.toFixed(6)}`));
+  let html = parts.join("<br>");
+  if (!hasCoords) return html;
+  const detail = [place.detail, ...(place.lines || [])].filter(Boolean).join("\n");
+  html += mapsShareMarkup({
+    title: place.title || place.pointLabel || "Location",
+    detail,
+    pointLabel: place.pointLabel || "Location",
+    lat,
+    lon,
+  });
+  return html;
+}
+
+function attrText(value) {
+  return escapeHtml(String(value ?? "")).replace(/\r\n|\r|\n/g, "&#10;");
+}
+
+function mapsShareMarkup(place) {
+  const lat = Number(place.lat);
+  const lon = Number(place.lon);
+  const coords = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  const apple = `https://maps.apple.com/?daddr=${lat},${lon}`;
+  const google = `https://maps.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  return (
+    `<div class="loc-share" data-share-title="${attrText(place.title || "Location")}"` +
+    ` data-share-detail="${attrText(place.detail || "")}"` +
+    ` data-share-point="${attrText(place.pointLabel || "Location")}"` +
+    ` data-share-coords="${attrText(coords)}"` +
+    ` data-share-apple="${attrText(apple)}"` +
+    ` data-share-google="${attrText(google)}">` +
+    `<div class="loc-share-platforms" role="group" aria-label="Choose a maps link">` +
+    `<button type="button" class="route apple" data-share-platform="apple" aria-pressed="false">Apple Maps</button>` +
+    `<button type="button" class="route google" data-share-platform="google" aria-pressed="false">Google Maps</button>` +
+    `</div>` +
+    `<div class="loc-share-via" hidden>` +
+    `<p class="loc-share-prompt"></p>` +
+    `<div class="loc-share-actions">` +
+    `<a class="ghost" data-share-via="sms">Text message</a>` +
+    `<a class="ghost" data-share-via="email">Email</a>` +
+    `</div></div></div>`
+  );
+}
+
+function pipelinePinPopup(pin) {
+  const title = pin.operator || pin.system || "Pipeline point";
+  const lines = [];
+  if (pin.system && pin.system !== title) lines.push(pin.system);
+  if (pin.commodity) lines.push(pin.commodity);
+  return locationPopupHtml({
+    title,
+    lines,
+    pointLabel: "Pipeline point",
+    showPointLabel: title !== "Pipeline point",
+    lat: pin.lat,
+    lon: pin.lon,
+  });
+}
+
+function locationShareBody(root, platform) {
+  const title = root.dataset.shareTitle || "Location";
+  const detail = root.dataset.shareDetail || "";
+  const point = root.dataset.sharePoint || "Location";
+  const coords = root.dataset.shareCoords || "";
+  const link = platform === "google" ? root.dataset.shareGoogle : root.dataset.shareApple;
+  const platformName = platform === "google" ? "Google Maps" : "Apple Maps";
+  const lines = [title];
+  if (detail) lines.push(detail);
+  if (coords) lines.push(`${point}: ${coords}`);
+  lines.push("", platformName, link || "");
+  return lines.join("\n").replace(/\n/g, "\r\n");
+}
+
+function prefersIosSms() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+function deviceShareHref(via, subject, body) {
+  if (via === "email") {
+    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
-  return a;
+  const encoded = encodeURIComponent(body);
+  return prefersIosSms() ? `sms:&body=${encoded}` : `sms:?body=${encoded}`;
+}
+
+function refreshLocationPopup() {
+  const popup = map && map._popup;
+  if (!popup || !popup.isOpen() || !popup._map || !popup._container) return;
+  if (typeof popup._updateLayout !== "function" || typeof popup._updatePosition !== "function") return;
+  const container = popup._container;
+  // Leaflet's update() rewrites popup HTML and would collapse the share step.
+  container.style.visibility = "hidden";
+  try {
+    popup._updateLayout();
+    popup._updatePosition();
+    if (typeof popup._adjustPan === "function") popup._adjustPan();
+  } finally {
+    container.style.visibility = "";
+  }
+}
+
+function selectSharePlatform(root, platform) {
+  root.dataset.platform = platform;
+  root.querySelectorAll("[data-share-platform]").forEach((btn) => {
+    const on = btn.dataset.sharePlatform === platform;
+    btn.classList.toggle("is-selected", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const via = root.querySelector(".loc-share-via");
+  const prompt = root.querySelector(".loc-share-prompt");
+  const name = platform === "google" ? "Google Maps" : "Apple Maps";
+  const title = root.dataset.shareTitle || "Location";
+  const body = locationShareBody(root, platform);
+  const sms = root.querySelector('[data-share-via="sms"]');
+  const email = root.querySelector('[data-share-via="email"]');
+  if (sms) sms.href = deviceShareHref("sms", title, body);
+  if (email) email.href = deviceShareHref("email", title, body);
+  if (prompt) prompt.textContent = `Send the ${name} link`;
+  if (via) via.hidden = false;
+  window.requestAnimationFrame(refreshLocationPopup);
+}
+
+function onLocationShareClick(event) {
+  const target = event.target;
+  if (!target || !target.closest) return;
+  const platformBtn = target.closest("[data-share-platform]");
+  if (!platformBtn) return;
+  event.preventDefault();
+  const root = platformBtn.closest(".loc-share");
+  if (root) selectSharePlatform(root, platformBtn.dataset.sharePlatform);
+}
+
+function bindLocationShare() {
+  if (document.documentElement.dataset.locationShare === "1") return;
+  document.documentElement.dataset.locationShare = "1";
+  document.addEventListener("click", onLocationShareClick, true);
 }
 
 function updateChrome(store) {
@@ -2045,13 +2205,6 @@ function updateChrome(store) {
     const destLat = showPin ? pipelinePin.lat : disposalFocus ? disposalFocus.lat : selected && selected.lat;
     const destLon = showPin ? pipelinePin.lon : disposalFocus ? disposalFocus.lon : selected && selected.lon;
     if (Number.isFinite(destLat) && Number.isFinite(destLon)) {
-      const dest = `${destLat},${destLon}`;
-      const routeAttrs =
-        !showPin && disposalFocus && disposalFocus.id ? { disposalId: disposalFocus.id } : null;
-      nav.append(
-        routeLink("apple", `https://maps.apple.com/?daddr=${dest}`, "Apple Maps", routeAttrs),
-        routeLink("google", `https://maps.google.com/maps/dir/?api=1&destination=${dest}`, "Google Maps", routeAttrs)
-      );
       if (showPin) {
         const remove = document.createElement("button");
         remove.type = "button";
@@ -2293,6 +2446,9 @@ window.syncMapButtons = syncMapButtons;
 window.initWellMap = initWellMap;
 window.setBasemap = setBasemap;
 
+const SUGGEST_TRIGGER =
+  "input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]";
+
 function searchScope() {
   const el = document.querySelector("#search-form [name=scope]");
   if (!el) return "wells";
@@ -2300,7 +2456,27 @@ function searchScope() {
   return document.querySelector("#search-form [name=scope]:checked")?.value || "wells";
 }
 
-function applySearchContext() {
+function wellSearchMode() {
+  return document.querySelector("#search-form [name=mode]:checked")?.value || "name";
+}
+
+function liveWellQuery() {
+  const mode = wellSearchMode();
+  return searchScope() === "wells" && (mode === "name" || mode === "api");
+}
+
+function refreshLiveResults() {
+  const q = document.getElementById("q");
+  if (!q || !window.htmx || !liveWellQuery()) return;
+  const text = q.value.trim();
+  const hasResults = !!document.querySelector("#results table.wells");
+  const hasFilters = !!document.querySelector(
+    "#active-filters .filter-chip, #search-form input[name='lease_no']"
+  );
+  if (text.length >= 1 || hasResults || hasFilters) window.htmx.trigger(q, "dofilter");
+}
+
+function applySearchContext({ refetch = false } = {}) {
   const form = document.getElementById("search-form");
   const q = document.getElementById("q");
   const spinner = document.getElementById("spinner");
@@ -2308,19 +2484,34 @@ function applySearchContext() {
   const scope = searchScope();
   const pipelines = scope === "pipelines";
   const disposal = scope === "disposal";
+  const live = !pipelines && !disposal && liveWellQuery();
   form.setAttribute("action", pipelines ? "/pipelines/search" : disposal ? "/disposal/search" : "/search");
   form.setAttribute("hx-get", pipelines ? "/pipelines/search" : disposal ? "/disposal/search" : "/search");
   if (q) {
-    q.setAttribute("hx-get", pipelines ? "/pipelines/suggest" : disposal ? "/disposal/suggest" : "/operators");
-    q.setAttribute(
-      "hx-trigger",
-      "input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
-    );
-    q.setAttribute("hx-include", "[name=mode],[name=state],[name=pipe_mode],[name=disp_mode],[name=scope]");
-    q.setAttribute(
-      "hx-params",
-      pipelines ? "q,pipe_mode,scope,state" : disposal ? "q,disp_mode,scope,state" : "q,mode,state"
-    );
+    if (live) {
+      q.setAttribute("hx-get", "/search");
+      q.setAttribute("hx-target", "#results");
+      q.setAttribute("hx-swap", "innerHTML");
+      q.setAttribute("hx-trigger", "input changed delay:280ms, dofilter");
+      q.setAttribute("hx-include", "#search-form, #column-filters");
+      q.setAttribute("hx-indicator", "#spinner");
+      q.setAttribute("hx-sync", "this:replace");
+      q.setAttribute("hx-headers", '{"X-Live-Filter":"1"}');
+      q.removeAttribute("hx-params");
+    } else {
+      q.setAttribute("hx-get", pipelines ? "/pipelines/suggest" : disposal ? "/disposal/suggest" : "/operators");
+      q.setAttribute("hx-trigger", SUGGEST_TRIGGER);
+      q.setAttribute("hx-target", "#operator-suggest");
+      q.setAttribute("hx-include", "[name=mode],[name=state],[name=pipe_mode],[name=disp_mode],[name=scope]");
+      q.setAttribute(
+        "hx-params",
+        pipelines ? "q,pipe_mode,scope,state" : disposal ? "q,disp_mode,scope,state" : "q,mode,state"
+      );
+      q.setAttribute("hx-sync", "this:abort");
+      q.removeAttribute("hx-indicator");
+      q.removeAttribute("hx-headers");
+      q.removeAttribute("hx-swap");
+    }
   }
   if (spinner) {
     spinner.textContent = pipelines
@@ -2349,17 +2540,68 @@ function applySearchContext() {
       }
     }
   }
+  if (refetch) refreshLiveResults();
 }
 
 function bindSearchContext() {
   const form = document.getElementById("search-form");
   if (!form || form.dataset.scopeBound === "1") return;
   form.dataset.scopeBound = "1";
-  form.addEventListener("change", (event) => {
-    if (event.target.name === "scope" || event.target.name === "pipe_mode" || event.target.name === "disp_mode" || event.target.name === "state") {
-      applySearchContext();
-    }
-  });
+  form.addEventListener(
+    "change",
+    (event) => {
+      const name = event.target.name;
+      const box = document.getElementById("q");
+      if (
+        box &&
+        ((name === "use_name" && !event.target.checked && wellSearchMode() === "name") ||
+          (name === "use_api" && !event.target.checked && wellSearchMode() === "api"))
+      ) {
+        box.value = "";
+        box.dataset.suppressLive = "1";
+        if (window.htmx) window.htmx.trigger(box, "htmx:abort");
+      }
+      if (name === "mode") {
+        const next = event.target.value;
+        const typed = box && box.value.trim();
+        if (typed && (next === "name" || next === "api")) {
+          const drop = next === "name" ? "api" : "name";
+          document
+            .querySelectorAll("#active-filters [name=" + drop + "], #active-filters [name=use_" + drop + "]")
+            .forEach((el) => el.remove());
+        }
+      }
+      if (name === "scope" || name === "pipe_mode" || name === "disp_mode" || name === "state" || name === "mode") {
+        applySearchContext({ refetch: name === "mode" || name === "state" || name === "scope" });
+      }
+    },
+    true
+  );
+  form.addEventListener(
+    "click",
+    (event) => {
+      const btn = event.target.closest("[name=remove_name], [name=remove_api]");
+      if (!btn) return;
+      const mode = wellSearchMode();
+      if ((btn.name === "remove_name" && mode !== "name") || (btn.name === "remove_api" && mode !== "api")) return;
+      const box = document.getElementById("q");
+      if (!box) return;
+      box.value = "";
+      box.dataset.suppressLive = "1";
+      if (window.htmx) window.htmx.trigger(box, "htmx:abort");
+    },
+    true
+  );
+  const q = document.getElementById("q");
+  if (q && q.dataset.liveBound !== "1") {
+    q.dataset.liveBound = "1";
+    q.addEventListener("input", () => {
+      delete q.dataset.suppressLive;
+    });
+    q.addEventListener("search", () => {
+      if (!q.value.trim() && liveWellQuery() && window.htmx) window.htmx.trigger(q, "dofilter");
+    });
+  }
   applySearchContext();
 }
 
@@ -2419,6 +2661,10 @@ document.addEventListener("click", (event) => {
 document.addEventListener("htmx:configRequest", (event) => {
   const elt = event.detail && event.detail.elt;
   const q = searchInputEl();
+  if (elt && elt.id === "q" && elt.dataset.suppressLive === "1") {
+    event.preventDefault();
+    return;
+  }
   if (!elt || !q) return;
   const target = elt.getAttribute && elt.getAttribute("hx-target");
   if (elt.id === "search-form" || target === "#results") {
@@ -2477,6 +2723,10 @@ document.body.addEventListener("click", (event) => {
 
 document.getElementById("search-form")?.addEventListener("submit", () => {
   showWorkspacePane("search");
+  const q = searchInputEl();
+  if (!q) return;
+  q.dataset.suppressLive = "1";
+  if (window.htmx) window.htmx.trigger(q, "htmx:abort");
 });
 
 window.addEventListener("resize", () => {
@@ -2567,6 +2817,7 @@ function bindInfoTips() {
 }
 
 bindInfoTips();
+bindLocationShare();
 applyNetworkState();
 if (document.getElementById("well-map") || document.getElementById("map-panel")) {
   initWellMap();

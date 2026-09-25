@@ -955,6 +955,54 @@ button.well-name-link {
 .route.apple { background: transparent; color: var(--ink); }
 .route.google { background: transparent; color: #9ec1f5; }
 .route.apple:hover, .route.google:hover { color: var(--accent); }
+.leaflet-popup.loc-popup .leaflet-popup-content-wrapper,
+.leaflet-popup.loc-popup .leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.leaflet-popup.loc-popup .leaflet-popup-content-wrapper { border-radius: 12px; }
+.leaflet-popup.loc-popup .leaflet-popup-content {
+  margin: 12px 22px 12px 14px;
+  min-width: 12.5rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+.leaflet-container .loc-popup a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-container .loc-popup a.leaflet-popup-close-button:hover,
+.leaflet-container .loc-popup a.leaflet-popup-close-button:focus { color: var(--ink); }
+.loc-popup button.route {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.loc-popup .route.is-selected { color: var(--accent); }
+.loc-share {
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--line);
+}
+.loc-share-platforms,
+.loc-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+}
+.loc-popup .route,
+.loc-share-actions .ghost {
+  min-height: 2.25rem;
+}
+.loc-share-via { margin-top: 0.35rem; }
+.loc-share-via[hidden] { display: none; }
+.loc-share-prompt {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
 .route.compact { padding: 0.1rem 0; font-size: 0.72rem; font-weight: 600; }
 .nav-col { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 

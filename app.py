@@ -35,14 +35,16 @@ from wellnav.auth import (
 from wellnav.phone_auth import PHONE_AUTH
 from wellnav.filters import (
     COLUMN_FILTER_KEYS,
-    apply_search_input,
+    LIVE_FILTER_MIN,
     empty_filters,
     filter_query,
     has_filter_chips,
+    has_filters,
     parse_column_filters,
     parse_filters,
     search_kwargs,
     subtitle as filter_subtitle,
+    typed_query_filters,
 )
 from wellnav.operators import normalize_operator_name
 from wellnav.parsers import format_api, normalize_api
@@ -984,8 +986,30 @@ async def search(request: Request) -> HTMLResponse:
                 column_filters=column_filters,
                 retarget="#operator-suggest",
             )
-    elif committing and mode in {"name", "api"} and q:
-        filters = apply_search_input(filters, mode=mode, q=q)
+    live = is_htmx(request) and request.headers.get("x-live-filter") == "1"
+    filters = typed_query_filters(filters, mode=mode, q=q, committing=committing, live=live)
+    if live:
+        offset = 0
+    if (
+        live
+        and mode in {"name", "api"}
+        and len(q) < LIVE_FILTER_MIN
+        and not has_filters(filters)
+        and not data.get("lease_no")
+        and not column_filters
+    ):
+        return fragment_or_page(
+            request,
+            (
+                '<div class="empty">'
+                "Search wells, pipelines, and waste sites in Texas, New Mexico, "
+                "Oklahoma, and Louisiana. Pick a state or All, then search."
+                "</div>"
+            ),
+            clear_suggest=True,
+            filters=filters,
+            column_filters=column_filters,
+        )
 
     stacked = search_kwargs(filters)
     context = {
@@ -1012,7 +1036,7 @@ async def search(request: Request) -> HTMLResponse:
     context["state"] = state
     counts = REPO.counts(state)
     try:
-        if user and (has_filter_chips(filters) or q):
+        if user and not live and (has_filter_chips(filters) or q):
             CACHE.remember_recent(
                 user["id"],
                 {
@@ -1040,7 +1064,8 @@ async def search(request: Request) -> HTMLResponse:
             column_filters=column_filters,
         )
         if (
-            not column_filters
+            not live
+            and not column_filters
             and not column_partial
             and result["total"] == 0
             and mode == "name"

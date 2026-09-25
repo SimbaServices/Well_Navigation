@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from urllib.parse import urlencode
 
 from wellnav.operators import normalize_operator_name, operator_identity, standardize_operator_name
@@ -191,6 +192,42 @@ def apply_search_input(filters: dict, *, mode: str, q: str) -> dict:
     elif mode == "api":
         filters["api"] = q
         filters["api_active"] = True
+    return filters
+
+
+# A lone well-name or API keystroke is too broad to scan the full tables.
+# One character is enough once another filter already limits the set.
+LIVE_FILTER_MIN = 2
+
+
+def typed_query_filters(
+    filters: dict,
+    *,
+    mode: str,
+    q: str,
+    committing: bool,
+    live: bool = False,
+) -> dict:
+    """Apply a well name or API from the search box.
+
+    Submitting stores it on a chip. A live request replaces that chip with
+    whatever is currently typed, so clearing the box clears the filter.
+    """
+    text = (q or "").strip()
+    if live and mode in {"name", "api"}:
+        filters = deepcopy(filters)
+        if mode == "name":
+            filters["name"] = ""
+            filters["name_active"] = False
+        else:
+            filters["api"] = ""
+            filters["api_active"] = False
+        minimum = 1 if has_filters(filters) else LIVE_FILTER_MIN
+        if len(text) >= minimum:
+            return apply_search_input(filters, mode=mode, q=text)
+        return filters
+    if committing and mode in {"name", "api"} and text:
+        return apply_search_input(filters, mode=mode, q=text)
     return filters
 
 

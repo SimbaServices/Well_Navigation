@@ -8,6 +8,7 @@ from wellnav.filters import (
     parse_filters,
     search_kwargs,
     subtitle,
+    typed_query_filters,
 )
 from wellnav.operators import normalize_operator_name
 
@@ -97,6 +98,36 @@ class FilterParseTests(unittest.TestCase):
         kwargs = search_kwargs(filters)
         self.assertEqual(kwargs["operator_names"], ["BPX OPERATING COMPANY"])
         self.assertIn(filters["operators"][0]["number"], {"B6983", "B372"})
+
+    def test_live_name_filters_from_two_characters(self) -> None:
+        filters = empty_filters()
+        short = typed_query_filters(filters, mode="name", q="U", committing=False, live=True)
+        self.assertEqual(search_kwargs(short)["name"], "")
+        live = typed_query_filters(filters, mode="name", q="UNI", committing=False, live=True)
+        self.assertEqual(search_kwargs(live)["name"], "UNI")
+        self.assertEqual(filters["name"], "")
+
+    def test_live_api_filters_and_keeps_operator(self) -> None:
+        filters = parse_filters(Params(opn=["123|OXY"], op=["123"]))
+        live = typed_query_filters(filters, mode="api", q="3", committing=False, live=True)
+        self.assertEqual(search_kwargs(live)["api"], "3")
+        self.assertEqual(search_kwargs(live)["operator_numbers"], ["123"])
+        self.assertEqual(filters["api"], "")
+
+    def test_live_name_replaces_previous_name_chip(self) -> None:
+        filters = parse_filters(Params(name="ALPHA", use_name="1"))
+        live = typed_query_filters(filters, mode="name", q="BETA", committing=False, live=True)
+        self.assertEqual(live["name"], "BETA")
+        self.assertTrue(live["name_active"])
+        self.assertEqual(filters["name"], "ALPHA")
+        cleared = typed_query_filters(filters, mode="name", q="", committing=False, live=True)
+        self.assertEqual(search_kwargs(cleared)["name"], "")
+
+    def test_commit_still_stores_api_chip(self) -> None:
+        filters = empty_filters()
+        committed = typed_query_filters(filters, mode="api", q="00300290", committing=True, live=False)
+        self.assertEqual(committed["api"], "00300290")
+        self.assertTrue(committed["api_active"])
 
     def test_name_only_operator_chip(self) -> None:
         filters = parse_filters(Params(add_op_name="BP America Production Company"))

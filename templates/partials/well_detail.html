@@ -80,22 +80,7 @@
         {% endif %}
       {% endif %}
     </div>
-    <div id="nav-links" class="route-row">
-      {% if location.found and location.wellhead %}
-        <a class="route apple"
-           target="_blank"
-           rel="noopener"
-           href="https://maps.apple.com/?daddr={{ location.wellhead.lat }},{{ location.wellhead.lon }}">
-          Apple Maps
-        </a>
-        <a class="route google"
-           target="_blank"
-           rel="noopener"
-           href="https://maps.google.com/maps/dir/?api=1&destination={{ location.wellhead.lat }},{{ location.wellhead.lon }}">
-          Google Maps
-        </a>
-      {% endif %}
-    </div>
+    <div id="nav-links" class="route-row"></div>
   </div>
   {% if location.note %}
     <p class="note">{{ location.note }}{% if location.from_cache %} <span class="pill">cached</span>{% endif %}</p>

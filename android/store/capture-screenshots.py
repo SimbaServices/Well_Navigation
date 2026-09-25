@@ -122,8 +122,8 @@ def pin_well_with_routes(page) -> None:
     if tab.count() and tab.is_visible():
         tab.click()
     page.wait_for_selector(".leaflet-container", timeout=20000)
-    page.wait_for_selector("a.route.apple", timeout=20000)
-    page.wait_for_selector("a.route.google", timeout=20000)
+    page.wait_for_selector(".loc-popup .route.apple", timeout=20000)
+    page.wait_for_selector(".loc-popup .route.google", timeout=20000)
     page.wait_for_timeout(3500)
     page.evaluate(
         """() => {

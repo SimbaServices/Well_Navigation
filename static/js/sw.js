@@ -1,11 +1,11 @@
 /* App-shell cache for offline reopen. Keep PRECACHE URLs identical to
    templates/index.html so web / PWA / local match store WebView feature parity
    (wait reports, map UX). Store clients unregister this worker. */
-const SHELL = "wellnav-shell-v16";
+const SHELL = "wellnav-shell-v18";
 const PRECACHE = [
   "/",
-  "/static/css/app.css?v=disposaltap1",
-  "/static/js/map.js?v=disposaltap1",
+  "/static/css/app.css?v=locshare2",
+  "/static/js/map.js?v=locshare2",
   "/static/js/column-filter.js?v=2",
   "/static/js/disposal-ux.js?v=4",
   "/static/js/offline-map.js?v=1",
