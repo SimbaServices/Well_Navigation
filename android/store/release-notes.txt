@@ -1,10 +1,10 @@
-Release name: 1.13
-Version: 1.13 (versionCode 14)
+Release name: 1.14
+Version: 1.14 (versionCode 15)
 Language: English (United States)
 Play Console limit: 500 characters
 
 Paste into the Play Console release notes:
 
-Open a saved route and tap Go to follow it offline from your GPS. The bar shows remaining distance, which way to head, and when you arrive. Follow keeps the map on you. Save for offline keeps USGS Topo tiles along the route; Esri and OpenStreetMap stay online-only.
+Share a well, disposal site, or pipeline point by text or email. The message is the place name, the operator, and a maps link.
 
 This app does not sell subscriptions. Organization admins buy seats on the website in Chrome.
