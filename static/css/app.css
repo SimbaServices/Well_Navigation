@@ -763,9 +763,12 @@ button.well-name-link {
   border-radius: 10px;
   padding: 0.7rem 0.8rem 0.55rem;
   display: grid;
+  align-content: start;
   gap: 0.45rem;
   flex: 0 1 auto;
   min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .pipeline-owners[hidden] { display: none; }
 .pipeline-owners-head {
@@ -778,13 +781,15 @@ button.well-name-link {
 .pipeline-owners-head .muted { font-size: 0.78rem; margin: 0.2rem 0 0; }
 .pipeline-owners dl {
   display: grid;
-  grid-template-columns: 7.5rem 1fr;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
   gap: 0.2rem 0.7rem;
   margin: 0;
   font-size: 0.86rem;
 }
+.pipeline-owners dt,
+.pipeline-owners dd { min-width: 0; }
 .pipeline-owners dt { color: var(--muted); }
-.pipeline-owners dd { margin: 0; }
+.pipeline-owners dd { margin: 0; overflow-wrap: anywhere; }
 .pipeline-owners-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .pipeline-map-btn.well-name-link {
   background: transparent;
@@ -810,6 +815,9 @@ button.well-name-link {
   justify-content: space-between;
   gap: 0.4rem 0.75rem;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+  background: var(--panel);
 }
 .coord-bar,
 .coord-grid {
@@ -1358,7 +1366,7 @@ body.gate .gate-tagline {
   .map-chrome[data-focus="idle"] .map-details { display: none; }
   .pipeline-owners { padding: 0.55rem 0.65rem; }
   .pipeline-owners-head h3 { font-size: 1.12rem; }
-  .pipeline-owners dl { font-size: 0.92rem; grid-template-columns: 6.4rem 1fr; }
+  .pipeline-owners dl { font-size: 0.92rem; grid-template-columns: 6.4rem minmax(0, 1fr); }
   .map-footer { display: grid; gap: 0.2rem; }
   .route-row { display: flex; gap: 0.9rem; }
   .route-row .pipeline-pin-remove { min-height: 1.65rem; }
