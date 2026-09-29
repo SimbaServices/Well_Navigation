@@ -246,7 +246,6 @@
 
   bindDockDrag();
   syncFromForm();
-  if (resultsHaveContent()) openDock();
 
   window.WellnavLayers = {
     onResults,
