@@ -423,10 +423,12 @@ table.wells th, table.wells td {
 table.wells th { color: var(--muted); font-weight: 600; }
 table.wells th.map-col, table.wells td.map-col { width: 2.6rem; text-align: center; }
 table.wells th.save-col, table.wells td.save-cell {
-  width: 1.8rem;
+  width: 2.4rem;
   text-align: right;
-  padding-left: 0.15rem;
-  padding-right: 0.35rem;
+  padding-left: 0.1rem;
+  padding-right: 0.15rem;
+  overflow: visible;
+  white-space: nowrap;
 }
 .save-status { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--ink); }
 .save-status:empty { display: none; }
@@ -2160,11 +2162,15 @@ body.gate .gate-tagline {
   transition: height 0.18s ease;
 }
 .bottom-sheet.is-open { height: min(58vh, 34rem); }
-.bottom-sheet.is-open[data-view="details"] {
+.bottom-sheet.is-open[data-view="details"],
+.bottom-sheet.is-open[data-view="pins"],
+.bottom-sheet.is-open[data-view="saved"] {
   height: auto;
   max-height: min(58vh, 34rem);
 }
-.bottom-sheet.is-open[data-view="details"] .sheet-views {
+.bottom-sheet.is-open[data-view="details"] .sheet-views,
+.bottom-sheet.is-open[data-view="pins"] .sheet-views,
+.bottom-sheet.is-open[data-view="saved"] .sheet-views {
   overflow: auto;
   max-height: calc(min(58vh, 34rem) - 0.9rem);
 }
@@ -2193,7 +2199,16 @@ body.gate .gate-tagline {
 #bottom-sheet[data-view="pins"] #account-sheet { display: none !important; }
 .settings-map-actions { margin: 0.35rem 0 0.8rem; }
 .pin-row { cursor: pointer; }
-.pins-table .ghost { min-height: 1.6rem; padding: 0.15rem 0.4rem; font-size: 0.72rem; }
+.pins-table th:nth-child(2),
+.pins-table td:nth-child(2) { width: 4.8rem; }
+.pins-table th:last-child,
+.pins-table td.save-cell {
+  width: 4.8rem;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  text-align: right;
+}
+.pins-table .ghost { min-height: 1.6rem; padding: 0.15rem 0.45rem; font-size: 0.72rem; }
 .bottom-sheet .map-details {
   display: block !important;
   width: auto;

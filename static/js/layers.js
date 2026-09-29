@@ -42,7 +42,7 @@
     if (dock) {
       dock.dataset.view = name || "";
       dock.classList.toggle("is-open", !!open);
-      if (!open || name === "details") dock.style.height = "";
+      if (!open || name === "details" || name === "pins" || name === "saved") dock.style.height = "";
     }
     if (tab) {
       tab.setAttribute("aria-expanded", open ? "true" : "false");
