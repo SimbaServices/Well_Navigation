@@ -458,9 +458,17 @@ a.recent-chip { text-decoration: none; display: inline-flex; align-items: center
 .results-toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 table.wells th.col-operator,
 table.wells td.col-operator {
-  max-width: 8.5rem;
+  width: 42%;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+.well-api-sub {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 450;
+  letter-spacing: 0.01em;
 }
 table.wells th.col-status,
 table.wells td.col-status {

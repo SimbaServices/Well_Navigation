@@ -87,9 +87,9 @@
 {% macro well_rows() -%}
 <tbody id="wells-rows">
   {% if column_partial and error %}
-    <tr><td class="empty" colspan="8">{{ error }}</td></tr>
+    <tr><td class="empty" colspan="5">{{ error }}</td></tr>
   {% elif not wells %}
-    <tr><td class="empty" colspan="8">No wells match these column filters.</td></tr>
+    <tr><td class="empty" colspan="5">No wells match these column filters.</td></tr>
   {% else %}
     {% for well in wells %}
       <tr class="well-row{% if (well.state|default('tx') ~ ':' ~ well.api) in saved_apis|default([]) or well.api in saved_apis|default([]) %} is-saved{% endif %}"
@@ -108,16 +108,16 @@
         <td class="map-col">
           <button type="button" class="map-toggle" title="Add to map">Pin</button>
         </td>
-        <td>
+        <td class="well-name-cell">
           <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
           {% if well.record_kind == "permit" %}
             <span class="pill">permit</span>
           {% endif %}
+          {% if well.api_display %}
+            <span class="well-api-sub mono">{{ well.api_display }}</span>
+          {% endif %}
         </td>
-        <td class="mono">{{ well.api_display }}</td>
-        <td class="col-status hide-phone">{{ well.status_label or well.symbol or "" }}</td>
-        <td class="col-operator hide-phone">{{ well.operator }}</td>
-        <td class="hide-phone">{{ well.lease_name }}</td>
+        <td class="col-operator">{{ well.operator }}</td>
         <td>{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
         <td class="save-cell">{% with variant='row' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
       </tr>
@@ -147,11 +147,8 @@
       <thead>
         <tr>
           <th class="map-col">Pin</th>
-          {{ col("Well name", "name") }}
-          {{ col("API", "api") }}
-          {{ col("Status", "status", "hide-phone") }}
-          {{ col("Operator", "operator", "hide-phone") }}
-          {{ col("Lease", "lease", "hide-phone") }}
+          {{ col("Well Name", "name") }}
+          {{ col("Operator", "operator") }}
           {{ col("County", "county") }}
           <th class="save-col"><span class="sr-only">Save</span></th>
         </tr>

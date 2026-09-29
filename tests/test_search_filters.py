@@ -397,8 +397,14 @@ class ColumnFilterTemplateTests(unittest.TestCase):
             dir="asc",
             subtitle='Name “bulldog”',
         )
-        self.assertIn('data-sort="status"', html)
-        self.assertIn("col-status", html)
+        self.assertIn("Well Name", html)
+        self.assertIn('data-sort="operator"', html)
+        self.assertIn('data-sort="county"', html)
+        self.assertIn("well-api-sub", html)
+        self.assertIn("42-125-31136", html)
+        self.assertNotIn('data-sort="api"', html)
+        self.assertNotIn('data-sort="status"', html)
+        self.assertNotIn('data-sort="lease"', html)
         self.assertIn('data-col-filter="operator"', html)
         self.assertIn('class="col-filter" action="/search" method="get" hidden', html)
         self.assertIn('value="CANAN"', html)

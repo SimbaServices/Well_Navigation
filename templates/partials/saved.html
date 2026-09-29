@@ -17,13 +17,10 @@
       <thead>
         <tr>
           <th class="map-col">Pin</th>
-          <th>Well name</th>
-          <th>API</th>
-          <th>Status</th>
+          <th>Well Name</th>
           <th class="col-operator">Operator</th>
-          <th>Lease</th>
           <th>County</th>
-          <th></th>
+          <th class="save-col"><span class="sr-only">Save</span></th>
         </tr>
       </thead>
       <tbody>
@@ -42,14 +39,14 @@
             <td class="map-col">
               <button type="button" class="map-toggle" title="Add to map">Pin</button>
             </td>
-            <td>
+            <td class="well-name-cell">
               <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
+              {% if well.api_display %}
+                <span class="well-api-sub mono">{{ well.api_display }}</span>
+              {% endif %}
             </td>
-            <td class="mono">{{ well.api_display }}</td>
-            <td class="col-status">{{ well.status_label or well.symbol or "" }}</td>
             <td class="col-operator">{{ well.operator }}</td>
-            <td>{{ well.lease_name }}</td>
-            <td>{{ well.county }}</td>
+            <td>{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
             <td class="save-cell">{% with variant='saved' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
           </tr>
         {% endfor %}
