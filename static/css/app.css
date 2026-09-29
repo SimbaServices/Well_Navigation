@@ -376,9 +376,9 @@ a.recent-chip { text-decoration: none; display: inline-flex; align-items: center
 .results-toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 table.wells th.col-operator,
 table.wells td.col-operator {
-  width: 42%;
+  width: 32%;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .well-api-sub {
   display: block;
@@ -406,9 +406,20 @@ table.wells td.col-status {
 }
 .map-toggle.on { background: #3d2e0a; color: var(--accent); border-color: var(--accent); }
 
-.table-wrap { overflow: auto; }
-table.wells { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-table.wells th, table.wells td { text-align: left; padding: 0.55rem 0.45rem; border-bottom: 1px solid var(--line); }
+.table-wrap { overflow: auto; width: 100%; }
+table.wells { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.92rem; }
+.sheet-view table.wells,
+#results table.wells { font-size: 0.75rem; }
+.sheet-view table.wells th, .sheet-view table.wells td,
+#results table.wells th, #results table.wells td { padding: 0.32rem 0.35rem; }
+table.wells th, table.wells td {
+  text-align: left;
+  padding: 0.55rem 0.45rem;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: break-word;
+  word-break: normal;
+  vertical-align: top;
+}
 table.wells th { color: var(--muted); font-weight: 600; }
 table.wells th.map-col, table.wells td.map-col { width: 2.6rem; text-align: center; }
 table.wells th.save-col, table.wells td.save-cell {
@@ -1711,6 +1722,7 @@ body.gate .gate-tagline {
   .mode span { min-height: 1.55rem; font-size: 0.7rem; }
   .results-toolbar .ghost { min-height: 2.2rem; padding: 0.35rem 0.45rem; font-size: 0.78rem; justify-content: center; }
   table.wells th, table.wells td { padding: 0.7rem 0.4rem; }
+  #results table.wells th, #results table.wells td { padding: 0.28rem 0.3rem; }
   .results { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .route-row a { min-height: 1.65rem; display: inline-flex; align-items: center; }
   .pager a, .pager-current { min-height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; }

@@ -24,7 +24,6 @@
       <table class="wells pipeline-table">
         <thead>
           <tr>
-            <th></th>
             {% if kind == 'systems' %}
               <th>Pipeline / system</th>
               <th>Operator</th>
@@ -50,9 +49,6 @@
                 data-south="{{ row.miny }}"
                 data-east="{{ row.maxx }}"
                 data-north="{{ row.maxy }}">
-              <td class="map-col">
-                <button type="button" class="ghost pipeline-map-btn">Show on map</button>
-              </td>
               {% if kind == 'systems' %}
                 <td>
                   <button type="button" class="well-name-link pipeline-map-btn">{{ row.system }}</button>

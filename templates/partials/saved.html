@@ -16,7 +16,6 @@
     <table class="wells" data-results-table>
       <thead>
         <tr>
-          <th class="map-col">Pin</th>
           <th>Well Name</th>
           <th class="col-operator">Operator</th>
           <th>County</th>
@@ -36,9 +35,6 @@
               data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
               data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
               data-status="{{ well.status_label or '' }}">
-            <td class="map-col">
-              <button type="button" class="map-toggle" title="Add to map">Pin</button>
-            </td>
             <td class="well-name-cell">
               <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
               {% if well.api_display %}

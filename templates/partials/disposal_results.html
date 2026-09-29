@@ -19,7 +19,6 @@
       <table class="wells disposal-table">
         <thead>
           <tr>
-            <th></th>
             <th>Facility</th>
             <th>Operator</th>
             <th>Permit</th>
@@ -40,9 +39,6 @@
                 data-county="{{ row.county or '' }}"
                 data-swd-class="{{ row.swd_class or '' }}"
                 data-swd-label="{{ row.swd_class_label or '' }}">
-              <td class="map-col">
-                <button type="button" class="ghost disposal-map-btn">Show on map</button>
-              </td>
               <td>
                 <button type="button" class="well-name-link disposal-map-btn">{{ row.facility or row.permit_no }}</button>
                 {% if row.swd_class_label %}

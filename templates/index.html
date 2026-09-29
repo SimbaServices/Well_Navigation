@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers6">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers8">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -85,45 +85,7 @@
         <button type="button" class="pull-tab" id="sheet-tab" aria-expanded="false" aria-label="Panel" aria-controls="sheet-views"></button>
         <div id="sheet-views" class="sheet-views">
         <section id="search-sheet" class="sheet-view" data-view="search" aria-label="Search results">
-        <div class="modes modes-wells" role="tablist" aria-label="Well search">
-          <label class="mode">
-            <input type="radio" name="mode" value="name"{% if well_mode == 'name' %} checked{% endif %}>
-            <span>Well Name</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="mode" value="api"{% if well_mode == 'api' %} checked{% endif %}>
-            <span>API number</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="mode" value="operator"{% if well_mode == 'operator' %} checked{% endif %}>
-            <span>Operator</span>
-          </label>
-        </div>
-        <div class="modes modes-pipelines" role="tablist">
-          <label class="mode">
-            <input type="radio" name="pipe_mode" value="operator"{% if pipe_mode == 'operator' %} checked{% endif %}>
-            <span>Operator</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="pipe_mode" value="name"{% if pipe_mode == 'name' %} checked{% endif %}>
-            <span>Pipeline name</span>
-          </label>
-        </div>
-        <div class="modes modes-disposal" role="tablist">
-          <label class="mode">
-            <input type="radio" name="disp_mode" value="name"{% if disp_mode == 'name' %} checked{% endif %}>
-            <span>Facility</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="disp_mode" value="operator"{% if disp_mode == 'operator' %} checked{% endif %}>
-            <span>Operator</span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="disp_mode" value="permit"{% if disp_mode == 'permit' %} checked{% endif %}>
-            <span>Permit</span>
-          </label>
-        </div>
-        <div id="active-filters">
+        <div id="active-filters" hidden>
           {% include 'partials/filters.html' %}
         </div>
         <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
@@ -162,6 +124,45 @@
             <button type="button" class="choice-tile{% if scope == 'wells' %} is-on{% endif %}" data-pref="scope" data-value="wells" aria-pressed="{{ 'true' if scope == 'wells' else 'false' }}">Wells</button>
             <button type="button" class="choice-tile{% if scope == 'pipelines' %} is-on{% endif %}" data-pref="scope" data-value="pipelines" aria-pressed="{{ 'true' if scope == 'pipelines' else 'false' }}">Pipelines</button>
             <button type="button" class="choice-tile{% if scope == 'disposal' %} is-on{% endif %}" data-pref="scope" data-value="disposal" aria-pressed="{{ 'true' if scope == 'disposal' else 'false' }}">SWD</button>
+          </div>
+          <p class="muted">How that search matches.</p>
+          <div class="modes modes-wells" role="tablist" aria-label="Well search">
+            <label class="mode">
+              <input type="radio" name="mode" value="name"{% if well_mode == 'name' %} checked{% endif %}>
+              <span>Well Name</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="mode" value="api"{% if well_mode == 'api' %} checked{% endif %}>
+              <span>API number</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="mode" value="operator"{% if well_mode == 'operator' %} checked{% endif %}>
+              <span>Operator</span>
+            </label>
+          </div>
+          <div class="modes modes-pipelines" role="tablist">
+            <label class="mode">
+              <input type="radio" name="pipe_mode" value="operator"{% if pipe_mode == 'operator' %} checked{% endif %}>
+              <span>Operator</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="pipe_mode" value="name"{% if pipe_mode == 'name' %} checked{% endif %}>
+              <span>Pipeline name</span>
+            </label>
+          </div>
+          <div class="modes modes-disposal" role="tablist">
+            <label class="mode">
+              <input type="radio" name="disp_mode" value="name"{% if disp_mode == 'name' %} checked{% endif %}>
+              <span>Facility</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="disp_mode" value="operator"{% if disp_mode == 'operator' %} checked{% endif %}>
+              <span>Operator</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="disp_mode" value="permit"{% if disp_mode == 'permit' %} checked{% endif %}>
+              <span>Permit</span>
+            </label>
           </div>
         </section>
         <section id="detail-sheet" class="sheet-view" data-view="details" hidden aria-label="Location details">
@@ -280,7 +281,7 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers5"></script>
+  <script src="/static/js/map.js?v=layers8"></script>
   <script src="/static/js/layers.js?v=4"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}

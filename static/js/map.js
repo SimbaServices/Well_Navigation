@@ -3868,11 +3868,13 @@ document.addEventListener("click", (event) => {
       return;
     }
   }
-  if (event.target.closest("a, button, input, label, .save-form")) return;
-  const row = event.target.closest("tr.well-row.is-mapped");
-  if (row && row.dataset.api) {
-    selectWell(row.dataset.api);
-  }
+  if (event.target.closest("a, button, input, label, .save-form, .col-filter")) return;
+  const hit = event.target.closest("tr.well-row, tr.pipeline-row, tr.disposal-row");
+  if (!hit) return;
+  event.preventDefault();
+  if (hit.classList.contains("pipeline-row")) applyPipelineFocusFromEl(hit);
+  else if (hit.classList.contains("disposal-row")) applyDisposalFocusFromEl(hit);
+  else addAndSelectWell(hit);
 });
 
 document.addEventListener("htmx:configRequest", (event) => {

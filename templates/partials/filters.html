@@ -17,91 +17,15 @@
   <input type="hidden" name="lease_type" value="{{ lease_type }}">
 {% endif %}
 
-{% if ops or name_text or api_text %}
-  <div class="filters filter-bar">
-    <p class="filter-label">Active filters</p>
-    <div class="filter-chips">
-      {% for op in ops %}
-        <div class="filter-chip{% if not op.active %} inactive off{% endif %}">
-          <label>
-            <input type="checkbox" name="op" value="{{ op.number }}"
-                   {% if op.active %}checked{% endif %}
-                   hx-get="/search"
-                   hx-include="#search-form, #column-filters"
-                   hx-target="#results"
-                   hx-push-url="true"
-                   hx-indicator="#spinner"
-                   hx-trigger="change">
-            <span>{{ op.name }}</span>
-          </label>
-          <input type="hidden" name="opn" value="{{ op.number }}|{{ op.name }}">
-          <button type="submit" class="filter-remove chip-x" name="remove_op" value="{{ op.number }}"
-                  aria-label="Remove {{ op.name }} filter"
-                  hx-get="/search"
-                  hx-include="#search-form, #column-filters"
-                  hx-target="#results"
-                  hx-push-url="true"
-                  hx-indicator="#spinner">×</button>
-        </div>
-      {% endfor %}
-
-      {% if name_text %}
-        <div class="filter-chip{% if not name_on %} inactive off{% endif %}">
-          <label>
-            <input type="checkbox" name="use_name" value="1"
-                   {% if name_on %}checked{% endif %}
-                   hx-get="/search"
-                   hx-include="#search-form, #column-filters"
-                   hx-target="#results"
-                   hx-push-url="true"
-                   hx-indicator="#spinner"
-                   hx-trigger="change">
-            <span>Name {{ name_text }}</span>
-          </label>
-          <input type="hidden" name="name" value="{{ name_text }}">
-          <button type="submit" class="filter-remove chip-x" name="remove_name" value="1"
-                  aria-label="Remove name filter"
-                  hx-get="/search"
-                  hx-include="#search-form, #column-filters"
-                  hx-target="#results"
-                  hx-push-url="true"
-                  hx-indicator="#spinner">×</button>
-        </div>
-      {% endif %}
-
-      {% if api_text %}
-        <div class="filter-chip{% if not api_on %} inactive off{% endif %}">
-          <label>
-            <input type="checkbox" name="use_api" value="1"
-                   {% if api_on %}checked{% endif %}
-                   hx-get="/search"
-                   hx-include="#search-form, #column-filters"
-                   hx-target="#results"
-                   hx-push-url="true"
-                   hx-indicator="#spinner"
-                   hx-trigger="change">
-            <span>API {{ api_text }}</span>
-          </label>
-          <input type="hidden" name="api" value="{{ api_text }}">
-          <button type="submit" class="filter-remove chip-x" name="remove_api" value="1"
-                  aria-label="Remove API filter"
-                  hx-get="/search"
-                  hx-include="#search-form, #column-filters"
-                  hx-target="#results"
-                  hx-push-url="true"
-                  hx-indicator="#spinner">×</button>
-        </div>
-      {% endif %}
-
-      <button type="submit" class="clear-all clear-filters ghost" name="clear_filters" value="1"
-              hx-get="/search"
-              hx-include="#search-form"
-              hx-target="#results"
-              hx-swap="none"
-              hx-push-url="true"
-              hx-indicator="#spinner">
-        Clear all filters
-      </button>
-    </div>
-  </div>
+{% for op in ops if op.active %}
+  <input type="hidden" name="op" value="{{ op.number }}">
+  <input type="hidden" name="opn" value="{{ op.number }}|{{ op.name }}">
+{% endfor %}
+{% if name_text and name_on %}
+  <input type="hidden" name="name" value="{{ name_text }}">
+  <input type="hidden" name="use_name" value="1">
+{% endif %}
+{% if api_text and api_on %}
+  <input type="hidden" name="api" value="{{ api_text }}">
+  <input type="hidden" name="use_api" value="1">
 {% endif %}
