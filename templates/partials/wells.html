@@ -89,7 +89,6 @@
   {% if column_partial and error %}
     <tr><td class="empty" colspan="5">{{ error }}</td></tr>
   {% elif not wells %}
-    <tr><td class="empty" colspan="5">No wells match these column filters.</td></tr>
   {% else %}
     {% for well in wells %}
       <tr class="well-row{% if (well.state|default('tx') ~ ':' ~ well.api) in saved_apis|default([]) or well.api in saved_apis|default([]) %} is-saved{% endif %}"
@@ -127,7 +126,7 @@
   {{ well_rows() }}
   {{ count_line() }}
   {{ pager_block() }}
-{% elif wells or cols %}
+{% else %}
   <div class="result-head">
     <div>
       <h2>Wells</h2>
@@ -153,6 +152,4 @@
     </table>
   </div>
   {{ pager_block() }}
-{% elif not error %}
-  <div class="empty">No wells returned for this query.</div>
 {% endif %}

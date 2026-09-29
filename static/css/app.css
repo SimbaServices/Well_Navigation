@@ -2178,6 +2178,10 @@ body.gate .gate-tagline {
 }
 .sheet-view .account-card { min-width: 0; max-width: 100%; }
 .sheet-view[hidden] { display: none !important; }
+#bottom-sheet[data-view="search"] #account-sheet,
+#bottom-sheet[data-view="saved"] #account-sheet,
+#bottom-sheet[data-view="settings"] #account-sheet,
+#bottom-sheet[data-view="details"] #account-sheet { display: none !important; }
 .bottom-sheet .map-details {
   display: block !important;
   width: auto;

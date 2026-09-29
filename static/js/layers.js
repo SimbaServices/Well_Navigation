@@ -29,7 +29,14 @@
 
   const VIEWS = ["search", "saved", "account", "settings", "results", "details"];
 
+  function pullTeamOutOfResults() {
+    const stray = document.querySelector("#results .team-page");
+    const body = sheet("team-body");
+    if (stray && body && !body.contains(stray)) body.appendChild(stray);
+  }
+
   function showView(name, open) {
+    if (name === "search") pullTeamOutOfResults();
     const dock = sheet("bottom-sheet");
     const tab = sheet("sheet-tab");
     if (dock) {
