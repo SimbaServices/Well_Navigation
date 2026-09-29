@@ -378,6 +378,7 @@ def _disposal_row(state: str, site_id: int, **fields: object) -> dict | None:
         "permit_url": _text(fields.get("permit_url")),
         "lat": float(lat),
         "lon": float(lon),
+        "swd_class": _text(fields.get("swd_class")),
     }
 
 
@@ -402,6 +403,7 @@ def ok_uic_to_site(feature: dict) -> dict | None:
         county=attrs.get("county"),
         lat=lat,
         lon=lon,
+        swd_class="commercial",
     )
 
 
@@ -421,6 +423,7 @@ def ok_pit_to_site(feature: dict) -> dict | None:
         county=attrs.get("county"),
         lat=lat,
         lon=lon,
+        swd_class="commercial",
     )
 
 
@@ -571,14 +574,16 @@ def _load_la_bsee_wells(conn, seen: set[str], *, delay: float) -> int:
 
 
 def _upsert_disposal(conn, table: str, row: dict) -> None:
+    row = dict(row)
+    row.setdefault("swd_class", "")
     conn.execute(
         f"""
         INSERT INTO {table}(
             id, operator, facility, permit_no, permit_type, discharge_type,
-            permit_expiration, district, county, permit_url, lat, lon
+            permit_expiration, district, county, permit_url, lat, lon, swd_class
         ) VALUES (
             :id, :operator, :facility, :permit_no, :permit_type, :discharge_type,
-            :permit_expiration, :district, :county, :permit_url, :lat, :lon
+            :permit_expiration, :district, :county, :permit_url, :lat, :lon, :swd_class
         )
         ON CONFLICT(id) DO UPDATE SET
             operator=excluded.operator,
@@ -588,7 +593,8 @@ def _upsert_disposal(conn, table: str, row: dict) -> None:
             discharge_type=excluded.discharge_type,
             county=excluded.county,
             lat=excluded.lat,
-            lon=excluded.lon
+            lon=excluded.lon,
+            swd_class=excluded.swd_class
         """,
         row,
     )
@@ -626,17 +632,19 @@ def _disposal_from_wells(disp_conn, well_conn, state: str) -> int:
         for row in rows:
             if not _is_nm_waste(row["well_type"] or ""):
                 continue
+            well_type = row["well_type"] or ""
             site = _disposal_row(
                 "nm",
                 DISPOSAL_ID_BASE["nm"] + int(row["api"][2:10]),
                 operator=row["operator"],
                 facility=row["well_name"],
                 permit_no=row["api"],
-                permit_type=row["well_type"] or "Salt Water Disposal",
+                permit_type=well_type or "Salt Water Disposal",
                 county=row["county"],
                 district=row["district"],
                 lat=row["wellhead_lat"],
                 lon=row["wellhead_lon"],
+                swd_class="commercial" if "commercial" in well_type.lower() else "operator",
             )
             if site:
                 _upsert_disposal(disp_conn, table, site)
@@ -765,17 +773,20 @@ def _load_la_waste(conn, *, delay: float) -> int:
             api = _api10(attrs.get("API_NUM"), "la")
             if object_id in (None, "") or lat is None or lon is None:
                 continue
+            permit_type = _text(attrs.get("WELL_CLASS"), attrs.get("INJECTION_"), "Injection")
+            blob = f"{permit_type} {_text(attrs.get('CLASSIFICA'))}".lower()
             site = _disposal_row(
                 "la",
                 DISPOSAL_ID_BASE["la"] + int(object_id),
                 operator=attrs.get("ORG_OPER_N"),
                 facility=_text(attrs.get("WELL_NAME"), attrs.get("LUW_NAME")),
                 permit_no=api or attrs.get("WELL_SERIAL"),
-                permit_type=_text(attrs.get("WELL_CLASS"), attrs.get("INJECTION_"), "Injection"),
+                permit_type=permit_type,
                 county=attrs.get("PARISH_NAM"),
                 district=attrs.get("DISTRICT_C"),
                 lat=lat,
                 lon=lon,
+                swd_class="commercial" if "commercial" in blob else "operator",
             )
             if site:
                 _upsert_disposal(conn, table, site)

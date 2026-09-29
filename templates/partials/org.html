@@ -59,7 +59,7 @@
           <th>Email</th>
           <th>Role</th>
           {% if not ws.complimentary %}<th>Seat</th>{% endif %}
-          <th>Last login</th>
+          <th>Last activity</th>
           <th></th>
         </tr>
       </thead>
@@ -71,7 +71,7 @@
             {% if not ws.complimentary %}
             <td>{% if member.seated %}Seated{% else %}Needs a seat{% endif %}</td>
             {% endif %}
-            <td class="muted">{{ member.last_login_at or "—" }}</td>
+            <td class="muted">{{ member.last_activity_at or member.last_opened_at or member.last_login_at or "—" }}</td>
             <td class="member-actions">
               {% if ws.can_manage and member.id != user.id %}
                 <form action="/org/members/{{ member.id }}/role" method="post"

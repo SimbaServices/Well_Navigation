@@ -94,7 +94,10 @@
       const resp = await apiFetch("/disposal/site/" + encodeURIComponent(siteId), {
         headers: { Accept: "application/json" },
       });
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        hideWaitPanel();
+        return;
+      }
       const site = await resp.json();
       if (site.error) return;
       window.selectDisposalSite(
@@ -110,9 +113,12 @@
           waste_classifications: site.waste_classifications,
           permit_type_label: site.permit_type_label,
           discharge_type: site.discharge_type,
+          swd_class: site.swd_class,
+          swd_class_label: site.swd_class_label,
         },
         { fromMarker: true, enriched: true }
       );
+      if (site.swd_class === "operator") return;
       renderWasteClasses(site);
       loadWaitSummary(site.id);
     } catch {
@@ -415,6 +421,10 @@
 
   function onDisposalSelected(site) {
     if (!site || !site.id) {
+      hideWaitPanel();
+      return;
+    }
+    if (site.swd_class === "operator") {
       hideWaitPanel();
       return;
     }

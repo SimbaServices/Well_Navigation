@@ -55,7 +55,7 @@ def _public_stamp(raw: object) -> str | None:
         return text
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def _public_user(row: dict | None) -> dict | None:
@@ -76,6 +76,7 @@ def _public_user(row: dict | None) -> dict | None:
         "email_hint": mask_email(email),
         "created_at": row["created_at"],
         "last_login_at": _public_stamp(row.get("last_login_at")),
+        "last_opened_at": _public_stamp(row.get("last_opened_at")),
         "last_activity_at": _public_stamp(row.get("last_activity_at")),
         "session_version": int(row.get("session_version") or 0),
     }
@@ -83,10 +84,12 @@ def _public_user(row: dict | None) -> dict | None:
 
 _USER_COLS = (
     "id, username, email, password_hash, phone, org_id, role, "
-    "email_verified_at, phone_verified_at, created_at, last_login_at, last_activity_at, "
+    "email_verified_at, phone_verified_at, created_at, last_login_at, last_opened_at, last_activity_at, "
     "session_version"
 )
-ACTIVITY_TOUCH_SECONDS = 60
+# Every authenticated interaction updates last_activity_at. Callers can still
+# pass a positive min_interval when a probe must not write on every check.
+ACTIVITY_TOUCH_SECONDS = 0
 
 
 class UserStore:
@@ -383,7 +386,33 @@ class UserStore:
         conn = _conn()
         try:
             conn.execute(
-                "UPDATE users SET last_login_at = ?, last_activity_at = ? WHERE id = ?",
+                """
+                UPDATE users
+                SET last_login_at = ?, last_opened_at = ?, last_activity_at = ?
+                WHERE id = ?
+                """,
+                (now, now, now, user_id),
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            conn.rollback()
+
+    def record_app_open(self, user_id: int) -> None:
+        """Stamp the moment a signed-in user opens the app.
+
+        Credential login stays on last_login_at. Opening the site, the installed
+        web app, or a store WebView — including a resume that does not sign in
+        again — updates last_opened_at.
+        """
+        now = utcnow_iso()
+        conn = _conn()
+        try:
+            conn.execute(
+                """
+                UPDATE users
+                SET last_opened_at = ?, last_activity_at = ?
+                WHERE id = ?
+                """,
                 (now, now, user_id),
             )
             conn.commit()
@@ -391,19 +420,27 @@ class UserStore:
             conn.rollback()
 
     def touch_activity(self, user_id: int, *, min_interval: int = ACTIVITY_TOUCH_SECONDS) -> None:
+        """Stamp last_activity_at for one user interaction."""
         now = utcnow()
-        cutoff = (now - timedelta(seconds=max(0, int(min_interval)))).isoformat()
+        interval = max(0, int(min_interval))
         conn = _conn()
         try:
-            conn.execute(
-                """
-                UPDATE users
-                SET last_activity_at = ?
-                WHERE id = ?
-                  AND (last_activity_at IS NULL OR last_activity_at <= ?)
-                """,
-                (now.isoformat(), user_id, cutoff),
-            )
+            if interval:
+                cutoff = (now - timedelta(seconds=interval)).isoformat()
+                conn.execute(
+                    """
+                    UPDATE users
+                    SET last_activity_at = ?
+                    WHERE id = ?
+                      AND (last_activity_at IS NULL OR last_activity_at <= ?)
+                    """,
+                    (now.isoformat(), user_id, cutoff),
+                )
+            else:
+                conn.execute(
+                    "UPDATE users SET last_activity_at = ? WHERE id = ?",
+                    (now.isoformat(), user_id),
+                )
             conn.commit()
         except sqlite3.OperationalError:
             conn.rollback()

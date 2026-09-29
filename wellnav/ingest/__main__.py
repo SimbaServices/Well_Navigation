@@ -121,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
 
     disposal = sub.add_parser(
         "load-disposal",
-        help="Pull RRC commercial waste disposal sites (Public GIS layer 36) into disposal.db",
+        help="Pull RRC commercial SWDs and operator injection wells into disposal.db",
     )
     disposal.add_argument("--delay", type=float, default=0.15)
 

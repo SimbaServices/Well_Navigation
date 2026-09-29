@@ -354,12 +354,12 @@ class WellRepository:
                     SELECT well_name, api, api8, operator, county,
                            '{code}' AS state, 'as_drilled' AS kind
                     FROM {w}
-                    WHERE (well_name LIKE ? OR lease_name LIKE ?)
+                    WHERE well_name LIKE ?
                       AND TRIM(COALESCE(well_name, '')) != ''
                     ORDER BY well_name COLLATE NOCASE, api
                     LIMIT ?
                     """,
-                    (like, like, cap),
+                    (like, cap),
                 ).fetchall()
             )
             collected.extend(
@@ -368,13 +368,13 @@ class WellRepository:
                     SELECT well_name, api, api8, operator, county,
                            '{code}' AS state, 'permit' AS kind
                     FROM {p}
-                    WHERE (well_name LIKE ? OR lease_name LIKE ?)
+                    WHERE well_name LIKE ?
                       AND TRIM(COALESCE(well_name, '')) != ''
                       AND status NOT IN ('migrated')
                     ORDER BY well_name COLLATE NOCASE, api
                     LIMIT ?
                     """,
-                    (like, like, cap),
+                    (like, cap),
                 ).fetchall()
             )
         collected.sort(key=lambda row: ((row["well_name"] or "").upper(), row["api"] or ""))
@@ -612,11 +612,7 @@ class WellRepository:
                 return "operator_number = ?", [operator_number]
             return "operator LIKE ?", [f"%{q}%"]
         if q:
-            like = f"%{q}%"
-            return (
-                "(well_name LIKE ? OR lease_name LIKE ? OR well_no LIKE ? OR county LIKE ? OR operator LIKE ?)",
-                [like, like, like, like, like],
-            )
+            return "well_name LIKE ?", [f"%{q}%"]
         return "1=1", []
 
     def _stacked_filters(
@@ -644,11 +640,8 @@ class WellRepository:
                 args.extend(names)
             clauses.append(f"({' OR '.join(parts)})")
         if name:
-            like = f"%{name}%"
-            clauses.append(
-                "(well_name LIKE ? OR lease_name LIKE ? OR well_no LIKE ? OR county LIKE ?)"
-            )
-            args.extend([like, like, like, like])
+            clauses.append("well_name LIKE ?")
+            args.append(f"%{name}%")
         if api:
             eight = _api8(api)
             if eight:

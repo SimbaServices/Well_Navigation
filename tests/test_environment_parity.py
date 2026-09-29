@@ -88,7 +88,7 @@ class EnvironmentParityTest(unittest.TestCase):
     def test_service_worker_precache_matches_index_asset_urls(self) -> None:
         index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
         worker = (ROOT / "static" / "js" / "sw.js").read_text(encoding="utf-8")
-        self.assertIn("wellnav-shell-v30", worker)
+        self.assertIn("wellnav-shell-v31", worker)
         self.assertIn("disposal-ux.js", worker)
         script = (ROOT / "static" / "js" / "map.js").read_text(encoding="utf-8")
         self.assertIn('{"X-Live-Filter":"1"}', script)
@@ -183,6 +183,33 @@ class EnvironmentParityTest(unittest.TestCase):
         self.assertIn("CLLocationManager", ios)
         self.assertIn("navigator.geolocation", ios)
         self.assertIn("permit PDFs, maps", ios)
+
+    def test_app_open_is_wired_for_web_and_store_shells(self) -> None:
+        index = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "js" / "app-open.js").read_text(encoding="utf-8")
+        android = (
+            ROOT
+            / "android"
+            / "app"
+            / "src"
+            / "main"
+            / "java"
+            / "services"
+            / "simba"
+            / "wellnav"
+            / "MainActivity.kt"
+        ).read_text(encoding="utf-8")
+        ios = (ROOT / "ios" / "WellNavigation" / "WebContainer.swift").read_text(encoding="utf-8")
+        self.assertIn("/static/js/app-open.js", index)
+        self.assertIn('fetch("/session/opened"', script)
+        self.assertIn('fetch("/session/activity"', script)
+        self.assertIn("pointerup", script)
+        self.assertIn("window.wellnavRecordOpen", script)
+        self.assertNotIn("__WN_STORE", script)
+        self.assertIn("wellnavRecordOpen()", android)
+        self.assertIn("override fun onResume()", android)
+        self.assertIn("wellnavRecordOpen()", ios)
+        self.assertIn("didBecomeActiveNotification", ios)
 
     def test_wait_and_near_routes_are_not_store_gated(self) -> None:
         app_src = (ROOT / "app.py").read_text(encoding="utf-8")

@@ -967,6 +967,14 @@ button.well-name-link {
 .swatch.product { background: #7aa2e3; }
 .swatch.other { background: #b7b7a8; }
 .swatch.disposal { height: 10px; width: 10px; border-radius: 2px; background: #c45c3a; }
+.swatch.swd-commercial,
+.swatch.swd-operator {
+  height: 0.62rem;
+  width: 0.62rem;
+  border-radius: 50%;
+}
+.swatch.swd-commercial { background: #c45c3a; }
+.swatch.swd-operator { background: #3d7cc9; }
 .pipeline-status { margin: 0; font-size: 0.8rem; }
 .pipeline-status:empty,
 .coord-bar:empty,

@@ -186,6 +186,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
             role TEXT NOT NULL DEFAULT 'member',
             created_at TEXT NOT NULL,
             last_login_at TEXT,
+            last_opened_at TEXT,
             last_activity_at TEXT,
             session_version INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (org_id) REFERENCES organizations(id)
@@ -275,6 +276,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _ensure_column(conn, "users", "org_id", "INTEGER")
     _ensure_column(conn, "users", "role", "TEXT")
     _ensure_column(conn, "users", "last_login_at", "TEXT")
+    _ensure_column(conn, "users", "last_opened_at", "TEXT")
     _ensure_column(conn, "users", "last_activity_at", "TEXT")
     _ensure_column(conn, "users", "session_version", "INTEGER")
     conn.execute("UPDATE users SET session_version = 0 WHERE session_version IS NULL")
@@ -350,6 +352,10 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{w}_operator_number ON {w}(operator_number)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{w}_api8 ON {w}(api8)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{w}_county ON {w}(county)")
+        if code in APP_STATES:
+            conn.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{w}_xy ON {w}(wellhead_lon, wellhead_lat)"
+            )
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_name ON {p}(well_name)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_lease ON {p}(lease_name)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_operator ON {p}(operator)")

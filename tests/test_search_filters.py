@@ -153,6 +153,40 @@ class SearchFiltersTest(unittest.TestCase):
         operators = [well["operator"] for well in result["wells"]]
         self.assertEqual(operators, sorted(operators, reverse=True))
 
+    def test_name_search_matches_well_name_only(self) -> None:
+        _insert_well(
+            self.conn,
+            api8="29100001",
+            well_name="ABEL #1",
+            lease_name="LIBERTY",
+            well_no="1",
+            county="LIBERTY",
+            operator="LIBERTY ENERGY",
+            operator_number="291001",
+        )
+        _insert_well(
+            self.conn,
+            api8="00300011",
+            well_name="LIBERTY RANCH #2",
+            lease_name="LIBERTY RANCH",
+            well_no="2",
+            county="ANDREWS",
+            operator="PIONEER",
+            operator_number="667548",
+        )
+        self.conn.commit()
+
+        for kwargs in (
+            {"name": "liberty"},
+            {"mode": "name", "q": "liberty"},
+        ):
+            result = self.repo.search(**kwargs)
+            names = [well["well_name"] for well in result["wells"]]
+            self.assertEqual(names, ["LIBERTY RANCH #2"])
+
+        suggestions = [row["well_name"] for row in self.repo.suggest_wells("liberty")]
+        self.assertEqual(suggestions, ["LIBERTY RANCH #2"])
+
     def test_name_filter_ands_with_operator_numbers(self) -> None:
         result = self.repo.search(operator_numbers=["667548"], name="BETA")
         apis = [well["api"] for well in result["wells"]]

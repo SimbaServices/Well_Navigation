@@ -1,5 +1,6 @@
 import CoreLocation
 import SwiftUI
+import UIKit
 import WebKit
 
 struct WebContainer: UIViewRepresentable {
@@ -34,6 +35,7 @@ struct WebContainer: UIViewRepresentable {
         view.backgroundColor = UIColor(red: 0.07, green: 0.09, blue: 0.06, alpha: 1)
         view.scrollView.backgroundColor = view.backgroundColor
         view.scrollView.contentInsetAdjustmentBehavior = .never
+        context.coordinator.attach(view)
         let request = URLRequest(
             url: startURL,
             cachePolicy: .reloadRevalidatingCacheData,
@@ -110,6 +112,8 @@ struct WebContainer: UIViewRepresentable {
         /// string). Holding a manager keeps the framework active when the page
         /// calls navigator.geolocation for offline routes and disposal drive time.
         private let locationManager = CLLocationManager()
+        private weak var webView: WKWebView?
+        private var foregroundObserver: NSObjectProtocol?
 
         init(startURL: URL) {
             self.startURL = startURL
@@ -119,6 +123,32 @@ struct WebContainer: UIViewRepresentable {
             // offline routes and disposal drive-time estimates. WebKit shares this status.
             if locationManager.authorizationStatus == .notDetermined {
                 locationManager.requestWhenInUseAuthorization()
+            }
+        }
+
+        func attach(_ webView: WKWebView) {
+            self.webView = webView
+            guard foregroundObserver == nil else { return }
+            // Returning from the home screen does not reload the page, so the
+            // shell's pageshow handler never runs. Ping last-opened on resume.
+            foregroundObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.recordOpen()
+            }
+        }
+
+        func recordOpen() {
+            guard let webView = webView else { return }
+            guard let url = webView.url, isAllowed(url), url.host != nil else { return }
+            webView.evaluateJavaScript("window.wellnavRecordOpen&&window.wellnavRecordOpen()", completionHandler: nil)
+        }
+
+        deinit {
+            if let foregroundObserver {
+                NotificationCenter.default.removeObserver(foregroundObserver)
             }
         }
 

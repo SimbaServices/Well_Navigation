@@ -189,7 +189,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::webView.isInitialized) webView.onResume()
+        if (::webView.isInitialized) {
+            webView.onResume()
+            // Coming back from the launcher or recents does not reload the page,
+            // so the shell's pageshow handler never runs. Ping last-opened here.
+            recordAppOpen(webView, webView.url)
+        }
     }
 
     override fun onDestroy() {
@@ -198,6 +203,12 @@ class MainActivity : AppCompatActivity() {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(callback)
         }
         super.onDestroy()
+    }
+
+    private fun recordAppOpen(view: WebView?, url: String?) {
+        val host = url?.let { raw -> runCatching { Uri.parse(raw).host }.getOrNull() } ?: return
+        if (host !in ALLOWED_HOSTS) return
+        view?.evaluateJavascript("window.wellnavRecordOpen&&window.wellnavRecordOpen()", null)
     }
 
     private fun handleUrl(url: Uri): Boolean {

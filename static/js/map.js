@@ -67,7 +67,18 @@ const MAP_CHROME_HTML = `
           </span>
         </span>
       </span>
-      <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
+      <span class="overlay-with-tip">
+        <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
+        <span class="info-tip">
+          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">
+            <span class="legend-key">
+              <span><i class="swatch swd-commercial"></i>Commercial public SWD</span>
+              <span><i class="swatch swd-operator"></i>Operator SWD / injection</span>
+            </span>
+          </span>
+        </span>
+      </span>
       <div class="offline-pack">
         <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
         <button type="button" class="ghost" id="offline-save">Save for offline</button>
@@ -2302,33 +2313,57 @@ function bboxFromBounds(bounds) {
   return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].join(",");
 }
 
+const SWD_STYLE = {
+  commercial: { fill: "#c45c3a", stroke: "#3a2218", selectedFill: "#e08a5c" },
+  operator: { fill: "#3d7cc9", stroke: "#10243d", selectedFill: "#8eb7f0" },
+};
+
+function swdClassFrom(feature) {
+  const props = (feature && feature.properties) || feature || {};
+  return props.swd_class === "operator" ? "operator" : "commercial";
+}
+
+function swdClassLabel(props) {
+  if (!props) return "";
+  if (props.swd_class_label) return props.swd_class_label;
+  if (props.swd_class === "operator") return "Operator SWD / injection";
+  if (props.swd_class === "commercial") return "Commercial public SWD";
+  return "";
+}
+
 function disposalPopup(props) {
+  const role = swdClassLabel(props);
+  const operatorWell = props.swd_class === "operator";
   const waste =
     Array.isArray(props.waste_classifications) && props.waste_classifications.length
       ? props.waste_classifications.join(" · ")
-      : props.permit_type_label || props.permit_type || "";
+      : "";
+  const wellType = operatorWell ? props.permit_type_label || props.permit_type || "" : "";
   const lines = [
+    role,
     props.operator || "",
     props.permit_no ? `Permit ${props.permit_no}` : "",
-    waste ? `Accepted: ${waste}` : "",
+    !operatorWell && waste ? `Accepted: ${waste}` : "",
+    wellType && wellType !== role ? wellType : "",
     props.county ? `${props.county} County` : "",
   ].filter(Boolean);
   return locationPopupHtml({
     title: props.facility || props.permit_no || "Waste disposal site",
     operator: props.operator || "",
     lines,
-    pointLabel: "Waste site",
+    pointLabel: props.swd_class === "operator" ? "Injection well" : "Waste site",
     lat: props.lat,
     lon: props.lon,
     disposalId: props.id || "",
   });
 }
 
-function disposalMarkerStyle(selected) {
+function disposalMarkerStyle(swdClass, selected) {
+  const palette = SWD_STYLE[swdClass] || SWD_STYLE.commercial;
   const grow = coarsePointer() ? 4 : 0;
   return selected
-    ? { radius: 8 + grow, color: "#1a1404", fillColor: "#e08a5c", fillOpacity: 1, weight: 2 }
-    : { radius: 6 + grow, color: "#3a2218", fillColor: "#c45c3a", fillOpacity: 0.92, weight: 1 };
+    ? { radius: 8 + grow, color: "#1a1404", fillColor: palette.selectedFill, fillOpacity: 1, weight: 2 }
+    : { radius: 6 + grow, color: palette.stroke, fillColor: palette.fill, fillOpacity: 0.92, weight: 1 };
 }
 
 function disposalFeatureId(feature) {
@@ -2342,7 +2377,7 @@ function restyleDisposalMarkers() {
   disposalLayer.eachLayer((layer) => {
     if (!layer.setStyle) return;
     const selected = disposalFocus && disposalFeatureId(layer.feature) === String(disposalFocus.id);
-    layer.setStyle(disposalMarkerStyle(selected));
+    layer.setStyle(disposalMarkerStyle(swdClassFrom(layer.feature), selected));
   });
 }
 
@@ -2367,7 +2402,7 @@ function ensureDisposalLayer() {
       pointToLayer(feature, latlng) {
         const selected = disposalFocus && disposalFeatureId(feature) === String(disposalFocus.id);
         return L.circleMarker(latlng, {
-          ...disposalMarkerStyle(selected),
+          ...disposalMarkerStyle(swdClassFrom(feature), selected),
           pane: "disposal",
           interactive: true,
         });
@@ -2459,7 +2494,9 @@ function loadDisposal() {
       if (!stored) {
         setDisposalStatus("No local waste-site overlay yet. Run python -m wellnav.ingest load-disposal");
       } else if (!payload.features.length) {
-        setDisposalStatus("No commercial waste disposal sites in this view.");
+        setDisposalStatus("No commercial SWDs or operator injection wells in this view.");
+      } else if (payload.meta && payload.meta.truncated) {
+        setDisposalStatus("Zoom in to see every SWD and injection well in this area.");
       } else {
         setDisposalStatus("");
       }
@@ -2512,6 +2549,8 @@ function siteFromEl(el) {
     operator: el.dataset.operator || "",
     permit_no: el.dataset.permit || "",
     county: el.dataset.county || "",
+    swd_class: el.dataset.swdClass || "",
+    swd_class_label: el.dataset.swdLabel || "",
   };
 }
 
@@ -2547,6 +2586,8 @@ function selectDisposalSite(site, { fromMarker = false, enriched = false } = {})
     permit_type_label: site.permit_type_label || "",
     discharge_type: site.discharge_type || "",
     waste_classifications: site.waste_classifications || [],
+    swd_class: site.swd_class || "",
+    swd_class_label: site.swd_class_label || swdClassLabel(site),
   };
   disposalPopupPinned = true;
   pinChrome = false;
@@ -2688,9 +2729,17 @@ function ensureChromeNodes() {
   if (!document.getElementById("disposal-toggle")) {
     const actions = chrome.querySelector(".map-actions");
     if (actions) {
-      const disposal = document.createElement("label");
-      disposal.className = "overlay-toggle";
-      disposal.innerHTML = '<input type="checkbox" id="disposal-toggle"> SWD';
+      const disposal = document.createElement("span");
+      disposal.className = "overlay-with-tip";
+      disposal.innerHTML =
+        '<label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>' +
+        '<span class="info-tip">' +
+        '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>' +
+        '<span class="info-tip-pop" popover="manual" hidden role="tooltip">' +
+        '<span class="legend-key">' +
+        '<span><i class="swatch swd-commercial"></i>Commercial public SWD</span>' +
+        '<span><i class="swatch swd-operator"></i>Operator SWD / injection</span>' +
+        "</span></span></span>";
       actions.appendChild(disposal);
     }
   }
@@ -3260,10 +3309,11 @@ function updateChrome(store) {
     } else if (disposalFocus) {
       // Waste classifications live in #disposal-waste-classes — keep subtitle lean.
       const bits = [];
+      if (disposalFocus.swd_class_label) bits.push(disposalFocus.swd_class_label);
       if (disposalFocus.operator) bits.push(disposalFocus.operator);
       if (disposalFocus.permit) bits.push(disposalFocus.permit);
       if (disposalFocus.county) bits.push(`${disposalFocus.county} County`);
-      sub.textContent = bits.length ? bits.join(" · ") : "Commercial waste disposal";
+      sub.textContent = bits.length ? bits.join(" · ") : "SWD";
     } else if (selected) sub.textContent = "";
     else if (store.order.length) sub.textContent = "Select a well to route.";
     else sub.textContent = "Pin wells from search to show them on the map.";

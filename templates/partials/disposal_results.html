@@ -37,12 +37,17 @@
                 data-name="{{ row.facility }}"
                 data-operator="{{ row.operator or '' }}"
                 data-permit="{{ row.permit_no or '' }}"
-                data-county="{{ row.county or '' }}">
+                data-county="{{ row.county or '' }}"
+                data-swd-class="{{ row.swd_class or '' }}"
+                data-swd-label="{{ row.swd_class_label or '' }}">
               <td class="map-col">
                 <button type="button" class="ghost disposal-map-btn">Show on map</button>
               </td>
               <td>
                 <button type="button" class="well-name-link disposal-map-btn">{{ row.facility or row.permit_no }}</button>
+                {% if row.swd_class_label %}
+                  <div class="muted">{{ row.swd_class_label }}</div>
+                {% endif %}
                 {% if row.permit_url %}
                   <div><a class="text-link" href="{{ row.permit_url }}" target="_blank" rel="noopener">Permit PDF</a></div>
                 {% endif %}

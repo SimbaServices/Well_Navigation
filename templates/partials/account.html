@@ -14,11 +14,12 @@
       <p class="muted">{{ saved_count }} saved well{{ "s" if saved_count != 1 else "" }}
         {% if cache_stats %} · {{ cache_stats.entries }} cached lookups{% endif %}
       </p>
-      {% if user.last_login_at or user.last_activity_at %}
+      {% set opened = user.last_opened_at or user.last_login_at %}
+      {% if user.last_activity_at or opened %}
       <p class="muted">
-        {% if user.last_login_at %}Last login {{ user.last_login_at }}{% endif %}
-        {% if user.last_login_at and user.last_activity_at %} · {% endif %}
         {% if user.last_activity_at %}Last activity {{ user.last_activity_at }}{% endif %}
+        {% if user.last_activity_at and opened %} · {% endif %}
+        {% if opened %}Last opened {{ opened }}{% endif %}
       </p>
       {% endif %}
     </section>

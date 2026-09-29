@@ -173,6 +173,43 @@ def is_htmx(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
 
+EMPTY_SEARCH_HTML = (
+    '<div class="empty">'
+    "Search wells, pipelines, and waste sites in Texas, New Mexico, "
+    "Oklahoma, and Louisiana. Pick a state or All, then search."
+    "</div>"
+)
+
+
+def _search_has_constraints(filters: dict, q: str, data: dict, column_filters: dict) -> bool:
+    """True when a well search has something to match on.
+
+    An empty filter set must not scan every well into the results table.
+    """
+    return bool(
+        has_filters(filters)
+        or (q or "").strip()
+        or (data.get("lease_no") or "").strip()
+        or column_filters
+    )
+
+
+def _keep_search_results(
+    request: Request,
+    filters: dict,
+    *,
+    push_url: str | None = None,
+) -> HTMLResponse:
+    """Update filter chrome and leave the current results table untouched."""
+    if is_htmx(request):
+        response = HTMLResponse(with_oob(request, "", clear_suggest=True, filters=filters))
+        response.headers["HX-Reswap"] = "none"
+        if push_url:
+            response.headers["HX-Push-Url"] = push_url
+        return response
+    return page(request, results_html=EMPTY_SEARCH_HTML, filters=filters, column_filters={})
+
+
 def current_user(request: Request, *, revoke_on_mismatch: bool = True) -> dict | None:
     uid = current_user_id(request)
     if not uid:
@@ -355,6 +392,13 @@ def auth_page(request: Request, html: str) -> HTMLResponse:
     )
 
 
+def records_user_interaction(path: str) -> bool:
+    """Background fetches are not interactions. Taps, searches, and navigation are."""
+    if path.startswith("/offline/tiles/") or path.startswith("/ux/recordings"):
+        return False
+    return True
+
+
 def login_required_html(request: Request, message: str = "Sign in to continue.") -> HTMLResponse:
     nxt = safe_next(request.url.path)
     target = "/login" if nxt in {"/", "/login"} else f"/login?next={quote(nxt)}"
@@ -367,7 +411,22 @@ class RequireSignInMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         user = current_user(request)
         if user:
-            USERS.touch_activity(user["id"])
+            # Mobile start URL. Record before a billing redirect so a store
+            # WebView that never reaches the shell still counts as an open.
+            if request.method == "GET" and request.url.path == "/" and not is_htmx(request):
+                USERS.record_app_open(user["id"])
+            # Resume ping from web, PWA, and iOS/Android. Must succeed even
+            # when the workspace itself is waiting on billing.
+            if request.method == "POST" and request.url.path == "/session/opened":
+                USERS.record_app_open(user["id"])
+                return Response(status_code=204)
+            # Each search, tap, or navigation — including iOS and Android WebViews.
+            # Map tiles and session-replay uploads are skipped.
+            if request.method == "POST" and request.url.path == "/session/activity":
+                USERS.touch_activity(user["id"])
+                return Response(status_code=204)
+            if records_user_interaction(request.url.path):
+                USERS.touch_activity(user["id"])
             if (
                 billing_enforced()
                 and not is_billing_path(request.url.path)
@@ -450,6 +509,24 @@ async def _request_source(request: Request):
 
 async def index(request: Request) -> HTMLResponse:
     return page(request)
+
+
+async def session_opened(request: Request) -> Response:
+    """Foreground ping. The middleware records the open and returns 204."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    USERS.record_app_open(user["id"])
+    return Response(status_code=204)
+
+
+async def session_activity(request: Request) -> Response:
+    """Interaction ping from the page, including store WebViews. Middleware records it."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    USERS.touch_activity(user["id"])
+    return Response(status_code=204)
 
 
 async def account(request: Request) -> HTMLResponse:
@@ -1025,6 +1102,15 @@ async def search(request: Request) -> HTMLResponse:
     added_operator = bool(data.get("add_op_number") or data.get("add_op_name"))
     clear_query = committing or added_operator
     error = None
+    state = request_state_token(data) if data.get("state") else request_state_token(request)
+    request.state.app_state = state
+    if data.get("clear_filters") == "1":
+        # Drop the chips only. The table stays until the next Search.
+        return _keep_search_results(
+            request,
+            empty_filters(),
+            push_url=search_href(scope=data.get("scope") or "wells", state=state, mode=mode),
+        )
     known_numbers = {op["number"] for op in filters["operators"]}
     known_names = {normalize_operator_name(op["name"]) for op in filters["operators"]}
 
@@ -1075,16 +1161,22 @@ async def search(request: Request) -> HTMLResponse:
     ):
         return fragment_or_page(
             request,
-            (
-                '<div class="empty">'
-                "Search wells, pipelines, and waste sites in Texas, New Mexico, "
-                "Oklahoma, and Louisiana. Pick a state or All, then search."
-                "</div>"
-            ),
+            EMPTY_SEARCH_HTML,
             clear_suggest=True,
             filters=filters,
             column_filters=column_filters,
         )
+
+    if not _search_has_constraints(filters, q, data, column_filters):
+        if committing:
+            return fragment_or_page(
+                request,
+                EMPTY_SEARCH_HTML,
+                clear_suggest=True,
+                filters=filters,
+                column_filters=column_filters,
+            )
+        return _keep_search_results(request, filters)
 
     stacked = search_kwargs(filters)
     context = {
@@ -1106,8 +1198,6 @@ async def search(request: Request) -> HTMLResponse:
         "column_filters": column_filters,
         "column_partial": column_partial,
     }
-    state = request_state_token(data) if data.get("state") else request_state_token(request)
-    request.state.app_state = state
     context["state"] = state
     counts = REPO.counts(state)
     try:
@@ -1579,6 +1669,7 @@ async def pipeline_owner(request: Request) -> JSONResponse:
 
 
 async def disposal_sites(request: Request) -> JSONResponse:
+    from wellnav.db import DB_PATH
     from wellnav.disposal import query_geojson
 
     site_raw = request.query_params.get("id")
@@ -1590,6 +1681,7 @@ async def disposal_sites(request: Request) -> JSONResponse:
         payload = query_geojson(
             bbox=request.query_params.get("bbox"),
             site_id=site_id,
+            wells_path=DB_PATH,
         )
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
@@ -1921,6 +2013,8 @@ def offline_usgs_tile(request: Request) -> Response:
 app = Starlette(
     routes=[
         Route("/", index),
+        Route("/session/opened", session_opened, methods=["POST"]),
+        Route("/session/activity", session_activity, methods=["POST"]),
         Route("/account", account),
         Route("/account/delete", account_delete, methods=["GET", "POST"]),
         Route("/ux/recordings", ux_recording_start, methods=["POST"]),

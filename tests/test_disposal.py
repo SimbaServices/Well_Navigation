@@ -8,6 +8,9 @@ from wellnav.disposal import (
     DRIVE_MPH,
     KM_PER_MI,
     ROAD_FACTOR,
+    SWD_COMMERCIAL,
+    SWD_OPERATOR,
+    classify_swd,
     connect,
     distance_km,
     drive_minutes,
@@ -18,7 +21,7 @@ from wellnav.disposal import (
     search_sites,
     waste_classifications_for,
 )
-from wellnav.ingest.disposal import feature_to_row, upsert_site
+from wellnav.ingest.disposal import feature_to_row, uic_feature_to_row, upsert_site
 
 
 def _feature(oid: int, **attrs: object) -> dict:
@@ -163,6 +166,8 @@ class DisposalSearchTests(unittest.TestCase):
             self.assertEqual(props["permit_type_label"], "Reclamation Plant")
             self.assertEqual(props["discharge_type"], "Produced water")
             self.assertEqual(props["waste_classifications"], ["Reclamation Plant", "Produced Water"])
+            self.assertEqual(props["swd_class"], SWD_COMMERCIAL)
+            self.assertEqual(props["swd_class_label"], "Commercial public SWD")
 
     def test_waste_classifications_dedupe(self) -> None:
         labels = waste_classifications_for(
@@ -229,6 +234,112 @@ class DisposalNearestTests(unittest.TestCase):
                 search_sites("", mode="radium_near", path=db_path),
                 [],
             )
+
+
+class SwdClassTests(unittest.TestCase):
+    def test_classify_commercial_facility_and_operator_well(self) -> None:
+        self.assertEqual(
+            classify_swd(permit_type="STATIONARY TREATMENT FACILITY", site_id=12),
+            SWD_COMMERCIAL,
+        )
+        self.assertEqual(
+            classify_swd(permit_type="Commercial UIC", site_id=2_100_000_010),
+            SWD_COMMERCIAL,
+        )
+        self.assertEqual(
+            classify_swd(permit_type="Salt Water Disposal", site_id=2_000_000_100),
+            SWD_OPERATOR,
+        )
+        self.assertEqual(
+            classify_swd(swd_class="operator", permit_type="Commercial disposal"),
+            SWD_OPERATOR,
+        )
+
+    def test_uic_rows_keep_distinct_classes(self) -> None:
+        commercial = uic_feature_to_row(
+            {"attributes": {"OBJECTID": 9, "API": "00300111"}, "geometry": {"x": -101.5, "y": 31.8}},
+            swd_class=SWD_COMMERCIAL,
+            id_base=100_000_000,
+        )
+        operator = uic_feature_to_row(
+            {
+                "attributes": {"OBJECTID": 9, "API": "00300222"},
+                "geometry": {"x": -101.4, "y": 31.7},
+            },
+            swd_class=SWD_OPERATOR,
+            id_base=300_000_000,
+            well={"well_name": "SMITH", "well_no": "1H", "operator": "OXY USA INC.", "symbol": "Injection / Disposal from Oil"},
+        )
+        assert commercial is not None and operator is not None
+        self.assertEqual(commercial["swd_class"], SWD_COMMERCIAL)
+        self.assertEqual(commercial["permit_no"], "00300111")
+        self.assertEqual(operator["swd_class"], SWD_OPERATOR)
+        self.assertEqual(operator["facility"], "SMITH 1H")
+        self.assertNotEqual(commercial["id"], operator["id"])
+
+    def test_map_layer_colors_commercial_and_operator_wells(self) -> None:
+        import sqlite3
+
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "disposal.db"
+            wells_path = Path(tmp) / "wells.db"
+            conn = connect(db_path)
+            init_schema(conn)
+            commercial = feature_to_row(
+                _feature(
+                    4,
+                    PERMIT_NO="42-003-00111",
+                    LEASE_OR_FACILITY_NAME="PUBLIC SWD",
+                    LATITUDE=31.80,
+                    LONGITUDE=-101.50,
+                )
+            )
+            assert commercial is not None
+            upsert_site(conn, commercial)
+            conn.commit()
+            conn.close()
+
+            wells = sqlite3.connect(wells_path)
+            wells.execute(
+                """
+                CREATE TABLE wells_tx (
+                    api TEXT, api8 TEXT, well_name TEXT, well_no TEXT, lease_name TEXT,
+                    operator TEXT, county TEXT, district TEXT, symbol TEXT, well_type TEXT,
+                    wellhead_lat REAL, wellhead_lon REAL
+                )
+                """
+            )
+            wells.executemany(
+                """
+                INSERT INTO wells_tx(
+                    api, api8, well_name, well_no, lease_name, operator, county, district,
+                    symbol, well_type, wellhead_lat, wellhead_lon
+                ) VALUES (?, ?, ?, ?, '', ?, '', '', ?, '', ?, ?)
+                """,
+                [
+                    ("42-003-00111", "00300111", "PUBLIC WELL", "1", "R360", "Injection / Disposal from Oil", 31.81, -101.51),
+                    ("42-003-00222", "00300222", "LEASE SWD", "2H", "OXY USA INC.", "Injection / Disposal from Oil", 31.82, -101.52),
+                    ("42-003-00333", "00300333", "PRODUCER", "3", "OXY USA INC.", "Oil Well", 31.83, -101.53),
+                    ("42-003-00444", "00300444", "PLUGGED SWD", "4", "OXY USA INC.", "Plugged Injection Well", 31.84, -101.54),
+                ],
+            )
+            wells.commit()
+            wells.close()
+
+            geo = query_geojson(
+                "-102,31.5,-101,32.2",
+                path=db_path,
+                wells_path=wells_path,
+            )
+            by_class = {}
+            for feat in geo["features"]:
+                props = feat["properties"]
+                by_class.setdefault(props["swd_class"], []).append(props["facility"])
+            self.assertEqual(by_class[SWD_COMMERCIAL], ["PUBLIC SWD"])
+            self.assertEqual(by_class[SWD_OPERATOR], ["LEASE SWD 2H"])
+            self.assertEqual(geo["meta"]["commercial"], 1)
+            self.assertEqual(geo["meta"]["operator"], 1)
+            self.assertFalse(geo["meta"]["truncated"])
 
 
 class DriveMinutesTests(unittest.TestCase):

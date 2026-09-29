@@ -475,3 +475,127 @@ class SingleSessionTests(unittest.TestCase):
         )
         self.assertEqual(deleted.status_code, 303)
         self.assertEqual(deleted.headers["location"], "/login?forget=1")
+
+    def _backdate_open(self) -> None:
+        self.conn.execute(
+            "UPDATE users SET last_login_at = ?, last_opened_at = ?, last_activity_at = ? WHERE id = ?",
+            (
+                "2020-01-01T00:00:00+00:00",
+                "2020-01-01T00:00:00+00:00",
+                "2020-01-01T00:00:00+00:00",
+                self.user["id"],
+            ),
+        )
+        self.conn.commit()
+
+    def test_app_open_does_not_rewrite_last_login(self) -> None:
+        self.users.record_login(self.user["id"])
+        stamped = self.users.get(self.user["id"])
+        self.assertTrue(stamped["last_login_at"])
+        self.assertEqual(stamped["last_opened_at"], stamped["last_login_at"])
+        self._backdate_open()
+        self.users.record_app_open(self.user["id"])
+        opened = self.users.get(self.user["id"])
+        self.assertEqual(opened["last_login_at"], "2020-01-01 00:00:00 UTC")
+        self.assertNotEqual(opened["last_opened_at"], "2020-01-01 00:00:00 UTC")
+        self.assertTrue(str(opened["last_opened_at"]).endswith("UTC"))
+        from datetime import timedelta
+
+        from wellnav.accounts import utcnow
+
+        recent = (utcnow() - timedelta(seconds=5)).isoformat()
+        self.conn.execute(
+            "UPDATE users SET last_activity_at = ? WHERE id = ?",
+            (recent, self.user["id"]),
+        )
+        self.conn.commit()
+        before = self.users.get(self.user["id"])["last_activity_at"]
+        self.users.touch_activity(self.user["id"])
+        self.assertNotEqual(self.users.get(self.user["id"])["last_activity_at"], before)
+
+    def test_resume_ping_records_open_for_web_and_store_apps(self) -> None:
+        from starlette.testclient import TestClient
+
+        from app import app, records_user_interaction, templates
+
+        self.assertTrue(records_user_interaction("/search"))
+        self.assertFalse(records_user_interaction("/offline/tiles/12/1/1"))
+        self.assertFalse(records_user_interaction("/ux/recordings/abc/chunk"))
+
+        client = TestClient(app, follow_redirects=False)
+        self.assertEqual(self._sign_in(client).status_code, 303)
+        anonymous = TestClient(app, follow_redirects=False)
+        denied = anonymous.post("/session/opened", headers={"Accept": "application/json"})
+        self.assertEqual(denied.status_code, 401)
+        denied_activity = anonymous.post("/session/activity", headers={"Accept": "application/json"})
+        self.assertEqual(denied_activity.status_code, 401)
+
+        for agent in (
+            "Mozilla/5.0 WellNavigation/1.0 (iOS; store)",
+            "Mozilla/5.0 WellNavigation/1.0 (Android; store)",
+            "Mozilla/5.0 (Macintosh) Chrome/120.0.0.0",
+        ):
+            self._backdate_open()
+            ping = client.post(
+                "/session/opened",
+                headers={"Accept": "application/json", "User-Agent": agent},
+            )
+            self.assertEqual(ping.status_code, 204, agent)
+            fresh = self.users.get(self.user["id"])
+            self.assertNotEqual(fresh["last_opened_at"], "2020-01-01 00:00:00 UTC", agent)
+            self.assertEqual(fresh["last_login_at"], "2020-01-01 00:00:00 UTC", agent)
+
+        for agent in (
+            "Mozilla/5.0 WellNavigation/1.0 (iOS; store)",
+            "Mozilla/5.0 WellNavigation/1.0 (Android; store)",
+        ):
+            self._backdate_open()
+            acted = client.post(
+                "/session/activity",
+                headers={"Accept": "application/json", "User-Agent": agent},
+            )
+            self.assertEqual(acted.status_code, 204, agent)
+            fresh = self.users.get(self.user["id"])
+            self.assertNotEqual(fresh["last_activity_at"], "2020-01-01 00:00:00 UTC", agent)
+            self.assertEqual(fresh["last_opened_at"], "2020-01-01 00:00:00 UTC", agent)
+            self.assertEqual(fresh["last_login_at"], "2020-01-01 00:00:00 UTC", agent)
+
+        self._backdate_open()
+        client.get("/account", headers={"HX-Request": "true"})
+        client.get("/search", headers={"HX-Request": "true"})
+        acted = self.users.get(self.user["id"])
+        self.assertNotEqual(acted["last_activity_at"], "2020-01-01 00:00:00 UTC")
+        self.assertEqual(acted["last_opened_at"], "2020-01-01 00:00:00 UTC")
+
+        self._backdate_open()
+        home = client.get(
+            "/",
+            headers={"User-Agent": "Mozilla/5.0 WellNavigation/1.0 (Android; store)"},
+        )
+        self.assertIn(home.status_code, (200, 303))
+        self.assertNotEqual(self.users.get(self.user["id"])["last_opened_at"], "2020-01-01 00:00:00 UTC")
+        if home.status_code == 200:
+            self.assertIn("/static/js/app-open.js", home.text)
+
+        html = templates.get_template("partials/org.html").render(
+            user={"id": 1},
+            org={"name": "Acme", "domain": "acme.test"},
+            workspace={"complimentary": True, "org_name": "Acme", "member_count": 1},
+            members=[
+                {
+                    "id": 1,
+                    "email": "pat@acme.test",
+                    "role": "admin",
+                    "is_admin": True,
+                    "last_activity_at": "2026-09-29 17:40:12 UTC",
+                    "last_opened_at": "2026-09-29 17:01:00 UTC",
+                    "last_login_at": "2020-01-01 00:00:00 UTC",
+                }
+            ],
+            error=None,
+            store_client=False,
+        )
+        self.assertIn("Last activity", html)
+        self.assertIn("2026-09-29 17:40:12 UTC", html)
+        self.assertNotIn("Last opened", html)
+        self.assertNotIn("Last login", html)
