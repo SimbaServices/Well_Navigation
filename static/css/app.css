@@ -1478,14 +1478,21 @@ body.gate .gate-tagline {
 .legal-top-nav a[aria-current="page"] { color: var(--ink); font-weight: 650; }
 .account-actions, .cache-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .account-actions form { margin: 0; }
-.member-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.member-table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; }
 .member-table th, .member-table td {
   text-align: left;
-  padding: 0.45rem 0.35rem;
+  padding: 0.4rem 0.3rem;
   border-bottom: 1px solid var(--line);
-  vertical-align: middle;
+  vertical-align: top;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
-.member-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.member-table th:nth-child(2),
+.member-table td:nth-child(2) { width: 4.2rem; }
+.member-table th:last-child,
+.member-table td:last-child { width: 5.6rem; }
+.member-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+.member-actions .ghost { padding: 0.2rem 0.4rem; font-size: 0.72rem; min-height: 0; }
 .member-actions form { margin: 0; }
 .seat-summary { margin: 0; }
 .seat-form {
@@ -2154,9 +2161,22 @@ body.gate .gate-tagline {
 }
 .bottom-sheet.is-open { height: min(58vh, 34rem); }
 .bottom-sheet.is-dragging { transition: none; }
-.bottom-sheet .sheet-views { display: none; min-height: 0; overflow: auto; flex: 1; }
+.bottom-sheet .sheet-views {
+  display: none;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow: auto;
+  flex: 1;
+}
 .bottom-sheet.is-open .sheet-views { display: block; }
-.sheet-view { padding: 0.15rem 0.85rem 0.9rem; }
+.sheet-view {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.15rem 0.85rem 0.9rem;
+  overflow-wrap: break-word;
+}
+.sheet-view .account-card { min-width: 0; max-width: 100%; }
 .sheet-view[hidden] { display: none !important; }
 .bottom-sheet .map-details {
   display: block !important;
