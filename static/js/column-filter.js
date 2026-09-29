@@ -43,7 +43,7 @@
   }
 
   function closeFilters(exceptForm) {
-    document.querySelectorAll("form.col-filter").forEach((form) => {
+    document.querySelectorAll(".col-filter").forEach((form) => {
       if (form === exceptForm) return;
       form.hidden = true;
       const toggle = form.closest("th") && form.closest("th").querySelector("[data-col-filter]");
@@ -70,11 +70,17 @@
       }
       return;
     }
-    if (!event.target.closest("form.col-filter")) closeFilters(null);
+    if (!event.target.closest(".col-filter")) closeFilters(null);
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeFilters(null);
+    if (event.key !== "Enter") return;
+    const input = event.target && event.target.closest && event.target.closest(".col-filter-input");
+    if (!input) return;
+    event.preventDefault();
+    syncHidden(input);
+    if (window.htmx) window.htmx.trigger(input, "search");
   });
 
   document.addEventListener("submit", (event) => {

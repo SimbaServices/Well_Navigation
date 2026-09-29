@@ -33,7 +33,7 @@
         {% if sort == key %}<span class="sort-ind" aria-hidden="true">{{ "▲" if dir == "asc" else "▼" }}</span>{% else %}<span class="sort-ind sort-idle" aria-hidden="true">▼</span>{% endif %}
       </a>
     </div>
-    <form id="col-filter-{{ key }}" class="col-filter" action="/search" method="get" hidden>
+    <div id="col-filter-{{ key }}" class="col-filter" hidden>
       <label class="sr-only" for="cf-input-{{ key }}">Filter {{ label }}</label>
       <input id="cf-input-{{ key }}" class="col-filter-input" type="search" data-cf="{{ key }}"
              value="{{ current }}" placeholder="Filter" autocomplete="off" spellcheck="false" enterkeyhint="search"
@@ -46,7 +46,7 @@
              hx-indicator="#spinner"
              hx-sync="this:replace"
              hx-headers='{"X-Column-Filter": "1"}'>
-    </form>
+    </div>
   </div>
 </th>
 {%- endmacro %}
