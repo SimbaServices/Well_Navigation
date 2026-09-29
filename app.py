@@ -22,6 +22,7 @@ from starlette.templating import Jinja2Templates
 
 from wellnav.accounts import CACHE, LOCATION_TTL, OPERATOR_TTL, SAVED, SEARCH_TTL, USERS
 from wellnav.feedback import FEEDBACK, KINDS
+from wellnav.user_settings import default_search_prefs
 from wellnav.auth import (
     SESSION_MAX_AGE,
     clear_otp_session,
@@ -235,8 +236,19 @@ def view_ctx(request: Request, **extra) -> dict:
         context["sort"] = getattr(request.state, "sort", "name")
     if not context.get("dir"):
         context["dir"] = getattr(request.state, "dir", "asc")
+    prefs = USERS.search_prefs(user["id"]) if user else default_search_prefs()
+    context["search_prefs"] = prefs
     if not context.get("state"):
-        context["state"] = getattr(request.state, "app_state", None) or request_state_token(request)
+        forced = getattr(request.state, "app_state", None) if request is not None else None
+        query_state = ""
+        if request is not None and hasattr(request, "query_params"):
+            query_state = request.query_params.get("state") or ""
+        if forced:
+            context["state"] = forced
+        elif query_state:
+            context["state"] = request_state_token({"state": query_state})
+        else:
+            context["state"] = prefs["state"]
     if user and "workspace" not in extra:
         context["workspace"] = workspace_snapshot(user)
     context.setdefault("app_states", APP_STATES)
@@ -524,6 +536,43 @@ async def session_activity(request: Request) -> Response:
     return Response(status_code=204)
 
 
+async def account_prefs(request: Request) -> JSONResponse:
+    """Save location and search choices on the signed-in user."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({"error": "sign_in_required"}, status_code=401)
+    data = await _form_params(request)
+    return JSONResponse(USERS.save_search_prefs(user["id"], data))
+
+
+def _team_html(
+    request: Request,
+    user: dict,
+    *,
+    team_tab: str = "people",
+    error: str | None = None,
+    feedback_error: str | None = None,
+    draft: dict | None = None,
+) -> str:
+    workspace = workspace_snapshot(user) if user.get("org_id") else {"org": None, "members": []}
+    org = workspace.get("org")
+    messages, truncated = FEEDBACK.list_for(user) if org else ([], False)
+    return render(
+        "partials/team.html",
+        request,
+        org=org,
+        members=workspace.get("members") or [],
+        workspace=workspace,
+        error=error,
+        feedback_error=feedback_error,
+        team_tab=team_tab,
+        messages=messages,
+        truncated=truncated,
+        kinds=KINDS,
+        draft=draft or {},
+    )
+
+
 async def account(request: Request) -> HTMLResponse:
     user = current_user(request)
     workspace = workspace_snapshot(user)
@@ -677,7 +726,7 @@ async def feedback_panel(request: Request) -> HTMLResponse:
     user = current_user(request)
     if not user:
         return login_required_html(request)
-    html = _feedback_html(request, user)
+    html = _team_html(request, user, team_tab="feedback")
     return fragment_or_page(request, html, clear_suggest=True)
 
 
@@ -692,8 +741,13 @@ async def feedback_create(request: Request) -> HTMLResponse:
         place=data.get("place", ""),
         body=data.get("body", ""),
     )
-    draft = data if error else {}
-    html = _feedback_html(request, user, error=error, draft=draft)
+    html = _team_html(
+        request,
+        user,
+        team_tab="feedback",
+        feedback_error=error,
+        draft=data if error else {},
+    )
     return fragment_or_page(request, html, clear_suggest=True)
 
 
@@ -702,7 +756,7 @@ async def feedback_delete(request: Request) -> HTMLResponse:
     if not user:
         return login_required_html(request)
     _, error = FEEDBACK.delete(user, int(request.path_params["message_id"]))
-    html = _feedback_html(request, user, error=error)
+    html = _team_html(request, user, team_tab="feedback", feedback_error=error)
     return fragment_or_page(request, html, clear_suggest=True)
 
 
@@ -711,21 +765,13 @@ async def org_panel(request: Request) -> HTMLResponse:
     if not user:
         return login_required_html(request)
     if not user.get("org_id"):
-        html = render(
-            "partials/account.html",
+        html = _team_html(
             request,
-            org=None,
+            user,
             error="This account is not in an organization yet.",
         )
         return fragment_or_page(request, html, clear_suggest=True)
-    workspace = workspace_snapshot(user)
-    html = render(
-        "partials/org.html",
-        request,
-        org=workspace.get("org"),
-        members=workspace.get("members") or [],
-        workspace=workspace,
-    )
+    html = _team_html(request, user, team_tab="people")
     return fragment_or_page(request, html, clear_suggest=True)
 
 
@@ -735,13 +781,7 @@ async def org_remove(request: Request) -> HTMLResponse:
         return login_required_html(request)
     _, error = USERS.remove_member(user, int(request.path_params["member_id"]))
     if error:
-        html = render(
-            "partials/org.html",
-            request,
-            org=USERS.org(user.get("org_id")),
-            members=USERS.org_members(user["org_id"]) if user.get("org_id") else [],
-            error=error,
-        )
+        html = _team_html(request, user, error=error)
         return fragment_or_page(request, html, clear_suggest=True)
     return await org_panel(request)
 
@@ -753,13 +793,7 @@ async def org_role(request: Request) -> HTMLResponse:
     data = await _form_params(request)
     _, error = USERS.set_member_role(user, int(request.path_params["member_id"]), data.get("role", ""))
     if error:
-        html = render(
-            "partials/org.html",
-            request,
-            org=USERS.org(user.get("org_id")),
-            members=USERS.org_members(user["org_id"]) if user.get("org_id") else [],
-            error=error,
-        )
+        html = _team_html(request, user, error=error)
         return fragment_or_page(request, html, clear_suggest=True)
     return await org_panel(request)
 
@@ -2011,6 +2045,7 @@ app = Starlette(
         Route("/session/opened", session_opened, methods=["POST"]),
         Route("/session/activity", session_activity, methods=["POST"]),
         Route("/account", account),
+        Route("/account/prefs", account_prefs, methods=["POST"]),
         Route("/account/delete", account_delete, methods=["GET", "POST"]),
         Route("/ux/recordings", ux_recording_start, methods=["POST"]),
         Route("/ux/recordings/{recording_id}/chunk", ux_recording_chunk, methods=["POST"]),

@@ -92,7 +92,9 @@ const MAP_CHROME_HTML = `
     </div>
   </div>
   <div id="well-map" class="well-map"></div>
-  <div class="map-details">
+  <div class="detail-sheet" id="detail-sheet">
+  <button type="button" class="pull-tab detail-pull" id="detail-tab" aria-expanded="false" aria-controls="detail-panel">Details</button>
+  <div class="map-details" id="detail-panel">
     <div class="map-head">
       <div>
         <h2 id="map-title">Map</h2>
@@ -108,6 +110,7 @@ const MAP_CHROME_HTML = `
       <div id="map-coords" class="coord-bar"></div>
       <div id="nav-links" class="route-row"></div>
     </div>
+  </div>
   </div>
 </div>`;
 
@@ -3405,6 +3408,8 @@ function updateChrome(store) {
   if ((showPin || !disposalFocus) && window.WellnavDisposalUx) {
     window.WellnavDisposalUx.hideWaitPanel();
   }
+  const focus = chrome ? chrome.dataset.focus : "idle";
+  if (window.WellnavLayers) window.WellnavLayers.noteMapFocus(focus);
 }
 
 function paint({ fit = false } = {}) {
@@ -3516,8 +3521,6 @@ function goHome() {
   if (form) {
     const scope = form.querySelector("[name=scope]");
     if (scope) scope.value = "wells";
-    const state = form.querySelector("[name=state]");
-    if (state) state.value = "tx";
     form.querySelectorAll("[name=mode]").forEach((el) => {
       el.checked = el.value === "name";
     });
@@ -3548,6 +3551,7 @@ function goHome() {
   } catch {
     /* ignore */
   }
+  if (window.WellnavLayers) window.WellnavLayers.resetHome();
   disposalFocus = null;
   disposalPopupPinned = false;
   if (map) map.closePopup();
@@ -3932,6 +3936,7 @@ document.addEventListener("htmx:afterSwap", (event) => {
     applySaveStatus(target);
   }
   bindSearchContext();
+  if (targetId === "results" && window.WellnavLayers) window.WellnavLayers.onResults();
   if (targetId === "results" && !searchInputIsActive()) {
     const auto = document.querySelector("#results [data-auto-map]");
     if (auto) {
@@ -3948,32 +3953,8 @@ document.addEventListener("htmx:sendError", (event) => {
   HTMLFormElement.prototype.submit.call(elt);
 });
 
-function setAccountMenu(open) {
-  const toggle = document.querySelector("#account-nav .nav-toggle");
-  const menu = document.getElementById("account-menu");
-  if (toggle) {
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
-  }
-  if (menu) menu.hidden = !open;
-}
-
 document.body.addEventListener("click", (event) => {
-  const toggle = event.target.closest(".nav-toggle");
-  if (toggle) {
-    setAccountMenu(toggle.getAttribute("aria-expanded") !== "true");
-    return;
-  }
-  const inMenu = event.target.closest("#account-menu");
-  if (!inMenu) setAccountMenu(false);
-  if (event.target.closest("#account-nav a, #account-nav button:not(.nav-toggle), #search-form .primary")) {
-    showWorkspacePane("search");
-    if (inMenu) setAccountMenu(false);
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") setAccountMenu(false);
+  if (event.target.closest("#search-form .primary")) showWorkspacePane("search");
 });
 
 document.getElementById("search-form")?.addEventListener("submit", () => {

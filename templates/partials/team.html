@@ -1,0 +1,50 @@
+<div class="team-page" data-team-tab="{{ team_tab|default('people') }}">
+  <h2>Team</h2>
+  <div class="sheet-tabs" role="tablist" aria-label="Team">
+    <button type="button" data-team-tab="people" role="tab">People</button>
+    <button type="button" data-team-tab="use" role="tab">Use</button>
+    <button type="button" data-team-tab="feedback" role="tab">Feedback</button>
+  </div>
+
+  <div data-team-panel="people">
+    {% if not org %}
+      <p class="muted">{{ error or "This account is not in an organization yet." }}</p>
+    {% else %}
+      {% include 'partials/org.html' %}
+    {% endif %}
+  </div>
+
+  <div data-team-panel="use">
+    {% if members %}
+      <p class="muted">Opens and activity for people in this organization.</p>
+      <table class="member-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Last opened</th>
+            <th>Last activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in members %}
+            <tr>
+              <td>{{ member.email or member.username }}</td>
+              <td>{{ member.role }}</td>
+              <td class="muted">{{ member.last_opened_at or member.last_login_at or "—" }}</td>
+              <td class="muted">{{ member.last_activity_at or "—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No organization activity yet.</p>
+    {% endif %}
+  </div>
+
+  <div data-team-panel="feedback">
+    {% with error = feedback_error %}
+      {% include 'partials/feedback.html' %}
+    {% endwith %}
+  </div>
+</div>

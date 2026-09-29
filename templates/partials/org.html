@@ -1,6 +1,6 @@
 <div class="account-card">
   {% set ws = workspace or {} %}
-  <h2>{% if ws.complimentary %}Team{% else %}Team and seats{% endif %}</h2>
+    <h2>People</h2>
   {% if org %}
     <p class="seat-summary">
       <strong>{{ ws.org_name or org.name }}</strong>
@@ -13,7 +13,7 @@
         · {{ ws.member_count }} people · no paid seats yet
       {% endif %}
     </p>
-    <p class="muted">Coworkers create their own login with a <strong>{{ org.domain }}</strong> email.{% if not ws.complimentary %} Each person uses one seat.{% endif %} Admins can change roles or remove people. Anyone deletes their own account from Account.</p>
+    <p class="muted"><strong>Add a person</strong> by having them create a login with a <strong>{{ org.domain }}</strong> email.{% if not ws.complimentary %} Each person uses one seat.{% endif %} Admins change roles or remove people below. Anyone deletes their own account from Account.</p>
   {% endif %}
   {% if error %}
     <div class="banner error">{{ error }}</div>
@@ -33,7 +33,7 @@
     {% else %}
     <form class="seat-form" action="{{ '/billing/seats' if org and org.stripe_subscription_item_id else '/billing/checkout' }}" method="post"
           hx-post="{{ '/billing/seats' if org and org.stripe_subscription_item_id else '/billing/checkout' }}"
-          hx-target="#results">
+          hx-target="#team-body">
       <label>Seats
         <input type="number" name="seats" min="1" max="200" value="{{ ws.suggested_seats }}" required>
       </label>
@@ -76,13 +76,13 @@
               {% if ws.can_manage and member.id != user.id %}
                 <form action="/org/members/{{ member.id }}/role" method="post"
                       hx-post="/org/members/{{ member.id }}/role"
-                      hx-target="#results" hx-indicator="#spinner">
+                      hx-target="#team-body" hx-indicator="#spinner">
                   <input type="hidden" name="role" value="{{ 'member' if member.is_admin else 'admin' }}">
                   <button type="submit" class="ghost">{{ "Make member" if member.is_admin else "Make admin" }}</button>
                 </form>
                 <form action="/org/members/{{ member.id }}/remove" method="post"
                       hx-post="/org/members/{{ member.id }}/remove"
-                      hx-target="#results" hx-indicator="#spinner">
+                      hx-target="#team-body" hx-indicator="#spinner">
                   <button type="submit" class="ghost danger-text">Remove</button>
                 </form>
               {% elif member.id == user.id %}
@@ -96,14 +96,10 @@
   {% else %}
     <p class="muted">No people are in this organization yet.</p>
   {% endif %}
+  {% if not ws.complimentary %}
   <div class="account-actions">
-    {% if not ws.complimentary %}
     <a href="/billing" class="ghost"
-       hx-get="/billing" hx-target="#results" hx-push-url="true">Billing</a>
-    {% endif %}
-    <a href="/account" class="ghost"
-       hx-get="/account" hx-target="#results" hx-push-url="true">Back to account</a>
-    <a href="/account/delete" class="ghost danger-text"
-       hx-get="/account/delete" hx-target="#results" hx-push-url="true">Delete my account</a>
+       hx-get="/billing" hx-target="#team-body" hx-push-url="true">Billing</a>
   </div>
+  {% endif %}
 </div>

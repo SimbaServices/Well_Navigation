@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "wellnav.db"
 # Bump when init_schema gains DDL. A second worker skips the body once this
 # version is stored, so two processes never add the same column.
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 OPERATOR_COLUMNS = """
     operator_number TEXT PRIMARY KEY,
@@ -372,6 +372,21 @@ def _init_schema_locked(conn: sqlite3.Connection) -> None:
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_operator_number ON {p}(operator_number)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_status ON {p}(status)")
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{p}_expires ON {p}(expires_at)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_id INTEGER PRIMARY KEY,
+            state TEXT NOT NULL DEFAULT 'tx',
+            scope TEXT NOT NULL DEFAULT 'wells',
+            mode TEXT NOT NULL DEFAULT 'name',
+            pipe_mode TEXT NOT NULL DEFAULT 'operator',
+            disp_mode TEXT NOT NULL DEFAULT 'name',
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+        """
+    )
 
     from wellnav.operators import normalize_stored_operators
     from wellnav.well_names import normalize_stored_well_names

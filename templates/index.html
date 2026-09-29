@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=cols1">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers1">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -31,7 +31,6 @@
     </div>
     <div class="topbar-meta">
       <span class="census hide-phone">{% if counts %}{{ "{:,}".format(counts.wells) }} wells · {{ "{:,}".format(counts.live_permits if counts.live_permits is defined else counts.permits) }} live permits{% else %}Texas RRC{% endif %}</span>
-      {% include 'partials/account_nav.html' %}
     </div>
   </header>
 
@@ -47,117 +46,110 @@
       </button>
     </div>
     <div class="layout workspace-panes">
-    <section id="search-panel" class="panel search-panel" role="tabpanel" aria-labelledby="tab-search">
-      <form id="search-form"
-            class="search-form"
-            action="/search"
-            method="get"
-            hx-get="/search"
-            hx-target="#results"
-            hx-push-url="true"
-            hx-indicator="#spinner"
-            hx-sync="this:abort"
-            hx-disabled-elt="find .primary">
-        <input type="hidden" name="offset" value="0">
-        <div class="control-row">
-          <label class="picker">
-            <span class="sr-only">What to search</span>
-            <select name="scope" aria-label="What to search">
-              <option value="wells" selected>Wells</option>
-              <option value="pipelines">Pipelines</option>
-              <option value="disposal">SWD</option>
-            </select>
-          </label>
-          <label class="picker">
-            <span class="sr-only">State</span>
-            <select name="state" aria-label="State">
-              <option value="tx"{% if state|default('tx') == 'tx' %} selected{% endif %}>Texas</option>
-              <option value="nm"{% if state|default('tx') == 'nm' %} selected{% endif %}>New Mexico</option>
-              <option value="ok"{% if state|default('tx') == 'ok' %} selected{% endif %}>Oklahoma</option>
-              <option value="la"{% if state|default('tx') == 'la' %} selected{% endif %}>Louisiana</option>
-              <option value="all"{% if state|default('tx') == 'all' %} selected{% endif %}>All states</option>
-            </select>
-          </label>
+    <form id="search-form"
+          class="search-form"
+          action="/search"
+          method="get"
+          hx-get="/search"
+          hx-target="#results"
+          hx-push-url="true"
+          hx-indicator="#spinner"
+          hx-sync="this:abort"
+          hx-disabled-elt="find .primary">
+      <input type="hidden" name="offset" value="0">
+      <input type="hidden" name="state" value="{{ state|default('tx') }}">
+      <div class="stage-search query-row">
+        <label class="sr-only" for="q">Search</label>
+        <div class="query-field">
+          <input id="q" name="q" type="search" autocomplete="off"
+                 placeholder="Search"
+                 hx-get="/wells/suggest"
+                 hx-trigger="input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
+                 hx-target="#operator-suggest"
+                 hx-include="[name=mode],[name=state]"
+                 hx-params="q,mode,state"
+                 hx-sync="this:abort">
+          <span class="ph ph-name">Lease or well name, e.g. UNIVERSITY 11</span>
+          <span class="ph ph-api">42-003-00290 · 30-045-08708 · 35-001-00002</span>
+          <span class="ph ph-operator">Operator name — adds a filter, e.g. OXY</span>
+          <span class="ph ph-pipe-op">Pipeline operator or P-5, e.g. ENTERPRISE</span>
+          <span class="ph ph-pipe-name">Pipeline or system name, e.g. BASIN</span>
+          <span class="ph ph-disp-name">Facility name, e.g. SOUTH TEXAS DISPOSAL</span>
+          <span class="ph ph-disp-op">Waste facility operator, e.g. R360</span>
+          <span class="ph ph-disp-permit">Permit number, e.g. STF-0006</span>
+        </div>
+        <div id="operator-suggest"></div>
+      </div>
+      <button type="submit" class="primary sr-only" name="commit" value="1">Search</button>
+
+      <section id="search-sheet" class="float-sheet" hidden>
+        <h2>Search</h2>
+        <p class="muted">Choose what the box at the top searches. This stays on your account.</p>
+        {% set scope = search_prefs.scope if search_prefs is defined else 'wells' %}
+        {% set well_mode = search_prefs.mode if search_prefs is defined else 'name' %}
+        {% set pipe_mode = search_prefs.pipe_mode if search_prefs is defined else 'operator' %}
+        {% set disp_mode = search_prefs.disp_mode if search_prefs is defined else 'name' %}
+        <div class="choice-tiles" role="group" aria-label="What to search">
+          <button type="button" class="choice-tile{% if scope == 'wells' %} is-on{% endif %}" data-pref="scope" data-value="wells" aria-pressed="{{ 'true' if scope == 'wells' else 'false' }}">Wells</button>
+          <button type="button" class="choice-tile{% if scope == 'pipelines' %} is-on{% endif %}" data-pref="scope" data-value="pipelines" aria-pressed="{{ 'true' if scope == 'pipelines' else 'false' }}">Pipelines</button>
+          <button type="button" class="choice-tile{% if scope == 'disposal' %} is-on{% endif %}" data-pref="scope" data-value="disposal" aria-pressed="{{ 'true' if scope == 'disposal' else 'false' }}">SWD</button>
+        </div>
+        <label class="scope-native">
+          <span class="sr-only">What to search</span>
+          <select name="scope" aria-label="What to search">
+            <option value="wells"{% if scope == 'wells' %} selected{% endif %}>Wells</option>
+            <option value="pipelines"{% if scope == 'pipelines' %} selected{% endif %}>Pipelines</option>
+            <option value="disposal"{% if scope == 'disposal' %} selected{% endif %}>SWD</option>
+          </select>
+        </label>
         <div class="modes modes-wells" role="tablist" aria-label="Well search">
           <label class="mode">
-            <input type="radio" name="mode" value="name" checked>
+            <input type="radio" name="mode" value="name"{% if well_mode == 'name' %} checked{% endif %}>
             <span>Well Name</span>
           </label>
           <label class="mode">
-            <input type="radio" name="mode" value="api">
+            <input type="radio" name="mode" value="api"{% if well_mode == 'api' %} checked{% endif %}>
             <span>API number</span>
           </label>
           <label class="mode">
-            <input type="radio" name="mode" value="operator">
+            <input type="radio" name="mode" value="operator"{% if well_mode == 'operator' %} checked{% endif %}>
             <span>Operator</span>
           </label>
         </div>
         <div class="modes modes-pipelines" role="tablist">
           <label class="mode">
-            <input type="radio" name="pipe_mode" value="operator" checked>
+            <input type="radio" name="pipe_mode" value="operator"{% if pipe_mode == 'operator' %} checked{% endif %}>
             <span>Operator</span>
           </label>
           <label class="mode">
-            <input type="radio" name="pipe_mode" value="name">
+            <input type="radio" name="pipe_mode" value="name"{% if pipe_mode == 'name' %} checked{% endif %}>
             <span>Pipeline name</span>
           </label>
         </div>
         <div class="modes modes-disposal" role="tablist">
           <label class="mode">
-            <input type="radio" name="disp_mode" value="name" checked>
+            <input type="radio" name="disp_mode" value="name"{% if disp_mode == 'name' %} checked{% endif %}>
             <span>Facility</span>
           </label>
           <label class="mode">
-            <input type="radio" name="disp_mode" value="operator">
+            <input type="radio" name="disp_mode" value="operator"{% if disp_mode == 'operator' %} checked{% endif %}>
             <span>Operator</span>
           </label>
           <label class="mode">
-            <input type="radio" name="disp_mode" value="permit">
+            <input type="radio" name="disp_mode" value="permit"{% if disp_mode == 'permit' %} checked{% endif %}>
             <span>Permit</span>
           </label>
-        </div>
-        </div>
-
-        <div class="query-row">
-          <label class="sr-only" for="q">Search</label>
-          <div class="query-field">
-            <input id="q" name="q" type="search" autocomplete="off"
-                   placeholder="Search"
-                   hx-get="/wells/suggest"
-                   hx-trigger="input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
-                   hx-target="#operator-suggest"
-                   hx-include="[name=mode],[name=state]"
-                   hx-params="q,mode,state"
-                   hx-sync="this:abort">
-            <span class="ph ph-name">Lease or well name, e.g. UNIVERSITY 11</span>
-            <span class="ph ph-api">42-003-00290 · 30-045-08708 · 35-001-00002</span>
-            <span class="ph ph-operator">Operator name — adds a filter, e.g. OXY</span>
-            <span class="ph ph-pipe-op">Pipeline operator or P-5, e.g. ENTERPRISE</span>
-            <span class="ph ph-pipe-name">Pipeline or system name, e.g. BASIN</span>
-            <span class="ph ph-disp-name">Facility name, e.g. SOUTH TEXAS DISPOSAL</span>
-            <span class="ph ph-disp-op">Waste facility operator, e.g. R360</span>
-            <span class="ph ph-disp-permit">Permit number, e.g. STF-0006</span>
-          </div>
-          <button type="submit" class="primary" name="commit" value="1">Search</button>
         </div>
         <div id="active-filters">
           {% include 'partials/filters.html' %}
         </div>
-      </form>
-      <div id="column-filters" hidden>
-        {% for key, value in (column_filters|default({}, true)).items() if value %}
-          <input type="hidden" name="cf_{{ key }}" value="{{ value }}">
-        {% endfor %}
-      </div>
-      <div id="operator-suggest"></div>
-
-      <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
-      <div id="results" class="results">
-        {% if results_html %}
-          {{ results_html | safe }}
-        {% endif %}
-      </div>
-    </section>
+      </section>
+    </form>
+    <div id="column-filters" hidden>
+      {% for key, value in (column_filters|default({}, true)).items() if value %}
+        <input type="hidden" name="cf_{{ key }}" value="{{ value }}">
+      {% endfor %}
+    </div>
 
     <section id="map-panel" class="panel map-panel" hx-on::after-swap="initWellMap()">
       {% if map_html %}
@@ -214,7 +206,9 @@
             </div>
           </div>
           <div id="well-map" class="well-map"></div>
-          <div class="map-details">
+          <div class="detail-sheet" id="detail-sheet">
+          <button type="button" class="pull-tab detail-pull" id="detail-tab" aria-expanded="false" aria-controls="detail-panel">Details</button>
+          <div class="map-details" id="detail-panel">
           <div class="map-head">
             <div>
               <h2 id="map-title">Map</h2>
@@ -231,26 +225,68 @@
             <div id="nav-links" class="route-row"></div>
           </div>
           </div>
+          </div>
         </div>
       {% endif %}
+    </section>
+
+    <section id="results-dock" class="results-dock" aria-label="Search results">
+      <button type="button" class="pull-tab" id="results-tab" aria-expanded="false" aria-controls="results">Results</button>
+      <div class="dock-body">
+        <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
+        <div id="results" class="results">
+          {% if results_html %}
+            {{ results_html | safe }}
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section id="saved-sheet" class="float-sheet" hidden>
+      <h2>Saved</h2>
+      <div id="saved-body"></div>
+    </section>
+    <section id="account-sheet" class="float-sheet" hidden>
+      <div id="account-body"></div>
+    </section>
+    <section id="team-layer" class="team-layer" hidden>
+      <div id="team-body"></div>
     </section>
     </div>
   </main>
 
-  <footer class="app-footer">
-    <button type="button" class="home-btn" onclick="goHome()" aria-label="Home">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>
+  <footer class="nav-footer">
+    <button type="button" class="nav-tile" data-open="search" aria-label="Search" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.2 15.2 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button type="button" class="nav-tile" data-open="saved" aria-label="Saved locations" aria-pressed="false"
+            hx-get="/saved" hx-target="#saved-body" hx-swap="innerHTML" hx-indicator="#spinner">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2 14.4 8.9l6.1.5-4.7 3.9 1.5 5.9L12 16.2 6.7 19.2l1.5-5.9L3.5 9.4l6.1-.5z"/></svg>
+      {% include 'partials/account_nav.html' %}
+    </button>
+    <button type="button" class="nav-tile" data-open="account" aria-label="Account" aria-pressed="false"
+            hx-get="/account" hx-target="#account-body" hx-swap="innerHTML">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="currentColor"/><path fill="currentColor" d="M5.2 19.2c.8-3 3.3-4.7 6.8-4.7s6 1.7 6.8 4.7c.2.6-.3 1.1-.9 1.1H6.1c-.6 0-1.1-.5-.9-1.1z"/></svg>
+    </button>
+    <button type="button" class="nav-tile" data-open="team" aria-label="Team" aria-pressed="false"
+            hx-get="/org" hx-target="#team-body" hx-swap="innerHTML" hx-indicator="#spinner">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="8" cy="9" r="2.3" fill="currentColor"/>
+        <circle cx="16.2" cy="8.2" r="2" fill="currentColor" opacity="0.85"/>
+        <circle cx="12.2" cy="6.2" r="2.5" fill="currentColor"/>
+        <path fill="currentColor" d="M3.6 18.4c.5-2.2 2.2-3.5 4.5-3.5 1.1 0 2 .3 2.7.8-.7.6-1.1 1.5-1.2 2.5H4.2c-.4 0-.7-.3-.6-.8z"/>
+        <path fill="currentColor" opacity="0.85" d="M14.2 15.2c2.1 0 3.6 1.1 4.2 3 .1.5-.2.8-.7.8h-4.2c.2-.8.2-1.6 0-2.3.4-.5.9-1 1.7-1.3-.3-.1-.6-.2-1-.2z"/>
+        <path fill="currentColor" d="M8.8 14.8h3.6c2.6 0 4.4 1.5 5 3.6.1.5-.3.9-.8.9H8.4c-.5 0-.9-.4-.8-.9.5-2.1 2.2-3.6 4.8-3.6z"/>
       </svg>
     </button>
-    <p class="app-copy">© 2026 Wellnav</p>
   </footer>
 
   <script src="/static/js/app-open.js?v=1"></script>
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=compact1"></script>
+  <script src="/static/js/map.js?v=layers1"></script>
+  <script src="/static/js/layers.js?v=1"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

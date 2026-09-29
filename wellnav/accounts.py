@@ -21,6 +21,7 @@ from wellnav.auth import (
 from wellnav.parsers import format_api, normalize_api
 from wellnav.states import state_from_api
 from wellnav.repository import REPO
+from wellnav.user_settings import get_search_prefs, save_search_prefs
 
 SEARCH_TTL = 30 * 60
 OPERATOR_TTL = 30 * 60
@@ -444,6 +445,12 @@ class UserStore:
             conn.commit()
         except sqlite3.OperationalError:
             conn.rollback()
+
+    def search_prefs(self, user_id: int) -> dict[str, str]:
+        return get_search_prefs(_conn(), user_id)
+
+    def save_search_prefs(self, user_id: int, updates: dict) -> dict[str, str]:
+        return save_search_prefs(_conn(), user_id, updates)
 
 
 def _saved_state(well: dict | None, api: str = "") -> str:

@@ -10,7 +10,7 @@
   {% if org %}
     {% set draft = draft or {} %}
     <form class="feedback-form" action="/feedback" method="post"
-          hx-post="/feedback" hx-target="#results" hx-indicator="#spinner">
+          hx-post="/feedback" hx-target="#team-body" hx-indicator="#spinner">
       <label>Type
         <select name="kind" aria-label="Feedback type">
           {% for key, label in kinds.items() %}
@@ -44,7 +44,7 @@
             {% if message.can_remove %}
               <form action="/feedback/{{ message.id }}/delete" method="post"
                     hx-post="/feedback/{{ message.id }}/delete"
-                    hx-target="#results" hx-indicator="#spinner">
+                    hx-target="#team-body" hx-indicator="#spinner">
                 <button type="submit" class="ghost danger-text">Remove</button>
               </form>
             {% endif %}
@@ -62,6 +62,6 @@
   <div class="account-actions">
     <a href="/" class="ghost">Back to search</a>
     <a href="/account" class="ghost"
-       hx-get="/account" hx-target="#results" hx-push-url="true">Account</a>
+       hx-get="/account" hx-target="#team-body" hx-push-url="true">Account</a>
   </div>
 </div>
