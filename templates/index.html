@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers4">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers5">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -69,21 +69,11 @@
       </div>
       <button type="submit" class="primary sr-only" name="commit" value="1">Search</button>
 
-      <section id="search-sheet" class="edge-panel edge-left" aria-label="Search settings">
-        <button type="button" class="edge-handle" data-edge="search" aria-expanded="false" aria-controls="search-sheet">Search</button>
-        <div class="edge-body">
-        <h2>Search</h2>
-        <p class="muted">Choose what the box at the top searches. This stays on your account.</p>
-        {% set scope = search_prefs.scope if search_prefs is defined else 'wells' %}
-        {% set well_mode = search_prefs.mode if search_prefs is defined else 'name' %}
-        {% set pipe_mode = search_prefs.pipe_mode if search_prefs is defined else 'operator' %}
-        {% set disp_mode = search_prefs.disp_mode if search_prefs is defined else 'name' %}
-        <div class="choice-tiles" role="group" aria-label="What to search">
-          <button type="button" class="choice-tile{% if scope == 'wells' %} is-on{% endif %}" data-pref="scope" data-value="wells" aria-pressed="{{ 'true' if scope == 'wells' else 'false' }}">Wells</button>
-          <button type="button" class="choice-tile{% if scope == 'pipelines' %} is-on{% endif %}" data-pref="scope" data-value="pipelines" aria-pressed="{{ 'true' if scope == 'pipelines' else 'false' }}">Pipelines</button>
-          <button type="button" class="choice-tile{% if scope == 'disposal' %} is-on{% endif %}" data-pref="scope" data-value="disposal" aria-pressed="{{ 'true' if scope == 'disposal' else 'false' }}">SWD</button>
-        </div>
-        <label class="scope-native">
+      {% set scope = search_prefs.scope if search_prefs is defined else 'wells' %}
+      {% set well_mode = search_prefs.mode if search_prefs is defined else 'name' %}
+      {% set pipe_mode = search_prefs.pipe_mode if search_prefs is defined else 'operator' %}
+      {% set disp_mode = search_prefs.disp_mode if search_prefs is defined else 'name' %}
+      <label class="scope-native">
           <span class="sr-only">What to search</span>
           <select name="scope" aria-label="What to search">
             <option value="wells"{% if scope == 'wells' %} selected{% endif %}>Wells</option>
@@ -91,6 +81,12 @@
             <option value="disposal"{% if scope == 'disposal' %} selected{% endif %}>SWD</option>
           </select>
         </label>
+      <section id="bottom-sheet" class="bottom-sheet" data-view="search" aria-label="Panel">
+        <button type="button" class="pull-tab" id="sheet-tab" aria-expanded="false" aria-label="Panel" aria-controls="sheet-views"></button>
+        <div id="sheet-views" class="sheet-views">
+        <section id="search-sheet" class="sheet-view" data-view="search" aria-label="Search settings">
+        <h2>Search</h2>
+        <p class="muted">How the box at the top matches. What it searches is in Settings.</p>
         <div class="modes modes-wells" role="tablist" aria-label="Well search">
           <label class="mode">
             <input type="radio" name="mode" value="name"{% if well_mode == 'name' %} checked{% endif %}>
@@ -132,6 +128,56 @@
         <div id="active-filters">
           {% include 'partials/filters.html' %}
         </div>
+      </section>
+        <section id="saved-sheet" class="sheet-view" data-view="saved" hidden aria-label="Saved locations">
+          <h2>Saved</h2>
+          <div id="saved-body"></div>
+        </section>
+        <section id="account-sheet" class="sheet-view" data-view="account" data-account-tab="account" hidden aria-label="Account">
+          <div class="sheet-tabs" role="tablist" aria-label="Account">
+            <button type="button" data-account-tab="account" role="tab">Account</button>
+            <button type="button" data-account-tab="team" role="tab"
+                    hx-get="/org" hx-target="#team-body" hx-swap="innerHTML" hx-indicator="#spinner">Team</button>
+          </div>
+          <div data-account-panel="account" id="account-body"></div>
+          <div data-account-panel="team" id="team-body" hidden></div>
+        </section>
+        <section id="settings-sheet" class="sheet-view" data-view="settings" hidden aria-label="Settings">
+          <h2>Settings</h2>
+          <p class="muted">What the search box looks for. Saved on your account.</p>
+          <div class="choice-tiles" role="group" aria-label="What to search">
+            <button type="button" class="choice-tile{% if scope == 'wells' %} is-on{% endif %}" data-pref="scope" data-value="wells" aria-pressed="{{ 'true' if scope == 'wells' else 'false' }}">Wells</button>
+            <button type="button" class="choice-tile{% if scope == 'pipelines' %} is-on{% endif %}" data-pref="scope" data-value="pipelines" aria-pressed="{{ 'true' if scope == 'pipelines' else 'false' }}">Pipelines</button>
+            <button type="button" class="choice-tile{% if scope == 'disposal' %} is-on{% endif %}" data-pref="scope" data-value="disposal" aria-pressed="{{ 'true' if scope == 'disposal' else 'false' }}">SWD</button>
+          </div>
+        </section>
+        <section id="results-dock" class="sheet-view" data-view="results" hidden aria-label="Search results">
+          <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
+          <div id="results" class="results">
+            {% if results_html %}
+              {{ results_html | safe }}
+            {% endif %}
+          </div>
+        </section>
+        <section id="detail-sheet" class="sheet-view" data-view="details" hidden aria-label="Location details">
+          <div class="map-details" id="detail-panel">
+            <div class="map-head">
+              <div>
+                <h2 id="map-title">Map</h2>
+                <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
+              </div>
+            </div>
+            <p id="pipeline-status" class="muted pipeline-status"></p>
+            <div id="pipeline-owners" class="pipeline-owners" hidden></div>
+            <p id="disposal-status" class="muted pipeline-status"></p>
+            <ul id="mapped-list" class="mapped-list"></ul>
+            <ul id="offline-routes" class="offline-routes" hidden aria-label="Routes to pinned locations"></ul>
+            <div class="map-footer">
+              <div id="map-coords" class="coord-bar"></div>
+              <div id="nav-links" class="route-row"></div>
+            </div>
+          </div>
+        </section>
         </div>
       </section>
     </form>
@@ -196,59 +242,10 @@
             </div>
           </div>
           <div id="well-map" class="well-map"></div>
-          <div class="detail-sheet" id="detail-sheet">
-          <button type="button" class="pull-tab detail-pull" id="detail-tab" aria-expanded="false" aria-controls="detail-panel">Details</button>
-          <div class="map-details" id="detail-panel">
-          <div class="map-head">
-            <div>
-              <h2 id="map-title">Map</h2>
-              <p id="map-sub" class="muted">Add wells from the table to pin them on the map.</p>
-            </div>
-          </div>
-          <p id="pipeline-status" class="muted pipeline-status"></p>
-          <div id="pipeline-owners" class="pipeline-owners" hidden></div>
-          <p id="disposal-status" class="muted pipeline-status"></p>
-          <ul id="mapped-list" class="mapped-list"></ul>
-          <ul id="offline-routes" class="offline-routes" hidden aria-label="Routes to pinned locations"></ul>
-          <div class="map-footer">
-            <div id="map-coords" class="coord-bar"></div>
-            <div id="nav-links" class="route-row"></div>
-          </div>
-          </div>
-          </div>
         </div>
       {% endif %}
     </section>
 
-    <section id="results-dock" class="results-dock" aria-label="Search results">
-      <button type="button" class="pull-tab" id="results-tab" aria-expanded="false" aria-controls="results">Results</button>
-      <div class="dock-body">
-        <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
-        <div id="results" class="results">
-          {% if results_html %}
-            {{ results_html | safe }}
-          {% endif %}
-        </div>
-      </div>
-    </section>
-
-    <section id="saved-sheet" class="edge-panel edge-left" aria-label="Saved locations">
-      <button type="button" class="edge-handle" data-edge="saved" aria-expanded="false" aria-controls="saved-sheet">Saved</button>
-      <div class="edge-body">
-        <h2>Saved</h2>
-        <div id="saved-body"></div>
-      </div>
-    </section>
-    <section id="account-sheet" class="edge-panel edge-left" aria-label="Account">
-      <button type="button" class="edge-handle" data-edge="account" aria-expanded="false" aria-controls="account-sheet">Account</button>
-      <div class="edge-body">
-        <div id="account-body"></div>
-      </div>
-    </section>
-    <section id="team-layer" class="edge-panel edge-left edge-wide" aria-label="Team">
-      <button type="button" class="edge-handle" data-edge="team" aria-expanded="false" aria-controls="team-layer">Team</button>
-      <div class="edge-body" id="team-body"></div>
-    </section>
     </div>
   </main>
 
@@ -268,17 +265,9 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="currentColor"/><path fill="currentColor" d="M5.2 19.2c.8-3 3.3-4.7 6.8-4.7s6 1.7 6.8 4.7c.2.6-.3 1.1-.9 1.1H6.1c-.6 0-1.1-.5-.9-1.1z"/></svg>
       <span>Account</span>
     </button>
-    <button type="button" class="nav-tile" data-open="team" aria-label="Team" aria-pressed="false"
-            hx-get="/org" hx-target="#team-body" hx-swap="innerHTML" hx-indicator="#spinner">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="8" cy="9" r="2.3" fill="currentColor"/>
-        <circle cx="16.2" cy="8.2" r="2" fill="currentColor" opacity="0.85"/>
-        <circle cx="12.2" cy="6.2" r="2.5" fill="currentColor"/>
-        <path fill="currentColor" d="M3.6 18.4c.5-2.2 2.2-3.5 4.5-3.5 1.1 0 2 .3 2.7.8-.7.6-1.1 1.5-1.2 2.5H4.2c-.4 0-.7-.3-.6-.8z"/>
-        <path fill="currentColor" opacity="0.85" d="M14.2 15.2c2.1 0 3.6 1.1 4.2 3 .1.5-.2.8-.7.8h-4.2c.2-.8.2-1.6 0-2.3.4-.5.9-1 1.7-1.3-.3-.1-.6-.2-1-.2z"/>
-        <path fill="currentColor" d="M8.8 14.8h3.6c2.6 0 4.4 1.5 5 3.6.1.5-.3.9-.8.9H8.4c-.5 0-.9-.4-.8-.9.5-2.1 2.2-3.6 4.8-3.6z"/>
-      </svg>
-      <span>Team</span>
+    <button type="button" class="nav-tile" data-open="settings" aria-label="Settings" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm8.2 3.1-1.7-.3a6.7 6.7 0 0 0-.6-1.4l1-1.4a.9.9 0 0 0-.1-1.1l-1.3-1.3a.9.9 0 0 0-1.1-.1l-1.4 1a6.7 6.7 0 0 0-1.4-.6L13.3 3.8a.9.9 0 0 0-.9-.8h-1.8a.9.9 0 0 0-.9.8l-.3 1.7a6.7 6.7 0 0 0-1.4.6l-1.4-1a.9.9 0 0 0-1.1.1L3.2 6.1a.9.9 0 0 0-.1 1.1l1 1.4a6.7 6.7 0 0 0-.6 1.4l-1.7.3a.9.9 0 0 0-.8.9v1.8c0 .4.3.8.8.9l1.7.3c.1.5.3 1 .6 1.4l-1 1.4a.9.9 0 0 0 .1 1.1l1.3 1.3c.3.3.8.4 1.1.1l1.4-1c.4.3.9.5 1.4.6l.3 1.7c.1.5.5.8.9.8h1.8c.4 0 .8-.3.9-.8l.3-1.7c.5-.1 1-.3 1.4-.6l1.4 1c.3.3.8.2 1.1-.1l1.3-1.3a.9.9 0 0 0 .1-1.1l-1-1.4c.3-.4.5-.9.6-1.4l1.7-.3c.5-.1.8-.5.8-.9v-1.8a.9.9 0 0 0-.8-.9z"/></svg>
+      <span>Settings</span>
     </button>
   </footer>
 
@@ -286,8 +275,8 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers1"></script>
-  <script src="/static/js/layers.js?v=2"></script>
+  <script src="/static/js/map.js?v=layers5"></script>
+  <script src="/static/js/layers.js?v=3"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

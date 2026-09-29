@@ -92,26 +92,6 @@ const MAP_CHROME_HTML = `
     </div>
   </div>
   <div id="well-map" class="well-map"></div>
-  <div class="detail-sheet" id="detail-sheet">
-  <button type="button" class="pull-tab detail-pull" id="detail-tab" aria-expanded="false" aria-controls="detail-panel">Details</button>
-  <div class="map-details" id="detail-panel">
-    <div class="map-head">
-      <div>
-        <h2 id="map-title">Map</h2>
-        <p id="map-sub" class="muted"></p>
-      </div>
-    </div>
-    <p id="pipeline-status" class="muted pipeline-status"></p>
-    <div id="pipeline-owners" class="pipeline-owners" hidden></div>
-    <p id="disposal-status" class="muted pipeline-status"></p>
-    <ul id="mapped-list" class="mapped-list"></ul>
-    <ul id="offline-routes" class="offline-routes" hidden aria-label="Routes to pinned locations"></ul>
-    <div class="map-footer">
-      <div id="map-coords" class="coord-bar"></div>
-      <div id="nav-links" class="route-row"></div>
-    </div>
-  </div>
-  </div>
 </div>`;
 
 let map;
@@ -2675,7 +2655,7 @@ function ensureChromeNodes() {
     list.className = "mapped-list";
     mapEl.insertAdjacentElement("afterend", list);
   }
-  let footer = chrome.querySelector(".map-footer");
+  let footer = document.querySelector(".map-footer");
   if (!footer) {
     footer = document.createElement("div");
     footer.className = "map-footer";

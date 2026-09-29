@@ -27,50 +27,52 @@
     }).catch(function () {});
   }
 
-  const EDGE_IDS = {
-    search: "search-sheet",
-    saved: "saved-sheet",
-    account: "account-sheet",
-    team: "team-layer",
-  };
+  const VIEWS = ["search", "saved", "account", "settings", "results", "details"];
 
-  function setEdge(name, open) {
-    Object.entries(EDGE_IDS).forEach(([key, id]) => {
-      const el = sheet(id);
-      if (!el) return;
-      const on = key === name;
-      el.classList.toggle("is-active", on);
-      el.classList.toggle("is-open", on && open);
-      const handle = el.querySelector(".edge-handle");
-      if (handle) handle.setAttribute("aria-expanded", on && open ? "true" : "false");
+  function showView(name, open) {
+    const dock = sheet("bottom-sheet");
+    const tab = sheet("sheet-tab");
+    if (dock) {
+      dock.dataset.view = name || "";
+      dock.classList.toggle("is-open", !!open);
+      if (!open) dock.style.height = "";
+      else if (!dock.style.height) dock.style.height = "";
+    }
+    if (tab) {
+      tab.setAttribute("aria-expanded", open ? "true" : "false");
+      tab.setAttribute("aria-label", name ? name : "Panel");
+    }
+    document.querySelectorAll("#sheet-views > .sheet-view").forEach((el) => {
+      el.hidden = el.dataset.view !== name;
     });
     document.querySelectorAll(".nav-tile[data-open]").forEach((button) => {
-      button.setAttribute("aria-pressed", button.dataset.open === name ? "true" : "false");
+      button.setAttribute("aria-pressed", open && button.dataset.open === name ? "true" : "false");
     });
   }
 
   function closeFloats() {
-    setEdge("", false);
+    const dock = sheet("bottom-sheet");
+    showView(dock ? dock.dataset.view : "", false);
   }
 
   function openLayer(name) {
-    setEdge(name, true);
+    if (!VIEWS.includes(name)) return;
+    showView(name, true);
   }
 
   function setDock(open, height) {
-    const dock = sheet("results-dock");
-    const tab = sheet("results-tab");
+    const dock = sheet("bottom-sheet");
     if (!dock) return;
-    dock.classList.toggle("is-open", open);
-    if (tab) tab.setAttribute("aria-expanded", open ? "true" : "false");
-    if (typeof height === "number") dock.style.height = Math.round(height) + "px";
+    if (open) showView("results", true);
+    else showView(dock.dataset.view, false);
+    if (typeof height === "number" && open) dock.style.height = Math.round(height) + "px";
     else if (!open) dock.style.height = "";
   }
 
   function openDock() {
-    const dock = sheet("results-dock");
+    const dock = sheet("bottom-sheet");
     if (!dock) return;
-    if (!dock.classList.contains("is-open")) setDock(true);
+    if (!(dock.classList.contains("is-open") && dock.dataset.view === "results")) setDock(true);
   }
 
   function shutDock() {
@@ -88,22 +90,22 @@
   }
 
   function setDetail(open) {
-    const panel = sheet("detail-sheet");
-    const tab = sheet("detail-tab");
-    if (!panel) return;
-    panel.classList.toggle("is-open", open);
-    if (tab) tab.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) showView("details", true);
+    else {
+      const dock = sheet("bottom-sheet");
+      if (dock && dock.dataset.view === "details") showView("details", false);
+    }
   }
 
   function noteMapFocus(focus) {
-    const tab = sheet("detail-tab");
-    if (!tab) return;
-    tab.classList.toggle("has-focus", !!focus && focus !== "idle");
+    const tab = sheet("sheet-tab");
+    if (tab) tab.classList.toggle("has-focus", !!focus && focus !== "idle");
+    if (focus && focus !== "idle") showView("details", true);
   }
 
   function bindDockDrag() {
-    const dock = sheet("results-dock");
-    const tab = sheet("results-tab");
+    const dock = sheet("bottom-sheet");
+    const tab = sheet("sheet-tab");
     if (!dock || !tab || tab.dataset.bound === "1") return;
     tab.dataset.bound = "1";
     let startY = 0;
@@ -146,7 +148,7 @@
         return;
       }
       if (dock.classList.contains("is-open")) shutDock();
-      else setDock(true, Math.min(window.innerHeight * 0.46, 420));
+      else showView(dock.dataset.view || "search", true);
     });
   }
 
@@ -198,15 +200,15 @@
       }
       return;
     }
-    const handle = event.target.closest(".edge-handle[data-edge]");
-    if (handle) {
-      const name = handle.dataset.edge;
-      const panel = sheet(EDGE_IDS[name]);
-      if (!panel || !panel.classList.contains("is-active")) return;
-      const open = !panel.classList.contains("is-open");
-      panel.classList.toggle("is-open", open);
-      handle.setAttribute("aria-expanded", open ? "true" : "false");
-      return;
+    const accountTab = event.target.closest("#account-sheet [data-account-tab]");
+    if (accountTab) {
+      const page = sheet("account-sheet");
+      const name = accountTab.dataset.accountTab;
+      page.dataset.accountTab = name;
+      page.querySelectorAll("[data-account-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.accountPanel !== name;
+      });
+      if (name !== "team") return;
     }
     const tile = event.target.closest(".nav-tile[data-open]");
     if (!tile) return;
@@ -229,11 +231,6 @@
 
   document.getElementById("search-form")?.addEventListener("submit", () => {
     openDock();
-  });
-
-  document.getElementById("detail-tab")?.addEventListener("click", () => {
-    const panel = sheet("detail-sheet");
-    setDetail(!(panel && panel.classList.contains("is-open")));
   });
 
   document.addEventListener("keydown", (event) => {
