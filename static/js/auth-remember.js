@@ -48,6 +48,19 @@
     store.removeItem(KEY);
   }
 
+  var PINNED_WELLS = "wellnav.mappedWells";
+
+  function clearPinnedWells() {
+    [localStore(), sessionStore()].forEach(function (store) {
+      if (!store) return;
+      try {
+        store.removeItem(PINNED_WELLS);
+      } catch (err) {
+        /* private mode */
+      }
+    });
+  }
+
   function stage(payload) {
     var store = sessionStore();
     if (!store) return;
@@ -156,6 +169,7 @@
   function boot() {
     if (!document.body) return;
     if (document.body.classList.contains("gate")) {
+      clearPinnedWells();
       forgetFromQuery();
       var box = document.querySelector("form.auth-form [name=remember]");
       if (box && box.form) settleLoginForm(box.form);

@@ -167,6 +167,7 @@ class GateTests(unittest.TestCase):
         script = client.get("/static/js/auth-remember.js")
         self.assertEqual(script.status_code, 200)
         self.assertIn("wellnav.remember", script.text)
+        self.assertIn("wellnav.mappedWells", script.text)
         self.assertIn('data-remember', script.text)
         self.assertIn('forget', script.text)
         index = (Path(__file__).resolve().parents[1] / "templates" / "index.html").read_text(encoding="utf-8")

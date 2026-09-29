@@ -269,6 +269,7 @@ function loadStore() {
   return emptyStore();
 }
 
+/* Tab and device copies for the signed-in session. The sign-in gate clears both on logout. */
 function saveStore(store) {
   const raw = JSON.stringify(store);
   try {
