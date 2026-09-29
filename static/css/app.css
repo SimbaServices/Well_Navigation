@@ -231,11 +231,11 @@ body.is-offline .net-banner { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="operator"]:checked) .ph-disp-op { display: block; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked):has([name=disp_mode][value="permit"]:checked) .ph-disp-permit { display: block; }
 .search-form:has(select[name=scope] option[value="wells"]:checked) .modes-pipelines,
-.search-form:has(select[name=scope] option[value="wells"]:checked) .modes-disposal { display: none; }
+.search-form:has(select[name=scope] option[value="wells"]:checked) .modes-disposal { display: none !important; }
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) .modes-wells,
-.search-form:has(select[name=scope] option[value="pipelines"]:checked) .modes-disposal { display: none; }
+.search-form:has(select[name=scope] option[value="pipelines"]:checked) .modes-disposal { display: none !important; }
 .search-form:has(select[name=scope] option[value="disposal"]:checked) .modes-wells,
-.search-form:has(select[name=scope] option[value="disposal"]:checked) .modes-pipelines { display: none; }
+.search-form:has(select[name=scope] option[value="disposal"]:checked) .modes-pipelines { display: none !important; }
 .search-form:has(select[name=scope] option[value="pipelines"]:checked) #active-filters,
 .search-form:has(select[name=scope] option[value="disposal"]:checked) #active-filters { display: none; }
 .query-field:has(input:not(:placeholder-shown)) .ph { display: none !important; }
@@ -2045,6 +2045,30 @@ body.gate .gate-tagline {
   background: rgba(212, 160, 23, 0.14);
 }
 #settings-sheet > p.muted { font-size: 0.75rem; margin: 0.35rem 0 0.1rem; }
+.settings-basemap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  margin: 0.2rem 0 0.45rem;
+  padding: 0.28rem 0.5rem;
+  border: 1px solid rgba(232, 236, 217, 0.28);
+  border-radius: 6px;
+}
+.settings-offline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.55rem;
+}
+.settings-offline .primary {
+  min-height: 2rem;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.settings-offline #offline-status { flex-basis: 100%; }
 .nav-tile[aria-pressed="true"] {
   color: var(--accent);
   background: #222a1c;

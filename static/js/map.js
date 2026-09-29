@@ -3571,6 +3571,7 @@ function addAndSelectWell(btn) {
   upsertIntoStore(well, { select: true });
   revealMapOnPhone();
   paint({ fit: !existed });
+  if (window.WellnavLayers) window.WellnavLayers.closeFloats();
 }
 
 function mapAllVisibleWells() {
@@ -3591,6 +3592,7 @@ function mapAllVisibleWells() {
   }
   revealMapOnPhone();
   paint({ fit: addedAny || !!store.order.length });
+  if (window.WellnavLayers) window.WellnavLayers.closeFloats();
 }
 
 function clearMappedWells() {
