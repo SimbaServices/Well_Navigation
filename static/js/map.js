@@ -1,24 +1,14 @@
 const BASE_LAYERS = {
-  imagery: () =>
-    L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { attribution: "Tiles © Esri", maxZoom: 19 }
-    ),
   streets: () =>
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
       { attribution: "Tiles © Esri", maxZoom: 19 }
     ),
-  topo: () =>
+  imagery: () =>
     L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       { attribution: "Tiles © Esri", maxZoom: 19 }
     ),
-  osm: () =>
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap",
-      maxZoom: 19,
-    }),
   usgs: () =>
     L.tileLayer(
       "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
@@ -27,12 +17,13 @@ const BASE_LAYERS = {
 };
 
 const BASEMAP_LABELS = {
-  imagery: "Esri Imagery",
-  streets: "Esri Streets",
-  topo: "Esri Topo",
-  osm: "OpenStreetMap",
-  usgs: "USGS Topo",
+  streets: "Street",
+  imagery: "Satellite",
+  usgs: "Offline",
 };
+
+const OFFLINE_TIP =
+  "Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and switches the base layer to Offline.";
 
 const STORAGE_KEY = "wellnav.mappedWells";
 const ROUTE_PINS_KEY = "wellnav.routePins";
@@ -76,13 +67,13 @@ const MAP_CHROME_HTML = `
           </span>
         </span>
       </span>
-      <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
+      <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
       <div class="offline-pack">
         <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
         <button type="button" class="ghost" id="offline-save">Save for offline</button>
         <span class="info-tip">
           <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>
+          <span class="info-tip-pop" popover="manual" hidden role="tooltip">${OFFLINE_TIP}</span>
         </span>
         <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
         <p id="offline-status" class="muted"></p>
@@ -413,7 +404,8 @@ function removeFromStore(api) {
 }
 
 function preferredBasemap() {
-  return localStorage.getItem("wellnav.basemap") || "imagery";
+  const saved = localStorage.getItem("wellnav.basemap");
+  return saved && BASEMAP_LABELS[saved] ? saved : "imagery";
 }
 
 function selectedBasemap() {
@@ -1515,7 +1507,7 @@ function ensureOfflineControls() {
       '<button type="button" class="ghost" id="offline-save">Save for offline</button>' +
       '<span class="info-tip">' +
       '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>' +
-      '<span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>' +
+      `<span class="info-tip-pop" popover="manual" hidden role="tooltip">${OFFLINE_TIP}</span>` +
       "</span>" +
       '<button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>' +
       '<p id="offline-status" class="muted"></p>';
@@ -1569,11 +1561,10 @@ function bindOfflinePack() {
   saveBtn.dataset.bound = "1";
   saveBtn.addEventListener("click", async () => {
     if (!map || saveBtn.dataset.busy === "1") return;
+    if (selectedBasemap() !== "usgs") setBasemap("usgs");
     const basemap = selectedBasemap();
     if (!offline.cacheableBasemap(basemap)) {
-      setOfflineStatus(
-        `${basemapLabel(basemap)} can't be saved for offline use. Choose USGS Topo, then save again.`
-      );
+      setOfflineStatus("Could not switch to the Offline map.");
       return;
     }
     const packed = collectRouteDestinations();
@@ -1652,14 +1643,13 @@ function applyNetworkState() {
 function bindBasemapSelect() {
   const select = document.getElementById("basemap-select");
   if (!select) return;
-  if (!select.options.length) {
-    Object.entries(BASEMAP_LABELS).forEach(([key, label]) => {
-      const opt = document.createElement("option");
-      opt.value = key;
-      opt.textContent = label;
-      select.appendChild(opt);
-    });
-  }
+  select.replaceChildren();
+  Object.entries(BASEMAP_LABELS).forEach(([key, label]) => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = label;
+    select.appendChild(opt);
+  });
   select.value = preferredBasemap();
   if (select.dataset.bound === "1") return;
   select.addEventListener("change", () => setBasemap(select.value));
@@ -2700,7 +2690,7 @@ function ensureChromeNodes() {
     if (actions) {
       const disposal = document.createElement("label");
       disposal.className = "overlay-toggle";
-      disposal.innerHTML = '<input type="checkbox" id="disposal-toggle"> Waste sites';
+      disposal.innerHTML = '<input type="checkbox" id="disposal-toggle"> SWD';
       actions.appendChild(disposal);
     }
   }
@@ -3465,6 +3455,62 @@ function clearMappedWells() {
   paint({ fit: false });
 }
 
+function goHome() {
+  const form = document.getElementById("search-form");
+  const q = document.getElementById("q");
+  if (q) {
+    q.value = "";
+    delete q.dataset.suppressLive;
+  }
+  if (form) {
+    const scope = form.querySelector("[name=scope]");
+    if (scope) scope.value = "wells";
+    const state = form.querySelector("[name=state]");
+    if (state) state.value = "tx";
+    form.querySelectorAll("[name=mode]").forEach((el) => {
+      el.checked = el.value === "name";
+    });
+    form.querySelectorAll("[name=pipe_mode]").forEach((el) => {
+      el.checked = el.value === "operator";
+    });
+    form.querySelectorAll("[name=disp_mode]").forEach((el) => {
+      el.checked = el.value === "name";
+    });
+    const offset = form.querySelector("[name=offset]");
+    if (offset) offset.value = "0";
+  }
+  const filters = document.getElementById("active-filters");
+  if (filters) {
+    filters.innerHTML =
+      '<input type="hidden" name="sort" value="name"><input type="hidden" name="dir" value="asc">';
+  }
+  const cols = document.getElementById("column-filters");
+  if (cols) cols.replaceChildren();
+  const suggest = document.getElementById("operator-suggest");
+  if (suggest) suggest.replaceChildren();
+  const results = document.getElementById("results");
+  if (results) {
+    results.innerHTML =
+      '<div class="empty">Search wells, pipelines, and waste sites in Texas, New Mexico, Oklahoma, and Louisiana. Pick a state or All, then search.</div>';
+  }
+  try {
+    history.pushState({}, "", "/");
+  } catch {
+    /* ignore */
+  }
+  disposalFocus = null;
+  disposalPopupPinned = false;
+  if (map) map.closePopup();
+  if (window.WellnavDisposalUx && window.WellnavDisposalUx.hideWaitPanel) {
+    window.WellnavDisposalUx.hideWaitPanel();
+  }
+  clearPipelinePin();
+  clearPipelineFocus();
+  clearMappedWells();
+  applySearchContext({ refetch: false });
+  showWorkspacePane("search");
+}
+
 function markRowsSaved(apis) {
   const wanted = new Set((apis || []).filter(Boolean));
   if (!wanted.size) return;
@@ -3566,6 +3612,7 @@ window.toggleWellOnMap = toggleWellOnMap;
 window.addAndSelectWell = addAndSelectWell;
 window.mapAllVisibleWells = mapAllVisibleWells;
 window.clearMappedWells = clearMappedWells;
+window.goHome = goHome;
 window.syncMapButtons = syncMapButtons;
 window.initWellMap = initWellMap;
 window.setBasemap = setBasemap;
@@ -3585,8 +3632,11 @@ function wellSearchMode() {
 }
 
 function liveWellQuery() {
-  const mode = wellSearchMode();
-  return searchScope() === "wells" && (mode === "name" || mode === "api");
+  return searchScope() === "wells" && wellSearchMode() === "api";
+}
+
+function wellNameSuggest() {
+  return searchScope() === "wells" && wellSearchMode() === "name";
 }
 
 function refreshLiveResults() {
@@ -3623,7 +3673,16 @@ function applySearchContext({ refetch = false } = {}) {
       q.setAttribute("hx-headers", '{"X-Live-Filter":"1"}');
       q.removeAttribute("hx-params");
     } else {
-      q.setAttribute("hx-get", pipelines ? "/pipelines/suggest" : disposal ? "/disposal/suggest" : "/operators");
+      q.setAttribute(
+        "hx-get",
+        pipelines
+          ? "/pipelines/suggest"
+          : disposal
+            ? "/disposal/suggest"
+            : wellNameSuggest()
+              ? "/wells/suggest"
+              : "/operators"
+      );
       q.setAttribute("hx-trigger", SUGGEST_TRIGGER);
       q.setAttribute("hx-target", "#operator-suggest");
       q.setAttribute("hx-include", "[name=mode],[name=state],[name=pipe_mode],[name=disp_mode],[name=scope]");
@@ -3839,10 +3898,32 @@ document.addEventListener("htmx:sendError", (event) => {
   HTMLFormElement.prototype.submit.call(elt);
 });
 
-document.body.addEventListener("click", (event) => {
-  if (event.target.closest("#account-nav a, #account-nav button, #search-form .primary")) {
-    showWorkspacePane("search");
+function setAccountMenu(open) {
+  const toggle = document.querySelector("#account-nav .nav-toggle");
+  const menu = document.getElementById("account-menu");
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
   }
+  if (menu) menu.hidden = !open;
+}
+
+document.body.addEventListener("click", (event) => {
+  const toggle = event.target.closest(".nav-toggle");
+  if (toggle) {
+    setAccountMenu(toggle.getAttribute("aria-expanded") !== "true");
+    return;
+  }
+  const inMenu = event.target.closest("#account-menu");
+  if (!inMenu) setAccountMenu(false);
+  if (event.target.closest("#account-nav a, #account-nav button:not(.nav-toggle), #search-form .primary")) {
+    showWorkspacePane("search");
+    if (inMenu) setAccountMenu(false);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") setAccountMenu(false);
 });
 
 document.getElementById("search-form")?.addEventListener("submit", () => {

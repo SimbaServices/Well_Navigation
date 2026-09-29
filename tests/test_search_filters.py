@@ -371,6 +371,27 @@ class ColumnFilterTemplateTests(unittest.TestCase):
         self.assertIn("col-filter-dot", html)
         self.assertNotIn(">Filter<", html.split("<form", 1)[0])
 
+    def test_suggest_wells_returns_first_ten_alphabetically(self) -> None:
+        for index in range(12):
+            _insert_well(
+                self.conn,
+                api8=f"5000{index:04d}",
+                well_name=f"ZEBRA {index:02d}",
+                lease_name="ZEBRA",
+                well_no=str(index),
+                county="REEVES",
+                operator="PIONEER",
+                operator_number="667548",
+            )
+        self.conn.commit()
+        rows = self.repo.suggest_wells("zebra", state="tx", limit=10)
+        self.assertEqual(len(rows), 10)
+        names = [row["well_name"] for row in rows]
+        self.assertEqual(names, sorted(names, key=str.upper))
+        self.assertEqual(names[0], "ZEBRA 00")
+        self.assertNotIn("ZEBRA 10", names)
+        self.assertEqual(self.repo.suggest_wells("z", state="tx"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

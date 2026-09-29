@@ -187,7 +187,8 @@ def run_flow(page, prefix: str, pixels: tuple[int, int]) -> None:
     save_play_png(shot, pixels)
 
     page.locator("#tab-search").click()
-    page.locator("#account-nav a[href='/account']").click()
+    page.locator("#account-nav .nav-toggle").click()
+    page.locator("#account-menu a[href='/account']").click()
     page.wait_for_selector(".account-card", state="attached", timeout=20000)
     page.evaluate(
         """() => {

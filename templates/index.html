@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=routes2">
+  <link rel="stylesheet" href="/static/css/app.css?v=menu1">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -65,7 +65,7 @@
             <select name="scope" aria-label="What to search">
               <option value="wells" selected>Wells</option>
               <option value="pipelines">Pipelines</option>
-              <option value="disposal">Waste sites</option>
+              <option value="disposal">SWD</option>
             </select>
           </label>
           <label class="picker">
@@ -123,7 +123,7 @@
           <div class="query-field">
             <input id="q" name="q" type="search" autocomplete="off"
                    placeholder="Search"
-                   hx-get="/operators"
+                   hx-get="/wells/suggest"
                    hx-trigger="input[this.value.trim().length>=2] changed delay:300ms, keyup[this.value.trim().length>=2] changed delay:300ms, search[this.value.trim().length>=2]"
                    hx-target="#operator-suggest"
                    hx-include="[name=mode],[name=state]"
@@ -150,7 +150,7 @@
         {% endfor %}
       </div>
       <div id="operator-suggest"></div>
-      <p class="hint hint-name">The table filters as you type a well name. Add an operator filter to narrow those wells.</p>
+      <p class="hint hint-name">Well names update as you type. The first 10 matches appear in alphabetical order. Pick one to search that name.</p>
       <p class="hint hint-api">The table filters as you type an API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
       <p class="hint hint-operator">Add an operator filter. Pick another to add more, then search by well name to narrow those wells.</p>
       <p class="hint hint-pipe-op">Search Texas T-4, New Mexico EIA/BLM ROW, Oklahoma EIA, or Louisiana EIA/BSEE lines.</p>
@@ -182,11 +182,9 @@
               <label class="basemap-picker">
                 Base layer
                 <select id="basemap-select" hx-on:change="setBasemap(this.value)">
-                  <option value="imagery">Esri Imagery</option>
-                  <option value="streets">Esri Streets</option>
-                  <option value="topo">Esri Topo</option>
-                  <option value="osm">OpenStreetMap</option>
-                  <option value="usgs">USGS Topo</option>
+                  <option value="streets">Street</option>
+                  <option value="imagery">Satellite</option>
+                  <option value="usgs">Offline</option>
                 </select>
               </label>
               <span class="overlay-with-tip">
@@ -204,13 +202,13 @@
                   </span>
                 </span>
               </span>
-              <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
+              <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
               <div class="offline-pack">
                 <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
                 <button type="button" class="ghost" id="offline-save">Save for offline</button>
                 <span class="info-tip">
                   <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and the base layer selected at that moment. Choose USGS Topo. Esri and OpenStreetMap stay online-only.</span>
+                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and switches the base layer to Offline.</span>
                 </span>
                 <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
                 <p id="offline-status" class="muted"></p>
@@ -241,10 +239,19 @@
     </div>
   </main>
 
+  <footer class="app-footer">
+    <button type="button" class="home-btn" onclick="goHome()" aria-label="Home">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>
+      </svg>
+    </button>
+    <p class="app-copy">© 2026 Wellnav</p>
+  </footer>
+
   <script src="/static/js/auth-remember.js?v=1"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=4"></script>
-  <script src="/static/js/map.js?v=share1"></script>
+  <script src="/static/js/map.js?v=menu1"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

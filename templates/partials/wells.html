@@ -57,29 +57,32 @@
   {% if from_cache %}<span class="pill">cached</span>{% endif %}
 </p>
 {%- endmacro %}
+{% macro page_link(page_offset, label) -%}
+<a href="{{ page_href(page_offset) }}"
+   hx-get="{{ page_href(page_offset) }}"
+   hx-include="#column-filters"
+   hx-target="#results"
+   hx-push-url="true"
+   hx-indicator="#spinner">{{ label }}</a>
+{%- endmacro %}
 {% macro pager_block() -%}
-<div id="wells-pager" class="pager"{% if column_partial %} hx-swap-oob="outerHTML"{% endif %}{% if total <= page_size %} hidden{% endif %}>
+<nav id="wells-pager" class="pager" aria-label="Result pages"{% if column_partial %} hx-swap-oob="outerHTML"{% endif %}{% if total <= page_size %} hidden{% endif %}>
   {% if offset > 0 %}
-    <a href="{{ page_href([offset - page_size, 0]|max) }}"
-       hx-get="{{ page_href([offset - page_size, 0]|max) }}"
-       hx-include="#column-filters"
-       hx-target="#results"
-       hx-push-url="true"
-       hx-indicator="#spinner">
-      Previous
-    </a>
+    {{ page_link([offset - page_size, 0]|max, "Previous") }}
   {% endif %}
+  {% for crumb in page_crumbs(offset, page_size, total) %}
+    {% if crumb.kind == "gap" %}
+      <span class="pager-gap" aria-hidden="true">…</span>
+    {% elif crumb.current %}
+      <span class="pager-current" aria-current="page">{{ crumb.n }}</span>
+    {% else %}
+      {{ page_link(crumb.offset, crumb.n) }}
+    {% endif %}
+  {% endfor %}
   {% if offset + page_size < total %}
-    <a href="{{ page_href(offset + page_size) }}"
-       hx-get="{{ page_href(offset + page_size) }}"
-       hx-include="#column-filters"
-       hx-target="#results"
-       hx-push-url="true"
-       hx-indicator="#spinner">
-      Next
-    </a>
+    {{ page_link(offset + page_size, "Next") }}
   {% endif %}
-</div>
+</nav>
 {%- endmacro %}
 {% macro well_rows() -%}
 <tbody id="wells-rows">

@@ -5,7 +5,7 @@
 <div class="disposal-results"{% if auto_map and rows|length == 1 %} data-auto-map="1" data-disposal-id="{{ rows[0].id }}" data-lat="{{ rows[0].lat }}" data-lon="{{ rows[0].lon }}" data-name="{{ rows[0].facility }}"{% endif %}>
   <div class="result-head">
     <div>
-      <h2>Waste disposal sites</h2>
+      <h2>SWD</h2>
       <p class="muted">
         {% if subtitle %}{{ subtitle }} · {% endif %}
         {{ rows|length }} match{{ '' if rows|length == 1 else 'es' }}

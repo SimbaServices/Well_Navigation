@@ -9,11 +9,9 @@
       <label class="basemap-picker">
         Base layer
         <select id="basemap-select" hx-on:change="setBasemap(this.value)">
-          <option value="imagery">Esri Imagery</option>
-          <option value="streets">Esri Streets</option>
-          <option value="topo">Esri Topo</option>
-          <option value="osm">OpenStreetMap</option>
-          <option value="usgs">USGS Topo</option>
+          <option value="streets">Street</option>
+          <option value="imagery">Satellite</option>
+          <option value="usgs">Offline</option>
         </select>
       </label>
       <span class="overlay-with-tip">
@@ -31,7 +29,7 @@
           </span>
         </span>
       </span>
-      <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> Waste sites</label>
+      <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
     </div>
   </div>
 

@@ -7,6 +7,7 @@ from wellnav.filters import (
     parse_column_filters,
     parse_filters,
     search_kwargs,
+    page_crumbs,
     subtitle,
     typed_query_filters,
 )
@@ -52,7 +53,13 @@ class FilterParseTests(unittest.TestCase):
         filters = apply_search_input(filters, mode="name", q="UNIVERSITY")
         self.assertEqual(search_kwargs(filters)["operator_numbers"], ["123"])
         self.assertEqual(search_kwargs(filters)["name"], "UNIVERSITY")
-        self.assertIn("Operator OXY", subtitle(filters))
+        crumbs = page_crumbs(100, 50, 1000)
+        self.assertEqual(crumbs[0], {"kind": "page", "n": 1, "offset": 0, "current": False})
+        self.assertTrue(any(item.get("current") and item["n"] == 3 for item in crumbs))
+        self.assertIn({"kind": "gap"}, crumbs)
+        self.assertEqual(crumbs[-1]["n"], 20)
+        self.assertEqual(page_crumbs(0, 50, 40), [])
+        self.assertNotIn("OXY", subtitle(filters))
         self.assertIn("UNIVERSITY", subtitle(filters))
 
     def test_name_checkbox_off(self) -> None:

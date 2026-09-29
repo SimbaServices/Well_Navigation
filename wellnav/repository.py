@@ -338,6 +338,68 @@ class WellRepository:
             "offset": offset,
         }
 
+    def suggest_wells(self, q: str, state: str = "tx", limit: int = 10) -> list[dict]:
+        """First matching wells, alphabetically, for the live well-name list."""
+        needle = (q or "").strip()
+        if len(needle) < 2:
+            return []
+        like = f"%{needle}%"
+        cap = max(1, int(limit))
+        collected: list[sqlite3.Row] = []
+        for code in _states_arg(state):
+            w, p = wells_table(code), permits_table(code)
+            collected.extend(
+                self.conn.execute(
+                    f"""
+                    SELECT well_name, api, api8, operator, county,
+                           '{code}' AS state, 'as_drilled' AS kind
+                    FROM {w}
+                    WHERE (well_name LIKE ? OR lease_name LIKE ?)
+                      AND TRIM(COALESCE(well_name, '')) != ''
+                    ORDER BY well_name COLLATE NOCASE, api
+                    LIMIT ?
+                    """,
+                    (like, like, cap),
+                ).fetchall()
+            )
+            collected.extend(
+                self.conn.execute(
+                    f"""
+                    SELECT well_name, api, api8, operator, county,
+                           '{code}' AS state, 'permit' AS kind
+                    FROM {p}
+                    WHERE (well_name LIKE ? OR lease_name LIKE ?)
+                      AND TRIM(COALESCE(well_name, '')) != ''
+                      AND status NOT IN ('migrated')
+                    ORDER BY well_name COLLATE NOCASE, api
+                    LIMIT ?
+                    """,
+                    (like, like, cap),
+                ).fetchall()
+            )
+        collected.sort(key=lambda row: ((row["well_name"] or "").upper(), row["api"] or ""))
+        seen: set[tuple[str, str]] = set()
+        out: list[dict] = []
+        for row in collected:
+            key = (row["state"], row["api8"] or row["api"] or "")
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(
+                {
+                    "well_name": row["well_name"] or "",
+                    "api": row["api"] or "",
+                    "api8": row["api8"] or "",
+                    "operator": row["operator"] or "",
+                    "county": row["county"] or "",
+                    "state": row["state"],
+                    "kind": row["kind"],
+                }
+            )
+            if len(out) >= cap:
+                break
+        return out
+
     def search_operators(self, q: str, state: str = "tx", limit: int = 40) -> list[dict]:
         needle = (q or "").strip()
         if len(needle) < 2:

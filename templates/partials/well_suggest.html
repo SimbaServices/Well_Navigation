@@ -1,0 +1,26 @@
+{% if wells %}
+  <ul class="suggest">
+    {% for well in wells %}
+      <li>
+        <form action="/search" method="get"
+              hx-get="/search"
+              hx-target="#results"
+              hx-include="#search-form"
+              hx-push-url="true"
+              hx-indicator="#spinner">
+          <input type="hidden" name="pick_name" value="{{ well.well_name }}">
+          <input type="hidden" name="mode" value="name">
+          <input type="hidden" name="commit" value="1">
+          <button type="submit" class="suggest-item">
+            <strong>{{ well.well_name }}</strong>
+            <span class="muted">
+              {% if well.api %}{{ well.api }}{% endif %}{% if well.operator %} · {{ well.operator }}{% endif %}{% if well.county %} · {{ well.county }}{% endif %}
+            </span>
+          </button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% elif query %}
+  <p class="hint">No wells match “{{ query }}”.</p>
+{% endif %}

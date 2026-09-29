@@ -45,6 +45,7 @@ from wellnav.filters import (
     parse_column_filters,
     parse_filters,
     search_kwargs,
+    page_crumbs,
     subtitle as filter_subtitle,
     typed_query_filters,
 )
@@ -157,6 +158,7 @@ templates.env.globals["search_href"] = search_href
 templates.env.globals["filter_href"] = filter_href
 templates.env.globals["filter_query"] = filter_query
 templates.env.globals["sort_href"] = sort_href
+templates.env.globals["page_crumbs"] = page_crumbs
 
 
 def workspace_snapshot(user: dict | None) -> dict:
@@ -968,6 +970,15 @@ async def logout(request: Request) -> HTMLResponse | RedirectResponse:
     return redirect_to(request, "/login")
 
 
+async def well_suggest(request: Request) -> HTMLResponse:
+    if request.query_params.get("mode", "name") != "name":
+        return fragment_or_page(request, "")
+    q = request.query_params.get("q", "").strip()
+    rows = REPO.suggest_wells(q, state=request_state_token(request), limit=10)
+    html = render("partials/well_suggest.html", request, wells=rows, query=q)
+    return fragment_or_page(request, html)
+
+
 async def operators(request: Request) -> HTMLResponse:
     if request.query_params.get("mode", "operator") != "operator":
         return fragment_or_page(request, "")
@@ -992,12 +1003,19 @@ async def search(request: Request) -> HTMLResponse:
     request.state.sort = sort
     request.state.dir = direction
     q = data.get("q", "")
+    picked_name = (data.get("pick_name") or "").strip()
+    if picked_name:
+        q = picked_name
+        data["q"] = picked_name
+        mode = "name"
+        data["mode"] = "name"
+        data["commit"] = "1"
     if (data.get("scope") or "wells") == "pipelines":
         return await pipeline_search(request)
     if (data.get("scope") or "wells") == "disposal":
         return await disposal_search(request)
     filters = parse_filters(source)
-    committing = data.get("commit") == "1"
+    committing = data.get("commit") == "1" or bool(picked_name)
     column_filters = (
         {}
         if committing or data.get("clear_filters") == "1"
@@ -1935,6 +1953,7 @@ app = Starlette(
         Route("/register/verify", verify_code, methods=["GET", "POST"]),
         Route("/register/resend", resend_code, methods=["POST"]),
         Route("/logout", logout, methods=["POST"]),
+        Route("/wells/suggest", well_suggest),
         Route("/operators", operators),
         Route("/search", search, methods=["GET", "POST"]),
         Route("/well/{api}", well_detail),

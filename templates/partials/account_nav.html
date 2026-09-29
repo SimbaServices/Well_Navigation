@@ -1,23 +1,28 @@
 <nav id="account-nav" class="account-nav" aria-label="Account"{% if oob %} hx-swap-oob="true"{% endif %}>
   {% if user %}
-    <a href="/saved" class="ghost"
-       hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
-      Saved{% if saved_count %} · {{ saved_count }}{% endif %}
-    </a>
-    <a href="/cache" class="ghost hide-phone"
-       hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
-    <a href="/org" class="ghost"
-       hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team</a>
-    <a href="/feedback" class="ghost"
-       hx-get="/feedback" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Feedback</a>
-    {% if workspace and not workspace.complimentary and (not workspace.allowed or user.is_admin) %}
-    <a href="/billing" class="ghost"
-       hx-get="/billing" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Billing</a>
-    {% endif %}
-    <a href="/account" class="ghost"
-       hx-get="/account" hx-target="#results" hx-push-url="true">{{ user.email or user.username }}</a>
-    <form action="/logout" method="post" hx-post="/logout">
-      <button type="submit" class="ghost">Sign out</button>
-    </form>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="account-menu" aria-label="Menu">
+      <span class="nav-toggle-icon" aria-hidden="true"></span>
+    </button>
+    <div id="account-menu" class="account-menu" hidden>
+      <a href="/saved" class="ghost"
+         hx-get="/saved" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">
+        Saved{% if saved_count %} · {{ saved_count }}{% endif %}
+      </a>
+      <a href="/cache" class="ghost"
+         hx-get="/cache" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Cache</a>
+      <a href="/org" class="ghost"
+         hx-get="/org" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Team</a>
+      <a href="/feedback" class="ghost"
+         hx-get="/feedback" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Feedback</a>
+      {% if workspace and not workspace.complimentary and (not workspace.allowed or user.is_admin) %}
+      <a href="/billing" class="ghost"
+         hx-get="/billing" hx-target="#results" hx-push-url="true" hx-indicator="#spinner">Billing</a>
+      {% endif %}
+      <a href="/account" class="ghost"
+         hx-get="/account" hx-target="#results" hx-push-url="true">{{ user.email or user.username }}</a>
+      <form action="/logout" method="post" hx-post="/logout">
+        <button type="submit" class="ghost">Sign out</button>
+      </form>
+    </div>
   {% endif %}
 </nav>

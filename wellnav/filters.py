@@ -293,20 +293,45 @@ def filter_query(filters: dict, **extra: object) -> str:
 
 def subtitle(filters: dict, *, mode: str = "", q: str = "") -> str:
     bits = []
-    active_ops = [op["name"] for op in filters.get("operators") or [] if op.get("active")]
-    if active_ops:
-        if len(active_ops) == 1:
-            bits.append(f"Operator {active_ops[0]}")
-        else:
-            bits.append(f"{len(active_ops)} operators")
     if filters.get("name_active") and filters.get("name"):
         bits.append(f"Name “{filters['name']}”")
     if filters.get("api_active") and filters.get("api"):
         bits.append(f"API {filters['api']}")
-    if not bits and q:
+    if not bits and q and mode != "operator":
         if mode == "api":
             return f"API {q}"
-        if mode == "operator":
-            return f"Operator {q}"
         return f"Name “{q}”"
     return " · ".join(bits)
+
+
+def page_crumbs(offset: int, page_size: int, total: int, *, window: int = 2) -> list[dict]:
+    """Numbered page links around the current page, with gaps when the span is long."""
+    try:
+        offset = max(0, int(offset or 0))
+        page_size = int(page_size or 0)
+        total = max(0, int(total or 0))
+    except (TypeError, ValueError):
+        return []
+    if page_size <= 0 or total <= page_size:
+        return []
+    pages = (total + page_size - 1) // page_size
+    current = min(pages, (offset // page_size) + 1)
+    wanted = {1, pages, current}
+    for number in range(current - window, current + window + 1):
+        if 1 <= number <= pages:
+            wanted.add(number)
+    items: list[dict] = []
+    previous = 0
+    for number in sorted(wanted):
+        if previous and number > previous + 1:
+            items.append({"kind": "gap"})
+        items.append(
+            {
+                "kind": "page",
+                "n": number,
+                "offset": (number - 1) * page_size,
+                "current": number == current,
+            }
+        )
+        previous = number
+    return items
