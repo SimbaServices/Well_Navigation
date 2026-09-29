@@ -27,34 +27,34 @@
     }).catch(function () {});
   }
 
-  function closeFloats() {
-    ["search-sheet", "saved-sheet", "account-sheet", "team-layer"].forEach((id) => {
-      const el = sheet(id);
-      if (el) el.hidden = true;
-    });
-    document.querySelectorAll(".nav-tile[data-open]").forEach((button) => {
-      button.setAttribute("aria-pressed", "false");
-    });
-    delete document.body.dataset.layer;
-  }
+  const EDGE_IDS = {
+    search: "search-sheet",
+    saved: "saved-sheet",
+    account: "account-sheet",
+    team: "team-layer",
+  };
 
-  function openLayer(name) {
-    const ids = {
-      search: "search-sheet",
-      saved: "saved-sheet",
-      account: "account-sheet",
-      team: "team-layer",
-    };
-    Object.entries(ids).forEach(([key, id]) => {
+  function setEdge(name, open) {
+    Object.entries(EDGE_IDS).forEach(([key, id]) => {
       const el = sheet(id);
       if (!el) return;
-      el.hidden = key !== name;
+      const on = key === name;
+      el.classList.toggle("is-active", on);
+      el.classList.toggle("is-open", on && open);
+      const handle = el.querySelector(".edge-handle");
+      if (handle) handle.setAttribute("aria-expanded", on && open ? "true" : "false");
     });
     document.querySelectorAll(".nav-tile[data-open]").forEach((button) => {
       button.setAttribute("aria-pressed", button.dataset.open === name ? "true" : "false");
     });
-    if (name === "team") document.body.dataset.layer = "team";
-    else delete document.body.dataset.layer;
+  }
+
+  function closeFloats() {
+    setEdge("", false);
+  }
+
+  function openLayer(name) {
+    setEdge(name, true);
   }
 
   function setDock(open, height) {
@@ -196,6 +196,16 @@
         }
         savePref(key, value);
       }
+      return;
+    }
+    const handle = event.target.closest(".edge-handle[data-edge]");
+    if (handle) {
+      const name = handle.dataset.edge;
+      const panel = sheet(EDGE_IDS[name]);
+      if (!panel || !panel.classList.contains("is-active")) return;
+      const open = !panel.classList.contains("is-open");
+      panel.classList.toggle("is-open", open);
+      handle.setAttribute("aria-expanded", open ? "true" : "false");
       return;
     }
     const tile = event.target.closest(".nav-tile[data-open]");

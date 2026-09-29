@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers1">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers4">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -21,19 +21,6 @@
   <div id="net-banner" class="net-banner" hidden>
     Offline — saved routes navigate from your GPS. Search needs a connection.
   </div>
-  <header class="topbar">
-    <div class="brand">
-      <span class="mark">◆</span>
-      <div>
-        <h1>Well Navigation</h1>
-        <p>Texas · New Mexico · Oklahoma · Louisiana</p>
-      </div>
-    </div>
-    <div class="topbar-meta">
-      <span class="census hide-phone">{% if counts %}{{ "{:,}".format(counts.wells) }} wells · {{ "{:,}".format(counts.live_permits if counts.live_permits is defined else counts.permits) }} live permits{% else %}Texas RRC{% endif %}</span>
-    </div>
-  </header>
-
   <main class="workspace" data-pane="{{ 'map' if map_html else 'search' }}">
     <div class="workspace-tabs" role="tablist" aria-label="Search and map">
       <button type="button" class="workspace-tab" id="tab-search" role="tab"
@@ -82,7 +69,9 @@
       </div>
       <button type="submit" class="primary sr-only" name="commit" value="1">Search</button>
 
-      <section id="search-sheet" class="float-sheet" hidden>
+      <section id="search-sheet" class="edge-panel edge-left" aria-label="Search settings">
+        <button type="button" class="edge-handle" data-edge="search" aria-expanded="false" aria-controls="search-sheet">Search</button>
+        <div class="edge-body">
         <h2>Search</h2>
         <p class="muted">Choose what the box at the top searches. This stays on your account.</p>
         {% set scope = search_prefs.scope if search_prefs is defined else 'wells' %}
@@ -142,6 +131,7 @@
         </div>
         <div id="active-filters">
           {% include 'partials/filters.html' %}
+        </div>
         </div>
       </section>
     </form>
@@ -242,15 +232,22 @@
       </div>
     </section>
 
-    <section id="saved-sheet" class="float-sheet" hidden>
-      <h2>Saved</h2>
-      <div id="saved-body"></div>
+    <section id="saved-sheet" class="edge-panel edge-left" aria-label="Saved locations">
+      <button type="button" class="edge-handle" data-edge="saved" aria-expanded="false" aria-controls="saved-sheet">Saved</button>
+      <div class="edge-body">
+        <h2>Saved</h2>
+        <div id="saved-body"></div>
+      </div>
     </section>
-    <section id="account-sheet" class="float-sheet" hidden>
-      <div id="account-body"></div>
+    <section id="account-sheet" class="edge-panel edge-left" aria-label="Account">
+      <button type="button" class="edge-handle" data-edge="account" aria-expanded="false" aria-controls="account-sheet">Account</button>
+      <div class="edge-body">
+        <div id="account-body"></div>
+      </div>
     </section>
-    <section id="team-layer" class="team-layer" hidden>
-      <div id="team-body"></div>
+    <section id="team-layer" class="edge-panel edge-left edge-wide" aria-label="Team">
+      <button type="button" class="edge-handle" data-edge="team" aria-expanded="false" aria-controls="team-layer">Team</button>
+      <div class="edge-body" id="team-body"></div>
     </section>
     </div>
   </main>
@@ -258,15 +255,18 @@
   <footer class="nav-footer">
     <button type="button" class="nav-tile" data-open="search" aria-label="Search" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.2 15.2 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Search</span>
     </button>
     <button type="button" class="nav-tile" data-open="saved" aria-label="Saved locations" aria-pressed="false"
             hx-get="/saved" hx-target="#saved-body" hx-swap="innerHTML" hx-indicator="#spinner">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2 14.4 8.9l6.1.5-4.7 3.9 1.5 5.9L12 16.2 6.7 19.2l1.5-5.9L3.5 9.4l6.1-.5z"/></svg>
+      <span>Saved</span>
       {% include 'partials/account_nav.html' %}
     </button>
     <button type="button" class="nav-tile" data-open="account" aria-label="Account" aria-pressed="false"
             hx-get="/account" hx-target="#account-body" hx-swap="innerHTML">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="currentColor"/><path fill="currentColor" d="M5.2 19.2c.8-3 3.3-4.7 6.8-4.7s6 1.7 6.8 4.7c.2.6-.3 1.1-.9 1.1H6.1c-.6 0-1.1-.5-.9-1.1z"/></svg>
+      <span>Account</span>
     </button>
     <button type="button" class="nav-tile" data-open="team" aria-label="Team" aria-pressed="false"
             hx-get="/org" hx-target="#team-body" hx-swap="innerHTML" hx-indicator="#spinner">
@@ -278,6 +278,7 @@
         <path fill="currentColor" opacity="0.85" d="M14.2 15.2c2.1 0 3.6 1.1 4.2 3 .1.5-.2.8-.7.8h-4.2c.2-.8.2-1.6 0-2.3.4-.5.9-1 1.7-1.3-.3-.1-.6-.2-1-.2z"/>
         <path fill="currentColor" d="M8.8 14.8h3.6c2.6 0 4.4 1.5 5 3.6.1.5-.3.9-.8.9H8.4c-.5 0-.9-.4-.8-.9.5-2.1 2.2-3.6 4.8-3.6z"/>
       </svg>
+      <span>Team</span>
     </button>
   </footer>
 
@@ -286,7 +287,7 @@
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
   <script src="/static/js/map.js?v=layers1"></script>
-  <script src="/static/js/layers.js?v=1"></script>
+  <script src="/static/js/layers.js?v=2"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

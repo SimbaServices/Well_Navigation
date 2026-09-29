@@ -1,10 +1,10 @@
-Release name: 1.14
-Version: 1.14 (versionCode 15)
+Release name: 1.15
+Version: 1.15 (versionCode 16)
 Language: English (United States)
 Play Console limit: 500 characters
 
 Paste into the Play Console release notes:
 
-Share a well, disposal site, or pipeline point by text or email. The message is the place name, the operator, and a maps link.
+The map fills the screen. Search, saved places, account, team, results, and location details open as panels you can slide on and off with a handle at the edge. Search stays a field on the map, and the footer is four tiles: search, saved, account, and team.
 
 This app does not sell subscriptions. Organization admins buy seats on the website in Chrome.
