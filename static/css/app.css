@@ -2160,6 +2160,14 @@ body.gate .gate-tagline {
   transition: height 0.18s ease;
 }
 .bottom-sheet.is-open { height: min(58vh, 34rem); }
+.bottom-sheet.is-open[data-view="details"] {
+  height: auto;
+  max-height: min(58vh, 34rem);
+}
+.bottom-sheet.is-open[data-view="details"] .sheet-views {
+  overflow: auto;
+  max-height: calc(min(58vh, 34rem) - 0.9rem);
+}
 .bottom-sheet.is-dragging { transition: none; }
 .bottom-sheet .sheet-views {
   display: none;

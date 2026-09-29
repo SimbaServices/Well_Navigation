@@ -42,8 +42,7 @@
     if (dock) {
       dock.dataset.view = name || "";
       dock.classList.toggle("is-open", !!open);
-      if (!open) dock.style.height = "";
-      else if (!dock.style.height) dock.style.height = "";
+      if (!open || name === "details") dock.style.height = "";
     }
     if (tab) {
       tab.setAttribute("aria-expanded", open ? "true" : "false");
@@ -107,7 +106,7 @@
   function noteMapFocus(focus) {
     const tab = sheet("sheet-tab");
     if (tab) tab.classList.toggle("has-focus", !!focus && focus !== "idle");
-    if (focus && focus !== "idle") showView("details", true);
+    if (focus && focus !== "idle") showView("details", false);
   }
 
   function bindDockDrag() {
