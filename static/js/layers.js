@@ -63,7 +63,7 @@
   function setDock(open, height) {
     const dock = sheet("bottom-sheet");
     if (!dock) return;
-    if (open) showView("results", true);
+    if (open) showView("search", true);
     else showView(dock.dataset.view, false);
     if (typeof height === "number" && open) dock.style.height = Math.round(height) + "px";
     else if (!open) dock.style.height = "";
@@ -72,7 +72,7 @@
   function openDock() {
     const dock = sheet("bottom-sheet");
     if (!dock) return;
-    if (!(dock.classList.contains("is-open") && dock.dataset.view === "results")) setDock(true);
+    if (!(dock.classList.contains("is-open") && dock.dataset.view === "search")) setDock(true);
   }
 
   function shutDock() {

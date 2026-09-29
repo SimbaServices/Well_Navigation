@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers5">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers6">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -84,9 +84,7 @@
       <section id="bottom-sheet" class="bottom-sheet" data-view="search" aria-label="Panel">
         <button type="button" class="pull-tab" id="sheet-tab" aria-expanded="false" aria-label="Panel" aria-controls="sheet-views"></button>
         <div id="sheet-views" class="sheet-views">
-        <section id="search-sheet" class="sheet-view" data-view="search" aria-label="Search settings">
-        <h2>Search</h2>
-        <p class="muted">How the box at the top matches. What it searches is in Settings.</p>
+        <section id="search-sheet" class="sheet-view" data-view="search" aria-label="Search results">
         <div class="modes modes-wells" role="tablist" aria-label="Well search">
           <label class="mode">
             <input type="radio" name="mode" value="name"{% if well_mode == 'name' %} checked{% endif %}>
@@ -128,6 +126,12 @@
         <div id="active-filters">
           {% include 'partials/filters.html' %}
         </div>
+        <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
+        <div id="results" class="results">
+          {% if results_html %}
+            {{ results_html | safe }}
+          {% endif %}
+        </div>
       </section>
         <section id="saved-sheet" class="sheet-view" data-view="saved" hidden aria-label="Saved locations">
           <h2>Saved</h2>
@@ -144,19 +148,20 @@
         </section>
         <section id="settings-sheet" class="sheet-view" data-view="settings" hidden aria-label="Settings">
           <h2>Settings</h2>
-          <p class="muted">What the search box looks for. Saved on your account.</p>
+          <p class="muted">Search and map stay in this state until you change it.</p>
+          <div class="choice-tiles" role="group" aria-label="Location">
+            {% set loc = state|default('tx') %}
+            {% for code, label in [('tx', 'Texas'), ('nm', 'New Mexico'), ('ok', 'Oklahoma'), ('la', 'Louisiana'), ('all', 'All states')] %}
+              <button type="button" class="choice-tile{% if loc == code %} is-on{% endif %}"
+                      data-pref="state" data-value="{{ code }}"
+                      aria-pressed="{{ 'true' if loc == code else 'false' }}">{{ label }}</button>
+            {% endfor %}
+          </div>
+          <p class="muted">What the search box looks for.</p>
           <div class="choice-tiles" role="group" aria-label="What to search">
             <button type="button" class="choice-tile{% if scope == 'wells' %} is-on{% endif %}" data-pref="scope" data-value="wells" aria-pressed="{{ 'true' if scope == 'wells' else 'false' }}">Wells</button>
             <button type="button" class="choice-tile{% if scope == 'pipelines' %} is-on{% endif %}" data-pref="scope" data-value="pipelines" aria-pressed="{{ 'true' if scope == 'pipelines' else 'false' }}">Pipelines</button>
             <button type="button" class="choice-tile{% if scope == 'disposal' %} is-on{% endif %}" data-pref="scope" data-value="disposal" aria-pressed="{{ 'true' if scope == 'disposal' else 'false' }}">SWD</button>
-          </div>
-        </section>
-        <section id="results-dock" class="sheet-view" data-view="results" hidden aria-label="Search results">
-          <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
-          <div id="results" class="results">
-            {% if results_html %}
-              {{ results_html | safe }}
-            {% endif %}
           </div>
         </section>
         <section id="detail-sheet" class="sheet-view" data-view="details" hidden aria-label="Location details">
@@ -276,7 +281,7 @@
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
   <script src="/static/js/map.js?v=layers5"></script>
-  <script src="/static/js/layers.js?v=3"></script>
+  <script src="/static/js/layers.js?v=4"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

@@ -1,9 +1,4 @@
-<div class="account-card settings-page" data-settings-tab="account">
-  <h2>Settings</h2>
-  <div class="sheet-tabs" role="tablist" aria-label="Settings">
-    <button type="button" data-settings-tab="account" role="tab">Account</button>
-    <button type="button" data-settings-tab="location" role="tab">Location</button>
-  </div>
+<div class="account-card">
   {% if error %}
     <div class="banner error">{{ error }}</div>
   {% endif %}
@@ -55,16 +50,4 @@
       <p class="app-copy">© 2026 Wellnav</p>
     </div>
   {% endif %}
-  </div>
-  <div data-settings-panel="location">
-    <p class="muted">Search and map stay in this state until you change it. The choice is saved on your account.</p>
-    <div class="choice-tiles" role="group" aria-label="Location">
-      {% set loc = state|default('tx') %}
-      {% for code, label in [('tx', 'Texas'), ('nm', 'New Mexico'), ('ok', 'Oklahoma'), ('la', 'Louisiana'), ('all', 'All states')] %}
-        <button type="button" class="choice-tile{% if loc == code %} is-on{% endif %}"
-                data-pref="state" data-value="{{ code }}"
-                aria-pressed="{{ 'true' if loc == code else 'false' }}">{{ label }}</button>
-      {% endfor %}
-    </div>
-  </div>
 </div>
