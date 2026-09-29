@@ -27,7 +27,7 @@
     }).catch(function () {});
   }
 
-  const VIEWS = ["search", "saved", "account", "settings", "results", "details"];
+  const VIEWS = ["search", "pins", "saved", "account", "settings", "results", "details"];
 
   function pullTeamOutOfResults() {
     const stray = document.querySelector("#results .team-page");
@@ -105,8 +105,9 @@
 
   function noteMapFocus(focus) {
     const tab = sheet("sheet-tab");
+    const dock = sheet("bottom-sheet");
     if (tab) tab.classList.toggle("has-focus", !!focus && focus !== "idle");
-    if (focus && focus !== "idle") showView("details", false);
+    if (focus && focus !== "idle" && dock && !dock.classList.contains("is-open")) showView("details", false);
   }
 
   function bindDockDrag() {

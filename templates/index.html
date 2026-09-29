@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers11">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers12">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -164,6 +164,54 @@
               <span>Pipeline name</span>
             </label>
           </div>
+          <p class="muted">Map layers and offline packs.</p>
+          <div class="map-actions settings-map-actions">
+            <label class="basemap-picker">
+              Base layer
+              <select id="basemap-select" hx-on:change="setBasemap(this.value)">
+                <option value="streets">Street</option>
+                <option value="imagery">Satellite</option>
+                <option value="usgs">Offline</option>
+              </select>
+            </label>
+            <span class="overlay-with-tip">
+              <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
+                <span class="info-tip-pop" popover="manual" hidden role="tooltip">
+                  <span class="legend-key">
+                    <span><i class="swatch gas"></i>Gas</span>
+                    <span><i class="swatch crude"></i>Crude</span>
+                    <span><i class="swatch hvl"></i>HVL</span>
+                    <span><i class="swatch product"></i>Product</span>
+                    <span><i class="swatch other"></i>Other</span>
+                  </span>
+                </span>
+              </span>
+            </span>
+            <span class="overlay-with-tip">
+              <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>
+                <span class="info-tip-pop" popover="manual" hidden role="tooltip">
+                  <span class="legend-key">
+                    <span><i class="swatch swd-commercial"></i>Commercial public SWD</span>
+                    <span><i class="swatch swd-operator"></i>Operator SWD / injection</span>
+                  </span>
+                </span>
+              </span>
+            </span>
+            <div class="offline-pack">
+              <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
+              <button type="button" class="ghost" id="offline-save">Save for offline</button>
+              <span class="info-tip">
+                <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
+                <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and switches the base layer to Offline.</span>
+              </span>
+              <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
+              <p id="offline-status" class="muted"></p>
+            </div>
+          </div>
           <div class="modes modes-disposal" role="tablist">
             <label class="mode">
               <input type="radio" name="disp_mode" value="name"{% if disp_mode == 'name' %} checked{% endif %}>
@@ -177,6 +225,21 @@
               <input type="radio" name="disp_mode" value="permit"{% if disp_mode == 'permit' %} checked{% endif %}>
               <span>Permit</span>
             </label>
+          </div>
+        </section>
+        <section id="pins-sheet" class="sheet-view" data-view="pins" hidden aria-label="Pinned locations">
+          <h2>Pinned</h2>
+          <div class="table-wrap">
+            <table class="wells pins-table">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Type</th>
+                  <th class="save-col"><span class="sr-only">Unpin</span></th>
+                </tr>
+              </thead>
+              <tbody id="pins-rows"></tbody>
+            </table>
           </div>
         </section>
         <section id="detail-sheet" class="sheet-view" data-view="details" hidden aria-label="Location details">
@@ -212,55 +275,6 @@
         {{ map_html | safe }}
       {% else %}
         <div class="map-chrome" data-focus="idle">
-          <div class="map-toolbar">
-            <div class="map-actions">
-              <label class="basemap-picker">
-                Base layer
-                <select id="basemap-select" hx-on:change="setBasemap(this.value)">
-                  <option value="streets">Street</option>
-                  <option value="imagery">Satellite</option>
-                  <option value="usgs">Offline</option>
-                </select>
-              </label>
-              <span class="overlay-with-tip">
-                <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
-                <span class="info-tip">
-                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-                    <span class="legend-key">
-                      <span><i class="swatch gas"></i>Gas</span>
-                      <span><i class="swatch crude"></i>Crude</span>
-                      <span><i class="swatch hvl"></i>HVL</span>
-                      <span><i class="swatch product"></i>Product</span>
-                      <span><i class="swatch other"></i>Other</span>
-                    </span>
-                  </span>
-                </span>
-              </span>
-              <span class="overlay-with-tip">
-                <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
-                <span class="info-tip">
-                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-                    <span class="legend-key">
-                      <span><i class="swatch swd-commercial"></i>Commercial public SWD</span>
-                      <span><i class="swatch swd-operator"></i>Operator SWD / injection</span>
-                    </span>
-                  </span>
-                </span>
-              </span>
-              <div class="offline-pack">
-                <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
-                <button type="button" class="ghost" id="offline-save">Save for offline</button>
-                <span class="info-tip">
-                  <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-                  <span class="info-tip-pop" popover="manual" hidden role="tooltip">Pin one or more spots, wells, or sites. Save for offline stores a route from your location to each pin and switches the base layer to Offline.</span>
-                </span>
-                <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
-                <p id="offline-status" class="muted"></p>
-              </div>
-            </div>
-          </div>
           <div id="well-map" class="well-map"></div>
         </div>
       {% endif %}
@@ -273,6 +287,10 @@
     <button type="button" class="nav-tile" data-open="search" aria-label="Search" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.2 15.2 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span>Search</span>
+    </button>
+    <button type="button" class="nav-tile" data-open="pins" aria-label="Pinned locations" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5c-3.6 0-6.5 2.8-6.5 6.3 0 4.7 6.5 12.7 6.5 12.7s6.5-8 6.5-12.7c0-3.5-2.9-6.3-6.5-6.3zm0 8.6a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z"/></svg>
+      <span>Pins</span>
     </button>
     <button type="button" class="nav-tile" data-open="saved" aria-label="Saved locations" aria-pressed="false"
             hx-get="/saved" hx-target="#saved-body" hx-swap="innerHTML" hx-indicator="#spinner">
@@ -295,8 +313,8 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers8"></script>
-  <script src="/static/js/layers.js?v=6"></script>
+  <script src="/static/js/map.js?v=layers12"></script>
+  <script src="/static/js/layers.js?v=7"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

@@ -2189,7 +2189,11 @@ body.gate .gate-tagline {
 #bottom-sheet[data-view="search"] #account-sheet,
 #bottom-sheet[data-view="saved"] #account-sheet,
 #bottom-sheet[data-view="settings"] #account-sheet,
-#bottom-sheet[data-view="details"] #account-sheet { display: none !important; }
+#bottom-sheet[data-view="details"] #account-sheet,
+#bottom-sheet[data-view="pins"] #account-sheet { display: none !important; }
+.settings-map-actions { margin: 0.35rem 0 0.8rem; }
+.pin-row { cursor: pointer; }
+.pins-table .ghost { min-height: 1.6rem; padding: 0.15rem 0.4rem; font-size: 0.72rem; }
 .bottom-sheet .map-details {
   display: block !important;
   width: auto;
@@ -2217,7 +2221,7 @@ body.gate .gate-tagline {
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0;
   padding: 0;
   padding-bottom: var(--safe-bottom);

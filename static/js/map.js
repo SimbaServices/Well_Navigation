@@ -47,50 +47,6 @@ const PIPELINE_COLORS = {
 
 const MAP_CHROME_HTML = `
 <div class="map-chrome" data-focus="idle">
-  <div class="map-toolbar">
-    <div class="map-actions">
-      <label class="basemap-picker">Base layer
-        <select id="basemap-select"></select>
-      </label>
-      <span class="overlay-with-tip">
-        <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle"> Pipelines</label>
-        <span class="info-tip">
-          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-            <span class="legend-key">
-              <span><i class="swatch gas"></i>Gas</span>
-              <span><i class="swatch crude"></i>Crude</span>
-              <span><i class="swatch hvl"></i>HVL</span>
-              <span><i class="swatch product"></i>Product</span>
-              <span><i class="swatch other"></i>Other</span>
-            </span>
-          </span>
-        </span>
-      </span>
-      <span class="overlay-with-tip">
-        <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
-        <span class="info-tip">
-          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-            <span class="legend-key">
-              <span><i class="swatch swd-commercial"></i>Commercial public SWD</span>
-              <span><i class="swatch swd-operator"></i>Operator SWD / injection</span>
-            </span>
-          </span>
-        </span>
-      </span>
-      <div class="offline-pack">
-        <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
-        <button type="button" class="ghost" id="offline-save">Save for offline</button>
-        <span class="info-tip">
-          <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>
-          <span class="info-tip-pop" popover="manual" hidden role="tooltip">${OFFLINE_TIP}</span>
-        </span>
-        <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
-        <p id="offline-status" class="muted"></p>
-      </div>
-    </div>
-  </div>
   <div id="well-map" class="well-map"></div>
 </div>`;
 
@@ -1186,6 +1142,7 @@ function drawOfflineRoutes(routes, { fit = false } = {}) {
   }
   applyNavStyles();
   renderOfflineRouteList();
+  renderPinsTable();
 }
 
 function routeRows() {
@@ -3390,6 +3347,131 @@ function updateChrome(store) {
   }
   const focus = chrome ? chrome.dataset.focus : "idle";
   if (window.WellnavLayers) window.WellnavLayers.noteMapFocus(focus);
+  renderPinsTable();
+}
+
+function focusWellOnMap(well) {
+  if (!map || !well || !Number.isFinite(well.lat) || !Number.isFinite(well.lon)) return;
+  const points = [[well.lat, well.lon]];
+  if (hasToe(well)) points.push([well.toeLat, well.toeLon]);
+  if (points.length === 1) map.setView(points[0], 15);
+  else map.fitBounds(points, { padding: [40, 40], maxZoom: FIT_MAX_ZOOM });
+}
+
+function renderPinsTable() {
+  const body = document.getElementById("pins-rows");
+  if (!body) return;
+  body.replaceChildren();
+  const store = loadStore();
+  const rows = [];
+  store.order.forEach((api) => {
+    const well = store.wells[api];
+    if (!well) return;
+    rows.push({
+      label: well.name || formatApi(api),
+      kind: "Well",
+      active: store.selected === api && !pinChrome && !disposalFocus,
+      pick() {
+        selectWell(api, { focus: true });
+      },
+      unpin() {
+        removeWell(api);
+      },
+    });
+  });
+  if (pipelinePin && Number.isFinite(Number(pipelinePin.lat)) && Number.isFinite(Number(pipelinePin.lon))) {
+    rows.push({
+      label: pipelinePin.operator || pipelinePin.system || "Pipeline point",
+      kind: "Pipeline",
+      active: !!pinChrome,
+      pick() {
+        pinChrome = true;
+        disposalFocus = null;
+        disposalPopupPinned = false;
+        const storeNow = loadStore();
+        storeNow.selected = null;
+        saveStore(storeNow);
+        if (map) map.setView([Number(pipelinePin.lat), Number(pipelinePin.lon)], 14);
+        updateChrome(loadStore());
+        syncMapButtons();
+      },
+      unpin() {
+        clearPipelinePin();
+      },
+    });
+  }
+  if (disposalFocus && Number.isFinite(Number(disposalFocus.lat)) && Number.isFinite(Number(disposalFocus.lon))) {
+    rows.push({
+      label: disposalFocus.name || "SWD",
+      kind: "SWD",
+      active: !pinChrome && !store.selected,
+      pick() {
+        pinChrome = false;
+        const storeNow = loadStore();
+        storeNow.selected = null;
+        saveStore(storeNow);
+        if (map) map.setView([Number(disposalFocus.lat), Number(disposalFocus.lon)], 14);
+        updateChrome(loadStore());
+      },
+      unpin() {
+        disposalFocus = null;
+        disposalPopupPinned = false;
+        if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
+        restyleDisposalMarkers();
+        updateChrome(loadStore());
+      },
+    });
+  }
+  routeRows().forEach((row) => {
+    if (row.kind !== "pin") return;
+    rows.push({
+      label: row.label || "Pinned spot",
+      kind: "Spot",
+      active: false,
+      pick() {
+        focusRouteRow(row);
+      },
+      unpin() {
+        removeRoutePin(row.id);
+      },
+    });
+  });
+  if (!rows.length) {
+    const empty = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.className = "muted";
+    cell.textContent = "No pinned locations.";
+    empty.appendChild(cell);
+    body.appendChild(empty);
+    return;
+  }
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    tr.className = "pin-row" + (row.active ? " is-selected" : "");
+    const name = document.createElement("td");
+    name.textContent = row.label;
+    const kind = document.createElement("td");
+    kind.textContent = row.kind;
+    const action = document.createElement("td");
+    action.className = "save-cell";
+    const unpin = document.createElement("button");
+    unpin.type = "button";
+    unpin.className = "ghost";
+    unpin.textContent = "Unpin";
+    unpin.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      row.unpin();
+    });
+    action.appendChild(unpin);
+    tr.append(name, kind, action);
+    tr.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      row.pick();
+    });
+    body.appendChild(tr);
+  });
 }
 
 function paint({ fit = false } = {}) {
@@ -3412,7 +3494,7 @@ function paint({ fit = false } = {}) {
   }, 60);
 }
 
-function selectWell(api) {
+function selectWell(api, { focus = false } = {}) {
   const store = loadStore();
   if (!store.wells[api]) return;
   store.selected = api;
@@ -3424,6 +3506,7 @@ function selectWell(api) {
   if (map) map.closePopup();
   revealMapOnPhone();
   paint({ fit: false });
+  if (focus) focusWellOnMap(loadStore().wells[api]);
 }
 
 function removeWell(api) {
