@@ -3358,8 +3358,32 @@ function focusWellOnMap(well) {
   else map.fitBounds(points, { padding: [40, 40], maxZoom: FIT_MAX_ZOOM });
 }
 
+function unpinAll() {
+  saveStore(emptyStore());
+  [...overlays.keys()].forEach(removeOverlay);
+  clearPipelinePin();
+  disposalFocus = null;
+  disposalPopupPinned = false;
+  if (window.WellnavDisposalUx) window.WellnavDisposalUx.hideWaitPanel();
+  if (typeof restyleDisposalMarkers === "function") restyleDisposalMarkers();
+  const pins = loadRoutePins();
+  saveRoutePins([]);
+  savedRoutes = [];
+  const offline = window.WellnavOffline;
+  if (offline) {
+    pins.forEach((pin) => {
+      offline.deleteRoute(pin.id).catch(function () {});
+    });
+  }
+  drawRoutePins();
+  drawOfflineRoutes(savedRoutes);
+  if (typeof stopNavigation === "function") stopNavigation();
+  paint({ fit: false });
+}
+
 function renderPinsTable() {
   const body = document.getElementById("pins-rows");
+  const clearAll = document.getElementById("unpin-all");
   if (!body) return;
   body.replaceChildren();
   const store = loadStore();
@@ -3436,6 +3460,7 @@ function renderPinsTable() {
       },
     });
   });
+  if (clearAll) clearAll.hidden = !rows.length;
   if (!rows.length) {
     const empty = document.createElement("tr");
     const cell = document.createElement("td");
@@ -4117,6 +4142,10 @@ function bindInfoTips() {
   });
 }
 
+document.getElementById("unpin-all")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  unpinAll();
+});
 bindInfoTips();
 bindLocationShare();
 applyNetworkState();

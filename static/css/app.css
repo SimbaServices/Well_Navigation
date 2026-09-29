@@ -2007,6 +2007,44 @@ body.gate .gate-tagline {
   border-color: var(--accent);
   background: rgba(212, 160, 23, 0.14);
 }
+#settings-sheet .choice-tiles {
+  grid-template-columns: repeat(auto-fit, minmax(4.4rem, 1fr));
+  gap: 0.28rem;
+  margin: 0.25rem 0 0.4rem;
+}
+#settings-sheet .choice-tile {
+  min-height: 0;
+  padding: 0.18rem 0.35rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+#settings-sheet .modes {
+  min-height: 0;
+  margin: 0 0 0.4rem;
+  gap: 0.28rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.4rem, 1fr));
+}
+#settings-sheet .mode span {
+  min-height: 0;
+  padding: 0.18rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: normal;
+}
+#settings-sheet .mode input:checked + span {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(212, 160, 23, 0.14);
+}
+#settings-sheet > p.muted { font-size: 0.75rem; margin: 0.35rem 0 0.1rem; }
 .nav-tile[aria-pressed="true"] {
   color: var(--accent);
   background: #222a1c;
