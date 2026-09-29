@@ -3541,8 +3541,7 @@ function goHome() {
   if (suggest) suggest.replaceChildren();
   const results = document.getElementById("results");
   if (results) {
-    results.innerHTML =
-      '<div class="empty">Search wells, pipelines, and waste sites in Texas, New Mexico, Oklahoma, and Louisiana. Pick a state or All, then search.</div>';
+    results.replaceChildren();
   }
   try {
     history.pushState({}, "", "/");

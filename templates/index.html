@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=swd1">
+  <link rel="stylesheet" href="/static/css/app.css?v=compact1">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -150,24 +150,11 @@
         {% endfor %}
       </div>
       <div id="operator-suggest"></div>
-      <p class="hint hint-name">Well names update as you type. The first 10 matches appear in alphabetical order. Pick one to search that name.</p>
-      <p class="hint hint-api">The table filters as you type an API. Texas 42-, New Mexico 30-, Oklahoma 35-, Louisiana 17-.</p>
-      <p class="hint hint-operator">Add an operator filter. Pick another to add more, then search by well name to narrow those wells.</p>
-      <p class="hint hint-pipe-op">Search Texas T-4, New Mexico EIA/BLM ROW, Oklahoma EIA, or Louisiana EIA/BSEE lines.</p>
-      <p class="hint hint-pipe-name">Search by pipeline or system name. Click a match to zoom the overlay to those lines.</p>
-      <p class="hint hint-disp-name">Search commercial waste, UIC, and salt-water disposal sites, then route in Apple or Google Maps.</p>
-      <p class="hint hint-disp-op">Search by the RRC-permitted operator that runs the waste facility.</p>
-      <p class="hint hint-disp-permit">Search by surface waste permit number (STF, R9, WP, and similar).</p>
 
       <div id="spinner" class="htmx-indicator spinner">Searching local well tables…</div>
       <div id="results" class="results">
         {% if results_html %}
           {{ results_html | safe }}
-        {% else %}
-          <div class="empty">
-            Search wells, pipelines, and waste sites in Texas, New Mexico,
-            Oklahoma, and Louisiana. Pick a state or All, then search.
-          </div>
         {% endif %}
       </div>
     </section>
@@ -263,7 +250,7 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=swd1"></script>
+  <script src="/static/js/map.js?v=compact1"></script>
   <script src="/static/js/column-filter.js?v=2"></script>
   {% include 'partials/ux_capture.html' %}
 </body>

@@ -102,7 +102,7 @@ class ClearSearchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.search.assert_not_called()
         self.assertIsNone(response.headers.get("hx-reswap"))
-        self.assertIn("Pick a state or All, then search.", response.text)
+        self.assertNotIn("Pick a state or All, then search.", response.text)
 
     def test_named_search_still_queries(self) -> None:
         self.search.return_value = {"wells": [], "total": 0, "start": 0, "end": 0}
@@ -137,5 +137,5 @@ class ClearSearchTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.search.assert_not_called()
-        self.assertIn("Pick a state or All, then search.", response.text)
+        self.assertNotIn("Pick a state or All, then search.", response.text)
         self.assertNotIn("data-results-table", response.text)

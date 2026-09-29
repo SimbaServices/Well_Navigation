@@ -173,12 +173,7 @@ def is_htmx(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
 
-EMPTY_SEARCH_HTML = (
-    '<div class="empty">'
-    "Search wells, pipelines, and waste sites in Texas, New Mexico, "
-    "Oklahoma, and Louisiana. Pick a state or All, then search."
-    "</div>"
-)
+EMPTY_SEARCH_HTML = ""
 
 
 def _search_has_constraints(filters: dict, q: str, data: dict, column_filters: dict) -> bool:
