@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,6 +19,9 @@ from wellnav.states import (
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "wellnav.db"
+# Bump when init_schema gains DDL. A second worker skips the body once this
+# version is stored, so two processes never add the same column.
+SCHEMA_VERSION = 6
 
 OPERATOR_COLUMNS = """
     operator_number TEXT PRIMARY KEY,
@@ -127,6 +132,15 @@ def session(path: Path | None = None):
 
 
 def init_schema(conn: sqlite3.Connection) -> None:
+    """Apply schema changes once. Other workers wait, then skip a finished migration."""
+    with schema_lock(conn):
+        if _schema_is_current(conn):
+            return
+        _init_schema_locked(conn)
+        conn.commit()
+
+
+def _init_schema_locked(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS meta (
@@ -328,12 +342,8 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         "INSERT OR IGNORE INTO meta(key, value) VALUES ('permit_refresh_hours', '168')"
     )
-    conn.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', '5')")
     conn.execute(
         "UPDATE meta SET value = '168' WHERE key = 'permit_refresh_hours' AND value = '24'"
-    )
-    conn.execute(
-        "UPDATE meta SET value = '5' WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 5"
     )
     _migrate_saved_wells(conn)
 
@@ -368,6 +378,11 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
     normalize_stored_operators(conn)
     normalize_stored_well_names(conn)
+    conn.execute(
+        "INSERT INTO meta(key, value) VALUES ('schema_version', ?) "
+        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (str(SCHEMA_VERSION),),
+    )
 
 
 def _migrate_saved_wells(conn: sqlite3.Connection) -> None:
@@ -403,10 +418,101 @@ def _migrate_saved_wells(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA foreign_keys=ON")
 
 
+def _column_names(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+
+
 def _ensure_column(conn: sqlite3.Connection, table: str, column: str, decl: str) -> None:
-    cols = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-    if column not in cols:
+    if column in _column_names(conn, table):
+        return
+    try:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    except sqlite3.OperationalError as exc:
+        # The other worker committed the same ALTER between the check and this one.
+        if "duplicate column" not in str(exc).lower() or column not in _column_names(conn, table):
+            raise
+
+
+def _schema_is_current(conn: sqlite3.Connection) -> bool:
+    try:
+        row = conn.execute(
+            "SELECT value FROM meta WHERE key = 'schema_version'"
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return False
+    if row is None:
+        return False
+    raw = row["value"] if isinstance(row, sqlite3.Row) else row[0]
+    try:
+        return int(raw) >= SCHEMA_VERSION
+    except (TypeError, ValueError):
+        return False
+
+
+def _sqlite_path(conn: sqlite3.Connection) -> str | None:
+    row = conn.execute("PRAGMA database_list").fetchone()
+    if row is None:
+        return None
+    file = row["file"] if isinstance(row, sqlite3.Row) else row[2]
+    return file or None
+
+
+@contextmanager
+def schema_lock(conn: sqlite3.Connection):
+    """Exclusive lock so only one process migrates a database file."""
+    path = _sqlite_path(conn)
+    if not path:
+        yield
+        return
+    lock_path = Path(path + ".migrate.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(lock_path, "a+b")
+    try:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+        _acquire_file_lock(handle)
+        try:
+            yield
+        finally:
+            _release_file_lock(handle)
+    finally:
+        handle.close()
+
+
+def _acquire_file_lock(handle) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0)
+        deadline = time.monotonic() + 600
+        while True:
+            try:
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                return
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
+    import fcntl
+
+    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+
+
+def _release_file_lock(handle) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+    import fcntl
+
+    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+ensure_column = _ensure_column
 
 
 def get_meta(conn: sqlite3.Connection, key: str, default: str | None = None) -> str | None:

@@ -12,6 +12,7 @@ wellbore_api_result.html
 data/*.db
 data/*.db-wal
 data/*.db-shm
+data/*.migrate.lock
 data/*.log
 data/.session_secret
 data/ingest_scratch/

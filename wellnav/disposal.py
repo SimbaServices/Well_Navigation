@@ -13,7 +13,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-from wellnav.db import ROOT
+from wellnav.db import ROOT, ensure_column
 from wellnav.states import APP_STATES, STATE_BBOX
 
 DISPOSAL_DB_PATH = ROOT / "data" / "disposal.db"
@@ -74,14 +74,8 @@ def ensure_disposal_table(conn: sqlite3.Connection, state: str) -> str:
     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_permit ON {table}(permit_no)")
     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_county ON {table}(county)")
     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_xy ON {table}(lon, lat)")
-    _ensure_column(conn, table, "swd_class", "TEXT")
+    ensure_column(conn, table, "swd_class", "TEXT")
     return table
-
-
-def _ensure_column(conn: sqlite3.Connection, table: str, column: str, decl: str) -> None:
-    have = {info[1] for info in conn.execute(f"PRAGMA table_info({table})")}
-    if column not in have:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
 
 
 def listed_disposal_tables(conn: sqlite3.Connection) -> list[str]:
