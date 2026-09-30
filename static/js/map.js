@@ -420,8 +420,248 @@ function setBasemap(key, { persist = true } = {}) {
   activeBase = next === "usgs" ? makeUsgsLayer() : BASE_LAYERS[next]();
   if (activeBase) activeBase.addTo(map);
   if (persist && next === key) localStorage.setItem("wellnav.basemap", key);
+  syncBasemapUi(next);
+}
+
+function ensureBasemapSelect() {
+  let select = document.getElementById("basemap-select");
+  if (select) return select;
+  select = document.createElement("select");
+  select.id = "basemap-select";
+  select.hidden = true;
+  select.setAttribute("aria-hidden", "true");
+  document.body.appendChild(select);
+  return select;
+}
+
+function syncBasemapUi(key) {
+  const current = key && BASE_LAYERS[key] ? key : selectedBasemap();
   const select = document.getElementById("basemap-select");
-  if (select && select.value !== next) select.value = next;
+  if (select && select.value !== current) select.value = current;
+  document.querySelectorAll("[data-basemap]").forEach((btn) => {
+    const on = btn.dataset.basemap === current;
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function setMapToolOpen(wrap, open) {
+  if (!wrap) return;
+  const tile = wrap.querySelector(".map-tool-tile");
+  const menu = wrap.querySelector(".map-tool-menu");
+  wrap.classList.toggle("is-open", !!open);
+  if (tile) tile.setAttribute("aria-expanded", open ? "true" : "false");
+  if (menu) {
+    menu.hidden = !open;
+    menu.setAttribute("aria-hidden", open ? "false" : "true");
+  }
+}
+
+function closeMapToolMenus() {
+  document.querySelectorAll(".leaflet-control-maptool").forEach((wrap) => {
+    setMapToolOpen(wrap, false);
+  });
+}
+
+function closeBasemapMenu() {
+  closeMapToolMenus();
+}
+
+function toggleMapToolMenu(wrap) {
+  const willOpen = !wrap.classList.contains("is-open");
+  closeMapToolMenus();
+  if (willOpen) setMapToolOpen(wrap, true);
+}
+
+function toggleBasemapMenu(wrap) {
+  toggleMapToolMenu(wrap);
+}
+
+function bindMapToolChrome(wrap) {
+  L.DomEvent.disableClickPropagation(wrap);
+  L.DomEvent.disableScrollPropagation(wrap);
+}
+
+function addBasemapControl() {
+  if (!map || typeof L === "undefined") return;
+  if (map.zoomControl) map.zoomControl.setPosition("topright");
+  if (map._basemapControl) {
+    syncBasemapUi(selectedBasemap());
+    return;
+  }
+  const Control = L.Control.extend({
+    options: { position: "topright" },
+    onAdd() {
+      const wrap = L.DomUtil.create("div", "leaflet-bar leaflet-control-maptool leaflet-control-basemap");
+      const tile = L.DomUtil.create("button", "map-tool-tile basemap-tile", wrap);
+      tile.type = "button";
+      tile.setAttribute("aria-label", "Base map");
+      tile.setAttribute("aria-haspopup", "true");
+      tile.setAttribute("aria-expanded", "false");
+      tile.setAttribute("aria-controls", "basemap-menu");
+      tile.innerHTML =
+        '<svg class="map-tool-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path d="M12 2.4 2.6 7.2 12 12 21.4 7.2 12 2.4z"/>' +
+        '<path d="M2.6 12.2 12 17l9.4-4.8-2.1-1.1L12 14.8 4.7 11.1z" opacity=".72"/>' +
+        '<path d="M2.6 16.2 12 21l9.4-4.8-2.1-1.1L12 18.8 4.7 15.1z" opacity=".46"/>' +
+        "</svg>";
+      const menu = L.DomUtil.create("div", "map-tool-menu basemap-menu", wrap);
+      menu.id = "basemap-menu";
+      menu.hidden = true;
+      menu.setAttribute("aria-hidden", "true");
+      menu.setAttribute("role", "menu");
+      Object.entries(BASEMAP_LABELS).forEach(([value, label]) => {
+        const choice = L.DomUtil.create("button", "map-tool-choice basemap-choice", menu);
+        choice.type = "button";
+        choice.dataset.basemap = value;
+        choice.setAttribute("role", "menuitem");
+        choice.textContent = label;
+        L.DomEvent.on(choice, "click", (event) => {
+          L.DomEvent.stop(event);
+          setBasemap(value);
+          closeMapToolMenus();
+        });
+      });
+      L.DomEvent.on(tile, "click", (event) => {
+        L.DomEvent.stop(event);
+        toggleMapToolMenu(wrap);
+      });
+      bindMapToolChrome(wrap);
+      return wrap;
+    },
+  });
+  map._basemapControl = new Control().addTo(map);
+  syncBasemapUi(selectedBasemap());
+}
+
+function syncOverlayUi() {
+  const pipeOn = pipelinesEnabled();
+  const swdOn = disposalEnabled();
+  document.querySelectorAll("[data-overlay]").forEach((btn) => {
+    const on = btn.dataset.overlay === "pipelines" ? pipeOn : swdOn;
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  document.querySelectorAll(".overlay-tile").forEach((tile) => {
+    tile.classList.toggle("is-active", pipeOn || swdOn);
+  });
+}
+
+function addOverlayControl() {
+  if (!map || typeof L === "undefined") return;
+  if (map._overlayControl) {
+    syncOverlayUi();
+    return;
+  }
+  const Control = L.Control.extend({
+    options: { position: "topright" },
+    onAdd() {
+      const wrap = L.DomUtil.create("div", "leaflet-bar leaflet-control-maptool leaflet-control-overlays");
+      const tile = L.DomUtil.create("button", "map-tool-tile overlay-tile", wrap);
+      tile.type = "button";
+      tile.setAttribute("aria-label", "Map overlays");
+      tile.setAttribute("aria-haspopup", "true");
+      tile.setAttribute("aria-expanded", "false");
+      tile.setAttribute("aria-controls", "overlay-menu");
+      tile.innerHTML =
+        '<svg class="map-tool-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path d="M4.2 14.2 12 18.4l7.8-4.2-1.7-1L12 16.4 5.9 13.2z" opacity=".45"/>' +
+        '<path d="M4.2 10.6 12 14.8l7.8-4.2L12 6.4z"/>' +
+        "</svg>";
+      const menu = L.DomUtil.create("div", "map-tool-menu overlay-menu", wrap);
+      menu.id = "overlay-menu";
+      menu.hidden = true;
+      menu.setAttribute("aria-hidden", "true");
+      menu.setAttribute("role", "menu");
+      [
+        ["pipelines", "Pipelines"],
+        ["disposal", "SWD"],
+      ].forEach(([value, label]) => {
+        const choice = L.DomUtil.create("button", "map-tool-choice overlay-choice", menu);
+        choice.type = "button";
+        choice.dataset.overlay = value;
+        choice.setAttribute("role", "menuitemcheckbox");
+        choice.textContent = label;
+        L.DomEvent.on(choice, "click", (event) => {
+          L.DomEvent.stop(event);
+          if (value === "pipelines") setPipelinesOn(!pipelinesEnabled());
+          else setDisposalOn(!disposalEnabled());
+        });
+      });
+      L.DomEvent.on(tile, "click", (event) => {
+        L.DomEvent.stop(event);
+        toggleMapToolMenu(wrap);
+      });
+      bindMapToolChrome(wrap);
+      return wrap;
+    },
+  });
+  map._overlayControl = new Control().addTo(map);
+  syncOverlayUi();
+}
+
+function addLocateControl() {
+  if (!map || typeof L === "undefined") return;
+  if (map._locateControl) return;
+  const Control = L.Control.extend({
+    options: { position: "topright" },
+    onAdd() {
+      const wrap = L.DomUtil.create("div", "leaflet-bar leaflet-control-locate");
+      const tile = L.DomUtil.create("button", "map-tool-tile locate-tile", wrap);
+      tile.type = "button";
+      tile.setAttribute("aria-label", "My location");
+      tile.innerHTML =
+        '<svg class="map-tool-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path d="M11.15 2.1h1.7v3.05h-1.7zM11.15 18.85h1.7v3.05h-1.7zM2.1 11.15h3.05v1.7H2.1zM18.85 11.15h3.05v1.7h-3.05z"/>' +
+        '<path d="M12 5.35a6.65 6.65 0 1 1 0 13.3 6.65 6.65 0 0 1 0-13.3zm0 1.7a4.95 4.95 0 1 0 0 9.9 4.95 4.95 0 0 0 0-9.9z"/>' +
+        '<circle cx="12" cy="12" r="2.05"/>' +
+        "</svg>";
+      L.DomEvent.on(tile, "click", (event) => {
+        L.DomEvent.stop(event);
+        focusUserLocation();
+      });
+      bindMapToolChrome(wrap);
+      return wrap;
+    },
+  });
+  map._locateControl = new Control().addTo(map);
+}
+
+function addMapToolControls() {
+  addBasemapControl();
+  addOverlayControl();
+  addLocateControl();
+}
+
+function focusUserLocation() {
+  closeMapToolMenus();
+  if (!map) return;
+  const tile = document.querySelector(".locate-tile");
+  const go = (lat, lon) => {
+    if (tile) tile.classList.remove("is-busy");
+    if (!map || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    lastUserLatLng = Object.assign({}, lastUserLatLng || {}, { lat, lon });
+    drawUserLocation();
+    map.setView([lat, lon], Math.max(map.getZoom() || 0, 14));
+    persistMapView();
+  };
+  if (tile) tile.classList.add("is-busy");
+  watchUserLocation();
+  if (lastUserLatLng && Number.isFinite(lastUserLatLng.lat) && Number.isFinite(lastUserLatLng.lon)) {
+    go(lastUserLatLng.lat, lastUserLatLng.lon);
+    return;
+  }
+  currentPosition()
+    .then((here) => {
+      onLocationFix({
+        coords: { latitude: here.lat, longitude: here.lon },
+      });
+      go(here.lat, here.lon);
+    })
+    .catch((err) => {
+      if (tile) tile.classList.remove("is-busy");
+      setOfflineStatus(err && err.message ? err.message : "Could not read your current location.");
+    });
 }
 
 function persistMapView() {
@@ -1315,7 +1555,7 @@ function setPinMode(on) {
   if (btn) {
     btn.classList.toggle("is-on", pinMode);
     btn.setAttribute("aria-pressed", pinMode ? "true" : "false");
-    btn.textContent = pinMode ? "Done pinning" : "Pin spot";
+    btn.textContent = pinMode ? "Done pinning" : "Drop Pin";
   }
   const mapEl = document.getElementById("well-map");
   if (mapEl) mapEl.classList.toggle("is-pinning", pinMode);
@@ -1455,7 +1695,7 @@ function ensureOfflineControls() {
     const wrap = document.createElement("div");
     wrap.className = "offline-pack";
     wrap.innerHTML =
-      '<button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>' +
+      '<button type="button" class="primary" id="offline-pin" aria-pressed="false">Drop Pin</button>' +
       '<button type="button" class="ghost" id="offline-save">Save for offline</button>' +
       '<span class="info-tip">' +
       '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="About offline maps">i</button>' +
@@ -1593,8 +1833,7 @@ function applyNetworkState() {
 }
 
 function bindBasemapSelect() {
-  const select = document.getElementById("basemap-select");
-  if (!select) return;
+  const select = ensureBasemapSelect();
   select.replaceChildren();
   Object.entries(BASEMAP_LABELS).forEach(([key, label]) => {
     const opt = document.createElement("option");
@@ -1603,9 +1842,12 @@ function bindBasemapSelect() {
     select.appendChild(opt);
   });
   select.value = preferredBasemap();
-  if (select.dataset.bound === "1") return;
-  select.addEventListener("change", () => setBasemap(select.value));
-  select.dataset.bound = "1";
+  if (select.dataset.bound !== "1") {
+    select.addEventListener("change", () => setBasemap(select.value));
+    select.dataset.bound = "1";
+  }
+  addMapToolControls();
+  syncBasemapUi(select.value);
 }
 
 function pipelinesEnabled() {
@@ -1616,38 +1858,49 @@ function disposalEnabled() {
   return localStorage.getItem(DISPOSAL_PREF) === "1";
 }
 
+function setPipelinesOn(on) {
+  localStorage.setItem(PIPELINE_PREF, on ? "1" : "0");
+  const pipe = document.getElementById("pipeline-toggle");
+  if (pipe) pipe.checked = !!on;
+  pipelineKey = "";
+  loadPipelines();
+  syncOverlayUi();
+}
+
+function setDisposalOn(on) {
+  localStorage.setItem(DISPOSAL_PREF, on ? "1" : "0");
+  const disposal = document.getElementById("disposal-toggle");
+  if (disposal) disposal.checked = !!on;
+  disposalKey = "";
+  if (!on) {
+    disposalPopupPinned = false;
+    disposalFocus = null;
+    if (map) map.closePopup();
+    if (!pipelinePin) pinChrome = false;
+    updateChrome(loadStore());
+  }
+  loadDisposal();
+  syncOverlayUi();
+}
+
 function bindOverlayToggles() {
   const pipe = document.getElementById("pipeline-toggle");
   const disposal = document.getElementById("disposal-toggle");
   if (pipe) {
     pipe.checked = pipelinesEnabled();
     if (pipe.dataset.bound !== "1") {
-      pipe.addEventListener("change", () => {
-        localStorage.setItem(PIPELINE_PREF, pipe.checked ? "1" : "0");
-        pipelineKey = "";
-        loadPipelines();
-      });
+      pipe.addEventListener("change", () => setPipelinesOn(pipe.checked));
       pipe.dataset.bound = "1";
     }
   }
   if (disposal) {
     disposal.checked = disposalEnabled();
     if (disposal.dataset.bound !== "1") {
-      disposal.addEventListener("change", () => {
-        localStorage.setItem(DISPOSAL_PREF, disposal.checked ? "1" : "0");
-        disposalKey = "";
-        if (!disposal.checked) {
-          disposalPopupPinned = false;
-          disposalFocus = null;
-          if (map) map.closePopup();
-          if (!pipelinePin) pinChrome = false;
-          updateChrome(loadStore());
-        }
-        loadDisposal();
-      });
+      disposal.addEventListener("change", () => setDisposalOn(disposal.checked));
       disposal.dataset.bound = "1";
     }
   }
+  syncOverlayUi();
 }
 
 function coarsePointer() {
@@ -1819,6 +2072,7 @@ function enablePipelineOverlay() {
   localStorage.setItem(PIPELINE_PREF, "1");
   const pipe = document.getElementById("pipeline-toggle");
   if (pipe) pipe.checked = true;
+  syncOverlayUi();
 }
 
 function clearPipelineFocus() {
@@ -2540,6 +2794,7 @@ function selectDisposalSite(site, { fromMarker = false, enriched = false } = {})
   localStorage.setItem(DISPOSAL_PREF, "1");
   const toggle = document.getElementById("disposal-toggle");
   if (toggle) toggle.checked = true;
+  syncOverlayUi();
   if (!ensureMap()) {
     updateChrome(loadStore());
     if (window.WellnavDisposalUx) window.WellnavDisposalUx.onDisposalSelected(disposalFocus);
@@ -2638,52 +2893,7 @@ function ensureChromeNodes() {
     const nav = document.getElementById("nav-links");
     if (nav.parentElement !== footer) footer.appendChild(nav);
   }
-  if (!document.getElementById("basemap-select")) {
-    const head = chrome.querySelector(".map-head") || chrome;
-    let actions = chrome.querySelector(".map-actions");
-    if (!actions) {
-      actions = document.createElement("div");
-      actions.className = "map-actions";
-      head.appendChild(actions);
-    }
-    const label = document.createElement("label");
-    label.className = "basemap-picker";
-    label.append("Base layer ");
-    const select = document.createElement("select");
-    select.id = "basemap-select";
-    label.appendChild(select);
-    actions.appendChild(label);
-  }
-  if (!document.getElementById("pipeline-toggle")) {
-    const head = chrome.querySelector(".map-head") || chrome;
-    let actions = chrome.querySelector(".map-actions");
-    if (!actions) {
-      actions = document.createElement("div");
-      actions.className = "map-actions";
-      head.appendChild(actions);
-    }
-    const pipe = document.createElement("label");
-    pipe.className = "overlay-toggle";
-    pipe.innerHTML = '<input type="checkbox" id="pipeline-toggle"> Pipelines';
-    actions.append(pipe);
-  }
-  if (!document.getElementById("disposal-toggle")) {
-    const actions = chrome.querySelector(".map-actions");
-    if (actions) {
-      const disposal = document.createElement("span");
-      disposal.className = "overlay-with-tip";
-      disposal.innerHTML =
-        '<label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>' +
-        '<span class="info-tip">' +
-        '<button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>' +
-        '<span class="info-tip-pop" popover="manual" hidden role="tooltip">' +
-        '<span class="legend-key">' +
-        '<span><i class="swatch swd-commercial"></i>Commercial public SWD</span>' +
-        '<span><i class="swatch swd-operator"></i>Operator SWD / injection</span>' +
-        "</span></span></span>";
-      actions.appendChild(disposal);
-    }
-  }
+  ensureBasemapSelect();
   if (!document.getElementById("pipeline-status")) {
     const status = document.createElement("p");
     status.id = "pipeline-status";
@@ -2814,8 +3024,9 @@ function ensureMap() {
     closePopupOnClick: true,
     tapTolerance: coarsePointer() ? 32 : 15,
   }).setView([31.2, -99.2], 6);
+  if (map.zoomControl) map.zoomControl.setPosition("topright");
   if (map.attributionControl) map.removeControl(map.attributionControl);
-  L.control.attribution({ position: "topright", prefix: false }).addTo(map);
+  L.control.attribution({ position: "bottomleft", prefix: false }).addTo(map);
   map.createPane("pipelines");
   map.getPane("pipelines").style.zIndex = 350;
   map.createPane("disposal");
@@ -2829,6 +3040,7 @@ function ensureMap() {
   bindOfflinePack();
   observeMapSize(el);
   map.on("click", (event) => {
+    closeBasemapMenu();
     if (pinMode) {
       addRoutePin(event.latlng);
       return;
@@ -3475,8 +3687,10 @@ function renderPinsTable() {
     const tr = document.createElement("tr");
     tr.className = "pin-row" + (row.active ? " is-selected" : "");
     const name = document.createElement("td");
+    name.className = "pin-name";
     name.textContent = row.label;
     const kind = document.createElement("td");
+    kind.className = "pin-kind";
     kind.textContent = row.kind;
     const action = document.createElement("td");
     action.className = "save-cell";
@@ -3574,9 +3788,13 @@ function addAndSelectWell(btn) {
   if (window.WellnavLayers) window.WellnavLayers.closeFloats();
 }
 
-function mapAllVisibleWells() {
+function mapAllVisibleWells(origin) {
+  const sheet = origin && origin.closest ? origin.closest(".sheet-view, #results") : null;
+  const root = sheet || document;
   let addedAny = false;
-  document.querySelectorAll("tr.well-row").forEach((row) => {
+  root.querySelectorAll("tr.well-row").forEach((row) => {
+    if (row.hidden) return;
+    if (row.parentElement && row.parentElement.closest("[hidden]")) return;
     const well = wellFromRow(row);
     if (!well) {
       markNoCoords(row.querySelector(".map-toggle"));
@@ -3662,12 +3880,14 @@ function markRowsSaved(apis) {
     const api = (row.dataset.api || "").trim();
     if (!wanted.has(api)) return;
     row.classList.add("is-saved");
-    const btn = row.querySelector(".save-form .save-btn");
+    const btn = row.querySelector(".save-star, .save-form .save-btn");
     if (!btn) return;
     btn.classList.add("on");
     btn.textContent = btn.classList.contains("save-star") ? "★" : "★ Saved";
     btn.setAttribute("aria-pressed", "true");
-    btn.title = "Remove from saved wells";
+    const savedLabel = btn.classList.contains("save-star") ? "Saved" : "Remove from saved wells";
+    btn.title = savedLabel;
+    btn.setAttribute("aria-label", savedLabel);
   });
 }
 
@@ -3939,12 +4159,90 @@ document.addEventListener("pointerdown", (event) => {
   if (map) map.closePopup();
 });
 
+function paintSearchStar(btn, on) {
+  btn.classList.toggle("on", on);
+  btn.textContent = on ? "★" : "☆";
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+  const label = on ? "Saved" : "Save this well";
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
+  const row = btn.closest("tr.well-row");
+  if (row) row.classList.toggle("is-saved", on);
+}
+
+function applySavedCount(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const next = doc.getElementById("account-nav");
+  const current = document.getElementById("account-nav");
+  if (!next || !current) return;
+  const count = (next.textContent || "").trim();
+  current.textContent = count;
+  current.hidden = !count;
+}
+
+function saveSearchResultStar(btn) {
+  if (btn.classList.contains("on") || btn.getAttribute("aria-pressed") === "true") return;
+  const row = btn.closest("tr.well-row");
+  const api = row && (row.dataset.api || "").trim();
+  if (!row || !api || btn.dataset.saving === "1") return;
+  btn.dataset.saving = "1";
+  paintSearchStar(btn, true);
+  const body = new URLSearchParams();
+  body.set("name", row.dataset.name || "");
+  body.set("well_no", row.dataset.wellNo || "");
+  body.set("lease", row.dataset.lease || "");
+  body.set("county", row.dataset.county || "");
+  body.set("operator", row.dataset.operator || "");
+  body.set("state", row.dataset.state || "tx");
+  body.set("variant", "row");
+  fetch("/saved/" + encodeURIComponent(api), {
+    method: "POST",
+    credentials: "same-origin",
+    redirect: "manual",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "text/html",
+      "HX-Request": "true",
+    },
+    body,
+  })
+    .then((response) => {
+      if (!response.ok || response.redirected || response.headers.get("HX-Redirect")) {
+        paintSearchStar(btn, false);
+        return "";
+      }
+      return response.text();
+    })
+    .then((html) => {
+      if (html) applySavedCount(html);
+    })
+    .catch(() => {
+      paintSearchStar(btn, false);
+    })
+    .finally(() => {
+      delete btn.dataset.saving;
+    });
+}
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const origin = event.target && event.target.closest ? event.target : event.target && event.target.parentElement;
+    const btn = origin && origin.closest("#results .save-star");
+    if (!btn || btn.tagName !== "BUTTON") return;
+    event.preventDefault();
+    event.stopPropagation();
+    saveSearchResultStar(btn);
+  },
+  true
+);
+
 document.addEventListener("click", (event) => {
   const action = event.target.closest("[data-map-action]");
   if (action) {
     event.preventDefault();
     const kind = action.dataset.mapAction;
-    if (kind === "page") mapAllVisibleWells();
+    if (kind === "page") mapAllVisibleWells(action);
     else if (kind === "clear") clearMappedWells();
     return;
   }

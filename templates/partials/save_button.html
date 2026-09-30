@@ -1,11 +1,21 @@
 {% set starred = (well.state|default('tx') ~ ':' ~ well.api) in saved_apis|default([]) or well.api in saved_apis|default([]) %}
-{% if user %}
+{% if user and variant == 'row' %}
+  <button type="button"
+          class="save-btn save-star{% if starred %} on{% endif %}"
+          title="{{ 'Saved' if starred else 'Save this well' }}"
+          aria-label="{{ 'Saved' if starred else 'Save this well' }}"
+          aria-pressed="{{ 'true' if starred else 'false' }}">{% if starred %}★{% else %}☆{% endif %}</button>
+{% elif user %}
   <form class="save-form"
         action="/saved/{{ well.api }}"
         method="post"
         hx-post="/saved/{{ well.api }}"
+        hx-push-url="false"
+        hx-indicator="unset"
+        hx-sync="unset"
+        hx-on:submit="event.stopPropagation()"
         {% if variant == 'saved' %}
-        hx-target="#results"
+        hx-target="#saved-body"
         hx-swap="innerHTML"
         {% else %}
         hx-target="this"
@@ -18,13 +28,8 @@
     <input type="hidden" name="county" value="{{ well.county or '' }}">
     <input type="hidden" name="operator" value="{{ well.operator or '' }}">
     <input type="hidden" name="state" value="{{ well.state or 'tx' }}">
-    <input type="hidden" name="variant" value="{{ variant or 'row' }}">
-    {% if variant == 'row' %}
-      <button type="submit" class="save-btn save-star{% if starred %} on{% endif %}"
-              title="{{ 'Remove from saved wells' if starred else 'Save this well' }}"
-              aria-label="{{ 'Remove from saved wells' if starred else 'Save this well' }}"
-              aria-pressed="{{ 'true' if starred else 'false' }}">{% if starred %}★{% else %}☆{% endif %}</button>
-    {% elif starred %}
+    <input type="hidden" name="variant" value="{{ variant or 'detail' }}">
+    {% if starred %}
       <button type="submit" class="save-btn save-star on" title="Remove from saved wells" aria-label="Remove from saved wells" aria-pressed="true">★</button>
     {% else %}
       <button type="submit" class="save-btn save-star" title="Save this well" aria-label="Save this well" aria-pressed="false">☆</button>

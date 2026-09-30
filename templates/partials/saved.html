@@ -1,3 +1,22 @@
+{% macro col(label, key) -%}
+<th scope="col" class="col-sortable{% if key == 'operator' %} col-operator{% endif %}">
+  <div class="col-head-wrap">
+    <div class="col-head">
+      <button type="button" class="col-filter-toggle" data-col-filter="{{ key }}"
+              aria-expanded="false" aria-controls="saved-col-filter-{{ key }}"
+              title="Filter {{ label }}">
+        {{ label }}
+      </button>
+    </div>
+    <div id="saved-col-filter-{{ key }}" class="col-filter" hidden>
+      <label class="sr-only" for="saved-cf-{{ key }}">Filter {{ label }}</label>
+      <input id="saved-cf-{{ key }}" class="col-filter-input" type="search" data-cf="{{ key }}"
+             data-local-filter
+             placeholder="Filter" autocomplete="off" spellcheck="false" enterkeyhint="search">
+    </div>
+  </div>
+</th>
+{%- endmacro %}
 <div class="result-head">
   {% if wells %}
     <div class="results-toolbar result-tools">
@@ -9,12 +28,12 @@
 
 {% if wells %}
   <div class="table-wrap">
-    <table class="wells" data-results-table>
+    <table class="wells" data-results-table data-local-filters>
       <thead>
         <tr>
-          <th>Well Name</th>
-          <th class="col-operator">Operator</th>
-          <th>County</th>
+          {{ col("Well Name", "name") }}
+          {{ col("Operator", "operator") }}
+          {{ col("County", "county") }}
           <th class="save-col"><span class="sr-only">Save</span></th>
         </tr>
       </thead>
@@ -22,6 +41,7 @@
         {% for well in wells %}
           <tr class="well-row"
               data-api="{{ well.api }}"
+              data-state="{{ well.state or 'tx' }}"
               data-name="{{ well.well_name or '' }}"
               data-lease="{{ well.lease_name or '' }}"
               data-county="{{ well.county or '' }}"
@@ -31,17 +51,20 @@
               data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
               data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
               data-status="{{ well.status_label or '' }}">
-            <td class="well-name-cell">
+            <td class="well-name-cell" data-col="name">
               <a class="well-name-link" href="{{ well_href(well) }}">{{ well.well_name }}</a>
               {% if well.api_display %}
                 <span class="well-api-sub mono">{{ well.api_display }}</span>
               {% endif %}
             </td>
-            <td class="col-operator">{{ well.operator }}</td>
-            <td>{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
+            <td class="col-operator" data-col="operator">{{ well.operator }}</td>
+            <td data-col="county">{{ well.county }}{% if well.state %}, {{ well.state|upper }}{% endif %}</td>
             <td class="save-cell">{% with variant='saved' %}{% include 'partials/save_button.html' %}{% endwith %}</td>
           </tr>
         {% endfor %}
+        <tr class="saved-filter-empty" hidden>
+          <td class="empty" colspan="4">No saved wells match these filters.</td>
+        </tr>
       </tbody>
     </table>
   </div>

@@ -1,12 +1,49 @@
-/* Column-header text filters. The box stays closed until a header is clicked. */
+/* Column-header text filters. The box stays closed until a header is clicked.
+   Search headers request /search. Saved headers filter the rows already shown. */
 (function () {
   function filtersRoot() {
     return document.getElementById("column-filters");
   }
 
+  function isLocalFilter(input) {
+    return !!(input && input.hasAttribute("data-local-filter"));
+  }
+
+  function columnText(row, key) {
+    const cell = row.querySelector('[data-col="' + key + '"]');
+    if (!cell) return "";
+    return cell.textContent.replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  function applyLocalFilters(input) {
+    const table = input.closest("table");
+    if (!table) return;
+    const filters = [];
+    table.querySelectorAll(".col-filter-input[data-local-filter]").forEach((el) => {
+      const key = el.getAttribute("data-cf");
+      const value = el.value.trim().toLowerCase();
+      if (key && value) filters.push({ key: key, value: value });
+    });
+    const rows = table.querySelectorAll("tbody tr.well-row");
+    let shown = 0;
+    rows.forEach((row) => {
+      const match = filters.every((filter) => columnText(row, filter.key).indexOf(filter.value) !== -1);
+      row.hidden = !match;
+      if (match) shown += 1;
+    });
+    const empty = table.querySelector("tr.saved-filter-empty");
+    if (empty) empty.hidden = !(filters.length && rows.length && shown === 0);
+  }
+
   function syncHidden(input) {
+    if (!input) return;
+    if (isLocalFilter(input)) {
+      applyLocalFilters(input);
+      markToggle(input);
+      return;
+    }
     const root = filtersRoot();
-    if (!root || !input) return;
+    if (!root) return;
     const key = input.getAttribute("data-cf");
     if (!key) return;
     const name = "cf_" + key;
@@ -80,6 +117,7 @@
     if (!input) return;
     event.preventDefault();
     syncHidden(input);
+    if (isLocalFilter(input)) return;
     if (window.htmx) window.htmx.trigger(input, "search");
   });
 
@@ -88,10 +126,10 @@
     if (!form.classList || !form.classList.contains("col-filter")) return;
     event.preventDefault();
     const input = form.querySelector(".col-filter-input");
-    if (input && window.htmx) {
-      syncHidden(input);
-      window.htmx.trigger(input, "search");
-    }
+    if (!input) return;
+    syncHidden(input);
+    if (isLocalFilter(input) || !window.htmx) return;
+    window.htmx.trigger(input, "search");
   });
 
   function onFilterEdit(event) {
@@ -104,6 +142,7 @@
   document.body.addEventListener("htmx:configRequest", (event) => {
     const input = event.detail && event.detail.elt;
     if (!input || !input.classList || !input.classList.contains("col-filter-input")) return;
+    if (isLocalFilter(input)) return;
     syncHidden(input);
     const key = input.getAttribute("data-cf");
     const params = event.detail.parameters;

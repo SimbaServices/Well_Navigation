@@ -225,7 +225,7 @@ def view_ctx(request: Request, **extra) -> dict:
     context = {
         "user": user,
         "saved_apis": saved_apis,
-        "saved_count": len(saved_apis),
+        "saved_count": sum(1 for key in saved_apis if ":" in key),
         "recent": recent,
         "cache_stats": CACHE.stats(user["id"]) if user else None,
         **extra,
@@ -1482,11 +1482,17 @@ async def saved_toggle(request: Request) -> HTMLResponse:
         "county": data.get("county", ""),
         "operator": data.get("operator", ""),
     }
-    if SAVED.is_saved(user["id"], eight, state=state):
+    variant = data.get("variant") or "row"
+    already = SAVED.is_saved(user["id"], eight, state=state)
+    if variant == "row":
+        if not already:
+            SAVED.save(user["id"], well)
+        html = render("partials/save_button.html", request, well=well, variant="row")
+        return HTMLResponse(with_oob(request, html, nav=True))
+    if already:
         SAVED.remove(user["id"], eight, state=state)
     else:
         SAVED.save(user["id"], well)
-    variant = data.get("variant") or "row"
     if variant == "saved":
         html = render("partials/saved.html", request, wells=SAVED.list(user["id"]))
         return fragment_or_page(request, html, nav=True, clear_suggest=True)

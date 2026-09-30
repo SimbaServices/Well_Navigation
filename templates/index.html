@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers16">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers25">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -125,18 +125,10 @@
         </section>
         <section id="settings-sheet" class="sheet-view" data-view="settings" hidden aria-label="Settings">
           <h2>Settings</h2>
-          <label class="basemap-picker settings-basemap">
-            Base layer
-            <select id="basemap-select" hx-on:change="setBasemap(this.value)">
-              <option value="streets">Street</option>
-              <option value="imagery">Satellite</option>
-              <option value="usgs">Offline</option>
-            </select>
-          </label>
           <div class="offline-pack settings-offline">
             <button type="button" class="primary" id="offline-save">Save for offline</button>
-            <button type="button" class="ghost" id="offline-clear" hidden>Clear saved maps</button>
-            <button type="button" class="ghost" id="offline-pin" aria-pressed="false">Pin spot</button>
+            <button type="button" class="primary" id="offline-clear" hidden>Clear saved maps</button>
+            <button type="button" class="primary" id="offline-pin" aria-pressed="false">Drop Pin</button>
             <p id="offline-status" class="muted"></p>
           </div>
           <p class="muted">Search and map stay in this state until you change it.</p>
@@ -179,36 +171,6 @@
               <span>Pipeline name</span>
             </label>
           </div>
-          <p class="muted">Map layers.</p>
-          <div class="map-actions settings-map-actions">
-            <span class="overlay-with-tip">
-              <label class="overlay-toggle"><input type="checkbox" id="pipeline-toggle" checked> Pipelines</label>
-              <span class="info-tip">
-                <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="Pipeline colors">i</button>
-                <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-                  <span class="legend-key">
-                    <span><i class="swatch gas"></i>Gas</span>
-                    <span><i class="swatch crude"></i>Crude</span>
-                    <span><i class="swatch hvl"></i>HVL</span>
-                    <span><i class="swatch product"></i>Product</span>
-                    <span><i class="swatch other"></i>Other</span>
-                  </span>
-                </span>
-              </span>
-            </span>
-            <span class="overlay-with-tip">
-              <label class="overlay-toggle"><input type="checkbox" id="disposal-toggle"> SWD</label>
-              <span class="info-tip">
-                <button type="button" class="info-tip-btn" aria-expanded="false" aria-label="SWD colors">i</button>
-                <span class="info-tip-pop" popover="manual" hidden role="tooltip">
-                  <span class="legend-key">
-                    <span><i class="swatch swd-commercial"></i>Commercial public SWD</span>
-                    <span><i class="swatch swd-operator"></i>Operator SWD / injection</span>
-                  </span>
-                </span>
-              </span>
-            </span>
-          </div>
           <div class="modes modes-disposal" role="tablist">
             <label class="mode">
               <input type="radio" name="disp_mode" value="name"{% if disp_mode == 'name' %} checked{% endif %}>
@@ -235,7 +197,7 @@
                 <tr>
                   <th>Location</th>
                   <th>Type</th>
-                  <th class="save-col"><span class="sr-only">Unpin</span></th>
+                  <th class="save-col">Unpin</th>
                 </tr>
               </thead>
               <tbody id="pins-rows"></tbody>
@@ -313,9 +275,9 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers17"></script>
+  <script src="/static/js/map.js?v=layers25"></script>
   <script src="/static/js/layers.js?v=10"></script>
-  <script src="/static/js/column-filter.js?v=3"></script>
+  <script src="/static/js/column-filter.js?v=4"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>
