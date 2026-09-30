@@ -42,7 +42,7 @@
     if (dock) {
       dock.dataset.view = name || "";
       dock.classList.toggle("is-open", !!open);
-      if (!open || name === "details" || name === "pins" || name === "saved") dock.style.height = "";
+      if (!open || name === "details" || name === "pins" || name === "saved" || name === "search") dock.style.height = "";
     }
     if (tab) {
       tab.setAttribute("aria-expanded", open ? "true" : "false");
@@ -92,7 +92,10 @@
   }
 
   function onResults() {
-    if (resultsHaveContent()) openDock();
+    if (!resultsHaveContent()) return;
+    openDock();
+    const dock = sheet("bottom-sheet");
+    if (dock && dock.dataset.view === "search") dock.style.height = "";
   }
 
   function setDetail(open) {

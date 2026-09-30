@@ -2417,13 +2417,15 @@ body.gate .gate-tagline {
 .bottom-sheet.is-open { height: min(58vh, 34rem); }
 .bottom-sheet.is-open[data-view="details"],
 .bottom-sheet.is-open[data-view="pins"],
-.bottom-sheet.is-open[data-view="saved"] {
+.bottom-sheet.is-open[data-view="saved"],
+.bottom-sheet.is-open[data-view="search"] {
   height: auto;
   max-height: min(58vh, 34rem);
 }
 .bottom-sheet.is-open[data-view="details"] .sheet-views,
 .bottom-sheet.is-open[data-view="pins"] .sheet-views,
-.bottom-sheet.is-open[data-view="saved"] .sheet-views {
+.bottom-sheet.is-open[data-view="saved"] .sheet-views,
+.bottom-sheet.is-open[data-view="search"] .sheet-views {
   overflow: auto;
   max-height: calc(min(58vh, 34rem) - 0.9rem);
 }
