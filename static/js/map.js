@@ -3219,9 +3219,6 @@ function fitToWells(store) {
     const well = store.wells[api];
     if (!well || !Number.isFinite(well.lat) || !Number.isFinite(well.lon)) return;
     points.push([well.lat, well.lon]);
-    if (store.selected === api && hasToe(well)) {
-      points.push([well.toeLat, well.toeLon]);
-    }
   });
   if (!points.length) return;
   if (points.length === 1) {
@@ -3625,10 +3622,7 @@ function updateChrome(store) {
 
 function focusWellOnMap(well) {
   if (!map || !well || !Number.isFinite(well.lat) || !Number.isFinite(well.lon)) return;
-  const points = [[well.lat, well.lon]];
-  if (hasToe(well)) points.push([well.toeLat, well.toeLon]);
-  if (points.length === 1) map.setView(points[0], 15);
-  else map.fitBounds(points, { padding: [40, 40], maxZoom: FIT_MAX_ZOOM });
+  map.setView([well.lat, well.lon], 15);
 }
 
 function unpinAll() {
