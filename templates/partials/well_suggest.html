@@ -2,22 +2,23 @@
   <ul class="suggest">
     {% for well in wells %}
       <li>
-        <form action="/search" method="get"
-              hx-get="/search"
-              hx-target="#results"
-              hx-include="#search-form"
-              hx-push-url="true"
-              hx-indicator="#spinner">
-          <input type="hidden" name="pick_name" value="{{ well.well_name }}">
-          <input type="hidden" name="mode" value="name">
-          <input type="hidden" name="commit" value="1">
-          <button type="submit" class="suggest-item">
-            <strong>{{ well.well_name }}</strong>
-            <span class="muted">
-              {% if well.api %}{{ well.api }}{% endif %}{% if well.operator %} · {{ well.operator }}{% endif %}{% if well.county %} · {{ well.county }}{% endif %}
-            </span>
-          </button>
-        </form>
+        <button type="button" class="suggest-item" data-suggest-well="1"
+                data-api="{{ well.api8 or well.api }}"
+                data-state="{{ well.state or 'tx' }}"
+                data-name="{{ well.well_name or '' }}"
+                data-lease="{{ well.lease_name or '' }}"
+                data-county="{{ well.county or '' }}"
+                data-operator="{{ well.operator or '' }}"
+                data-lat="{{ well.lat if well.lat is not none else '' }}"
+                data-lon="{{ well.lon if well.lon is not none else '' }}"
+                data-toe-lat="{{ well.toe_lat if well.toe_lat is not none else '' }}"
+                data-toe-lon="{{ well.toe_lon if well.toe_lon is not none else '' }}"
+                data-status="{{ well.status or '' }}">
+          <strong>{{ well.well_name }}</strong>
+          <span class="muted">
+            {% if well.api %}{{ well.api }}{% endif %}{% if well.operator %} · {{ well.operator }}{% endif %}{% if well.county %} · {{ well.county }}{% endif %}
+          </span>
+        </button>
       </li>
     {% endfor %}
   </ul>

@@ -10,12 +10,13 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers25">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers27">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
   <script src="/static/js/sw-register.js?v=2"></script>
   {% include 'partials/hotjar.html' %}
+  {% from 'partials/col_head.html' import col_head %}
 </head>
 <body>
   <div id="net-banner" class="net-banner" hidden>
@@ -94,13 +95,14 @@
           {% if results_html %}
             {{ results_html | safe }}
           {% else %}
+            <p class="muted save-hint">Click the star to the right of each result to save it.</p>
             <div class="table-wrap">
               <table class="wells" data-results-table>
                 <thead>
                   <tr>
-                    <th>Well Name</th>
-                    <th>Operator</th>
-                    <th>County</th>
+                    {{ col_head("Well Name", "name", "results") }}
+                    {{ col_head("Operator", "operator", "results") }}
+                    {{ col_head("County", "county", "results") }}
                     <th class="save-col"><span class="sr-only">Save</span></th>
                   </tr>
                 </thead>
@@ -195,9 +197,9 @@
             <table class="wells pins-table">
               <thead>
                 <tr>
-                  <th>Location</th>
-                  <th>Type</th>
-                  <th class="save-col">Unpin</th>
+                  {{ col_head("Location", "location", "pins", local=true) }}
+                  {{ col_head("Type", "type", "pins", local=true) }}
+                  {{ col_head("Unpin", "unpin", "pins", local=true, extra="save-col") }}
                 </tr>
               </thead>
               <tbody id="pins-rows"></tbody>
@@ -246,9 +248,9 @@
   </main>
 
   <footer class="nav-footer">
-    <button type="button" class="nav-tile" data-open="search" aria-label="Search" aria-pressed="false">
+    <button type="button" class="nav-tile" data-open="search" aria-label="Results" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.2 15.2 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <span>Search</span>
+      <span>Results</span>
     </button>
     <button type="button" class="nav-tile" data-open="pins" aria-label="Pinned locations" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5c-3.6 0-6.5 2.8-6.5 6.3 0 4.7 6.5 12.7 6.5 12.7s6.5-8 6.5-12.7c0-3.5-2.9-6.3-6.5-6.3zm0 8.6a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6z"/></svg>
@@ -275,9 +277,9 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers25"></script>
+  <script src="/static/js/map.js?v=layers29"></script>
   <script src="/static/js/layers.js?v=10"></script>
-  <script src="/static/js/column-filter.js?v=4"></script>
+  <script src="/static/js/column-filter.js?v=5"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>

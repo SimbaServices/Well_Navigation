@@ -99,6 +99,46 @@ function searchInputIsActive() {
   return !!(q && document.activeElement === q);
 }
 
+function isTextEntry(el) {
+  if (!el || !el.matches || !el.matches("textarea, input")) return false;
+  const type = (el.getAttribute("type") || el.type || "text").toLowerCase();
+  if (el.readOnly || type === "hidden") return false;
+  return ["button", "submit", "reset", "checkbox", "radio", "file", "image", "range", "color"].indexOf(type) === -1;
+}
+
+function dismissSearchKeyboard() {
+  const q = searchInputEl();
+  if (!q || q.dataset.keyboardHiding === "1") return;
+  const active = document.activeElement;
+  if (!active || active === document.body || active === document.documentElement) return;
+  if (isTextEntry(active) && active !== q) return;
+  q.dataset.keyboardHiding = "1";
+  // iOS and Android WebView ignore a blur fired in the search-key turn.
+  // A deferred read-only blur is what makes the keyboard slide away.
+  window.setTimeout(() => {
+    const now = document.activeElement;
+    if (!now || now === document.body || now === document.documentElement || (isTextEntry(now) && now !== q)) {
+      delete q.dataset.keyboardHiding;
+      return;
+    }
+    const wasReadOnly = q.readOnly;
+    q.readOnly = true;
+    q.blur();
+    if (now !== q && typeof now.blur === "function") now.blur();
+    window.setTimeout(() => {
+      q.readOnly = wasReadOnly;
+      delete q.dataset.keyboardHiding;
+    }, 80);
+  }, 0);
+}
+
+function isCommittedSearchForm(form) {
+  if (!form || !form.getAttribute) return false;
+  if (form.id === "search-form") return true;
+  const path = form.getAttribute("hx-get") || form.getAttribute("action") || "";
+  return path === "/search" || path === "/pipelines/search" || path === "/disposal/search";
+}
+
 function workspaceRoot() {
   return document.querySelector(".workspace");
 }
@@ -3220,7 +3260,7 @@ function locationPopupOptions(opts = {}) {
     autoClose: true,
     closeOnClick: true,
     closeOnEscapeKey: true,
-    maxWidth: opts.compact ? 220 : 300,
+    maxWidth: opts.compact ? 280 : 300,
     autoPan: true,
     autoPanPaddingTopLeft: opts.compact ? [8, 8] : [16, 16],
     autoPanPaddingBottomRight: [opts.compact ? 8 : 16, bottomPad],
@@ -3232,7 +3272,13 @@ function locationPopupHtml(place) {
   const lon = Number(place.lon);
   const parts = [];
   if (place.title) parts.push(`<strong>${escapeHtml(place.title)}</strong>`);
-  if (!place.compact) {
+  if (place.compact) {
+    const operator = String(place.operator || "").trim();
+    const title = String(place.title || "").trim();
+    if (operator && operator !== title) {
+      parts.push(`<span class="loc-operator">${escapeHtml(operator)}</span>`);
+    }
+  } else {
     (place.lines || []).forEach((line) => {
       if (line) parts.push(escapeHtml(line));
     });
@@ -3241,7 +3287,7 @@ function locationPopupHtml(place) {
       parts.push(escapeHtml(`${lat.toFixed(6)}, ${lon.toFixed(6)}`));
     }
   }
-  let html = parts.join("<br>");
+  let html = place.compact ? parts.join("") : parts.join("<br>");
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
   if (!hasCoords) return html;
   html += mapsShareMarkup({
@@ -3282,8 +3328,8 @@ function mapsShareMarkup(place) {
     `<div class="loc-share-via" hidden>` +
     prompt +
     `<div class="loc-share-actions">` +
-    `<a class="ghost" data-share-via="sms">${textLabel}</a>` +
-    `<a class="ghost" data-share-via="email">Email</a>` +
+    `<a class="ghost" data-share-via="sms"><span class="loc-share-kind">${textLabel}</span><span class="loc-share-source"></span></a>` +
+    `<a class="ghost" data-share-via="email"><span class="loc-share-kind">Email</span><span class="loc-share-source"></span></a>` +
     `</div></div></div>`
   );
 }
@@ -3307,11 +3353,14 @@ function pipelinePinPopup(pin) {
 function locationShareBody(root, platform) {
   const name = (root.dataset.shareTitle || "Location").trim();
   const operator = (root.dataset.shareOperator || "").trim();
-  const link = platform === "google" ? root.dataset.shareGoogle : root.dataset.shareApple;
-  const lines = [name];
+  const link = (platform === "google" ? root.dataset.shareGoogle : root.dataset.shareApple) || "";
+  const lines = [name, link];
   if (operator && operator !== name) lines.push(operator);
-  lines.push(link || "");
   return lines.join("\r\n");
+}
+
+function sharePlatformName(platform) {
+  return platform === "google" ? "Google Maps" : "Apple Maps";
 }
 
 function prefersIosSms() {
@@ -3353,15 +3402,27 @@ function selectSharePlatform(root, platform) {
   });
   const via = root.querySelector(".loc-share-via");
   const prompt = root.querySelector(".loc-share-prompt");
-  const name = platform === "google" ? "Google Maps" : "Apple Maps";
+  const name = sharePlatformName(platform);
   const title = root.dataset.shareTitle || "Location";
   const body = locationShareBody(root, platform);
   const sms = root.querySelector('[data-share-via="sms"]');
   const email = root.querySelector('[data-share-via="email"]');
-  if (sms) sms.href = deviceShareHref("sms", title, body);
-  if (email) email.href = deviceShareHref("email", title, body);
+  if (sms) {
+    sms.href = deviceShareHref("sms", title, body);
+    sms.setAttribute("aria-label", `Text the ${name} link`);
+  }
+  if (email) {
+    email.href = deviceShareHref("email", title, body);
+    email.setAttribute("aria-label", `Email the ${name} link`);
+  }
+  root.querySelectorAll(".loc-share-source").forEach((el) => {
+    el.textContent = name;
+  });
   if (prompt) prompt.textContent = `Send the ${name} link`;
-  if (via) via.hidden = false;
+  if (via) {
+    via.hidden = false;
+    via.setAttribute("aria-label", `Send the ${name} link`);
+  }
   window.requestAnimationFrame(refreshLocationPopup);
 }
 
@@ -3688,12 +3749,15 @@ function renderPinsTable() {
     tr.className = "pin-row" + (row.active ? " is-selected" : "");
     const name = document.createElement("td");
     name.className = "pin-name";
+    name.dataset.col = "location";
     name.textContent = row.label;
     const kind = document.createElement("td");
     kind.className = "pin-kind";
+    kind.dataset.col = "type";
     kind.textContent = row.kind;
     const action = document.createElement("td");
     action.className = "save-cell";
+    action.dataset.col = "unpin";
     const unpin = document.createElement("button");
     unpin.type = "button";
     unpin.className = "ghost";
@@ -3711,6 +3775,16 @@ function renderPinsTable() {
     });
     body.appendChild(tr);
   });
+  const unmatched = document.createElement("tr");
+  unmatched.className = "saved-filter-empty";
+  unmatched.hidden = true;
+  const unmatchedCell = document.createElement("td");
+  unmatchedCell.className = "empty";
+  unmatchedCell.colSpan = 3;
+  unmatchedCell.textContent = "No pinned locations match these filters.";
+  unmatched.appendChild(unmatchedCell);
+  body.appendChild(unmatched);
+  if (window.WellnavColumnFilters) window.WellnavColumnFilters.reapply(body.closest("table"));
 }
 
 function paint({ fit = false } = {}) {
@@ -3785,6 +3859,52 @@ function addAndSelectWell(btn) {
   upsertIntoStore(well, { select: true });
   revealMapOnPhone();
   paint({ fit: !existed });
+  if (window.WellnavLayers) window.WellnavLayers.closeFloats();
+}
+
+function dismissWellSuggestions() {
+  const suggest = document.getElementById("operator-suggest");
+  if (suggest) {
+    suggest.replaceChildren();
+    suggest.dataset.dismissed = "1";
+  }
+  const q = searchInputEl();
+  if (!q) return;
+  q.dataset.suppressLive = "1";
+  if (window.htmx) window.htmx.trigger(q, "htmx:abort");
+  q.blur();
+  window.setTimeout(() => {
+    const wasReadOnly = q.readOnly;
+    q.readOnly = true;
+    q.blur();
+    window.setTimeout(() => {
+      q.readOnly = wasReadOnly;
+    }, 80);
+  }, 0);
+}
+
+function pinSuggestedWell(el) {
+  const well = wellFromDataset(el.dataset);
+  if (!well) {
+    markNoCoords(el);
+    return;
+  }
+  dismissWellSuggestions();
+  if (document.activeElement && document.activeElement !== document.body && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+  const existed = !!loadStore().wells[well.api];
+  upsertIntoStore(well, { select: true });
+  disposalFocus = null;
+  disposalPopupPinned = false;
+  pinChrome = false;
+  if (window.WellnavDisposalUx && window.WellnavDisposalUx.hideWaitPanel) {
+    window.WellnavDisposalUx.hideWaitPanel();
+  }
+  if (map) map.closePopup();
+  revealMapOnPhone();
+  paint({ fit: !existed });
+  if (existed) focusWellOnMap(loadStore().wells[well.api]);
   if (window.WellnavLayers) window.WellnavLayers.closeFloats();
 }
 
@@ -4144,9 +4264,15 @@ function bindSearchContext() {
     q.dataset.liveBound = "1";
     q.addEventListener("input", () => {
       delete q.dataset.suppressLive;
+      const suggest = document.getElementById("operator-suggest");
+      if (suggest) delete suggest.dataset.dismissed;
     });
     q.addEventListener("search", () => {
-      if (!q.value.trim() && liveWellQuery() && window.htmx) window.htmx.trigger(q, "dofilter");
+      if (!q.value.trim()) {
+        if (liveWellQuery() && window.htmx) window.htmx.trigger(q, "dofilter");
+        return;
+      }
+      dismissSearchKeyboard();
     });
   }
   applySearchContext();
@@ -4238,6 +4364,13 @@ document.addEventListener(
 );
 
 document.addEventListener("click", (event) => {
+  const suggested = event.target.closest("#operator-suggest [data-suggest-well]");
+  if (suggested) {
+    event.preventDefault();
+    event.stopPropagation();
+    pinSuggestedWell(suggested);
+    return;
+  }
   const action = event.target.closest("[data-map-action]");
   if (action) {
     event.preventDefault();
@@ -4316,10 +4449,14 @@ document.addEventListener("htmx:afterSwap", (event) => {
           if (!searchInputIsActive()) q.value = "";
         } else if (q.value === submitted) {
           q.value = "";
+          dismissSearchKeyboard();
         }
       }
       marker.remove();
     }
+  }
+  if (targetId === "operator-suggest" && target.dataset.dismissed === "1") {
+    target.replaceChildren();
   }
   syncMapButtons();
   if (targetId === "save-status" || (target && target.querySelector && target.querySelector("#save-status"))) {
@@ -4347,12 +4484,22 @@ document.body.addEventListener("click", (event) => {
   if (event.target.closest("#search-form .primary")) showWorkspacePane("search");
 });
 
+document.addEventListener(
+  "submit",
+  (event) => {
+    if (!isCommittedSearchForm(event.target)) return;
+    dismissSearchKeyboard();
+  },
+  true
+);
+
 document.getElementById("search-form")?.addEventListener("submit", () => {
   showWorkspacePane("search");
   const q = searchInputEl();
   if (!q) return;
   q.dataset.suppressLive = "1";
   if (window.htmx) window.htmx.trigger(q, "htmx:abort");
+  dismissSearchKeyboard();
 });
 
 window.addEventListener("resize", () => {

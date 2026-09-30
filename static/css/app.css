@@ -330,6 +330,7 @@ a.recent-chip { text-decoration: none; display: inline-flex; align-items: center
 .banner.error { border: 1px solid var(--danger); color: #ffd4c8; }
 .result-head { display: flex; justify-content: space-between; align-items: end; gap: 0.75rem; margin: 0.8rem 0; }
 .result-head h2, .map-head h2 { margin: 0; font-size: 1.05rem; }
+.save-hint { font-size: 0.78rem; margin: 0.2rem 0 0.35rem; }
 .result-tools { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
 .filters, .filter-bar { display: grid; gap: 0.45rem; margin-top: 0.15rem; }
@@ -459,10 +460,12 @@ table.wells th.save-col, table.wells td.save-cell {
   padding: 0;
   border: 0;
   background: transparent;
-  color: inherit;
+  color: var(--accent);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
   cursor: pointer;
 }
 .col-filter-toggle:hover,
@@ -1136,19 +1139,27 @@ button.well-name-link {
 }
 .leaflet-popup.loc-popup-compact .leaflet-popup-content-wrapper { border-radius: 8px; }
 .leaflet-popup.loc-popup-compact .leaflet-popup-content {
-  margin: 4px 14px 4px 7px;
-  min-width: 0;
+  margin: 8px 18px 8px 10px;
+  min-width: 12.75rem;
   width: max-content;
-  max-width: 13.5rem;
+  max-width: 16rem;
   font-size: 0.75rem;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 .leaflet-popup.loc-popup-compact .leaflet-popup-content strong {
   display: block;
-  font-size: 0.78rem;
-  font-weight: 650;
-  line-height: 1.15;
-  margin: 0 0 0.08rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+.leaflet-popup.loc-popup-compact .loc-operator {
+  display: block;
+  margin: 0.16rem 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 550;
+  line-height: 1.25;
 }
 .leaflet-container .loc-popup a.leaflet-popup-close-button { color: var(--muted); }
 .leaflet-container .loc-popup a.leaflet-popup-close-button:hover,
@@ -1187,32 +1198,106 @@ button.well-name-link {
 }
 .loc-popup-compact .loc-share,
 .loc-share-compact {
-  margin-top: 0;
+  margin-top: 0.45rem;
   padding-top: 0;
   border-top: 0;
 }
 .loc-popup-compact .loc-share-platforms,
+.loc-share-compact .loc-share-platforms {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  align-items: stretch;
+}
 .loc-popup-compact .loc-share-actions,
-.loc-share-compact .loc-share-platforms,
 .loc-share-compact .loc-share-actions {
-  gap: 0.05rem 0.55rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+  align-items: stretch;
 }
-.loc-popup-compact .route,
-.loc-popup-compact .loc-share-actions .ghost,
-.loc-share-compact .route,
-.loc-share-compact .loc-share-actions .ghost {
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
+.leaflet-popup.loc-popup-compact button.route,
+.loc-share-compact button.route,
+.leaflet-popup.loc-popup-compact .loc-share-actions a.ghost,
+.loc-share-compact .loc-share-actions a.ghost {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #7d8f70;
+  border-radius: 7px;
+  background: #2a3324;
+  color: var(--ink);
+  font: inherit;
   font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 1.2;
-  text-decoration: underline;
-  text-underline-offset: 0.14em;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
 }
+.leaflet-popup.loc-popup-compact button.route.google,
+.loc-share-compact button.route.google {
+  color: #e7f0ff;
+  background: #1c2838;
+  border-color: #6d93c9;
+}
+.leaflet-popup.loc-popup-compact button.route.is-selected,
+.loc-share-compact button.route.is-selected {
+  color: #1a1404;
+  background: var(--accent);
+  border-color: #f0d48a;
+  box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.45);
+}
+.leaflet-popup.loc-popup-compact button.route:hover,
+.loc-share-compact button.route:hover,
+.leaflet-popup.loc-popup-compact .loc-share-actions a.ghost:hover,
+.loc-share-compact .loc-share-actions a.ghost:hover,
+.leaflet-popup.loc-popup-compact button.route:focus-visible,
+.loc-share-compact button.route:focus-visible,
+.leaflet-popup.loc-popup-compact .loc-share-actions a.ghost:focus-visible,
+.loc-share-compact .loc-share-actions a.ghost:focus-visible {
+  border-color: var(--accent);
+}
+.leaflet-popup.loc-popup-compact button.route.is-selected:hover,
+.loc-share-compact button.route.is-selected:hover,
+.leaflet-popup.loc-popup-compact button.route.is-selected:focus-visible,
+.loc-share-compact button.route.is-selected:focus-visible {
+  border-color: #f0d48a;
+  color: #1a1404;
+}
+.leaflet-popup.loc-popup-compact .loc-share-actions a.ghost,
+.loc-share-compact .loc-share-actions a.ghost {
+  flex-direction: column;
+  gap: 0.08rem;
+  min-height: 2.4rem;
+  background: #1e261a;
+  border-color: #5a6850;
+}
+.loc-popup-compact .loc-share-kind,
+.loc-share-compact .loc-share-kind {
+  font-weight: 700;
+  line-height: 1.1;
+}
+.loc-popup-compact .loc-share-source,
+.loc-share-compact .loc-share-source {
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+.loc-share-source:empty { display: none; }
 .loc-popup-compact .loc-share-via,
-.loc-share-compact .loc-share-via { margin-top: 0.05rem; }
+.loc-share-compact .loc-share-via { margin-top: 0.35rem; }
 .map-chrome[data-focus="well"] #map-title,
 .map-chrome[data-focus="well"] #map-sub { display: none; }
 .map-chrome[data-focus="well"] .map-details:not(:has(#mapped-list li, #nav-links > *, #pipeline-owners:not([hidden]), #pipeline-status:not(:empty), #disposal-status:not(:empty))) {
@@ -2384,6 +2469,10 @@ table.wells.pins-table th:nth-child(2),
 table.wells.pins-table td:nth-child(2) {
   width: 4.1rem;
   white-space: nowrap;
+}
+table.wells.pins-table th.save-col .col-filter-toggle {
+  justify-content: flex-end;
+  text-align: right;
 }
 table.wells.pins-table th.save-col,
 table.wells.pins-table td.save-cell {

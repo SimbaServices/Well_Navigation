@@ -351,8 +351,9 @@ class WellRepository:
             collected.extend(
                 self.conn.execute(
                     f"""
-                    SELECT well_name, api, api8, operator, county,
-                           '{code}' AS state, 'as_drilled' AS kind
+                    SELECT well_name, api, api8, operator, county, lease_name, well_no,
+                           wellhead_lat, wellhead_lon, toe_lat, toe_lon,
+                           '{code}' AS state, 'as_drilled' AS kind, '' AS status
                     FROM {w}
                     WHERE well_name LIKE ?
                       AND TRIM(COALESCE(well_name, '')) != ''
@@ -365,8 +366,9 @@ class WellRepository:
             collected.extend(
                 self.conn.execute(
                     f"""
-                    SELECT well_name, api, api8, operator, county,
-                           '{code}' AS state, 'permit' AS kind
+                    SELECT well_name, api, api8, operator, county, lease_name, well_no,
+                           wellhead_lat, wellhead_lon, NULL AS toe_lat, NULL AS toe_lon,
+                           '{code}' AS state, 'permit' AS kind, status
                     FROM {p}
                     WHERE well_name LIKE ?
                       AND TRIM(COALESCE(well_name, '')) != ''
@@ -392,8 +394,15 @@ class WellRepository:
                     "api8": row["api8"] or "",
                     "operator": row["operator"] or "",
                     "county": row["county"] or "",
+                    "lease_name": row["lease_name"] or "",
+                    "well_no": row["well_no"] or "",
+                    "lat": row["wellhead_lat"],
+                    "lon": row["wellhead_lon"],
+                    "toe_lat": row["toe_lat"],
+                    "toe_lon": row["toe_lon"],
                     "state": row["state"],
                     "kind": row["kind"],
+                    "status": row["status"] or "",
                 }
             )
             if len(out) >= cap:

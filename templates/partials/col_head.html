@@ -1,0 +1,28 @@
+{% macro col_head(label, key, id_prefix, local=false, extra='', value='') -%}
+<th scope="col" class="col-sortable{% if extra %} {{ extra }}{% endif %}">
+  <div class="col-head-wrap">
+    <div class="col-head">
+      <button type="button" class="col-filter-toggle" data-col-filter="{{ key }}"
+              aria-expanded="false" aria-controls="{{ id_prefix }}-col-filter-{{ key }}"
+              title="Filter {{ label }}">
+        {{ label }}{% if value %}<span class="col-filter-dot" aria-hidden="true"></span><span class="sr-only">, filtered</span>{% endif %}
+      </button>
+    </div>
+    <div id="{{ id_prefix }}-col-filter-{{ key }}" class="col-filter" hidden>
+      <label class="sr-only" for="{{ id_prefix }}-cf-{{ key }}">Filter {{ label }}</label>
+      <input id="{{ id_prefix }}-cf-{{ key }}" class="col-filter-input" type="search" data-cf="{{ key }}"
+             {% if local %}data-local-filter {% endif %}value="{{ value }}"
+             placeholder="Filter" autocomplete="off" spellcheck="false" enterkeyhint="search"
+             {% if not local %}hx-get="/search"
+             hx-trigger="input changed delay:280ms, search"
+             hx-include="#column-filters, #search-form"
+             hx-target="#wells-rows"
+             hx-swap="outerHTML"
+             hx-replace-url="true"
+             hx-indicator="#spinner"
+             hx-sync="this:replace"
+             hx-headers='{"X-Column-Filter": "1"}'{% endif %}>
+    </div>
+  </div>
+</th>
+{%- endmacro %}

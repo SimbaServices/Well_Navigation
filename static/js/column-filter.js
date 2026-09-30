@@ -1,5 +1,5 @@
 /* Column-header text filters. The box stays closed until a header is clicked.
-   Search headers request /search. Saved headers filter the rows already shown. */
+   Search headers request /search. Saved and pinned headers filter the rows already shown. */
 (function () {
   function filtersRoot() {
     return document.getElementById("column-filters");
@@ -24,7 +24,7 @@
       const value = el.value.trim().toLowerCase();
       if (key && value) filters.push({ key: key, value: value });
     });
-    const rows = table.querySelectorAll("tbody tr.well-row");
+    const rows = table.querySelectorAll("tbody tr.well-row, tbody tr.pin-row");
     let shown = 0;
     rows.forEach((row) => {
       const match = filters.every((filter) => columnText(row, filter.key).indexOf(filter.value) !== -1);
@@ -150,6 +150,16 @@
     if (value) params["cf_" + key] = value;
     else delete params["cf_" + key];
   });
+
+  function reapply(table) {
+    if (!table) return;
+    const input = table.querySelector(".col-filter-input[data-local-filter]");
+    if (!input) return;
+    applyLocalFilters(input);
+    table.querySelectorAll(".col-filter-input[data-local-filter]").forEach(markToggle);
+  }
+
+  window.WellnavColumnFilters = { reapply: reapply };
 
   document.body.addEventListener("htmx:afterSwap", () => {
     const active = document.activeElement;
