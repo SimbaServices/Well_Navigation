@@ -7,6 +7,8 @@
 # SQLite: named volume well_navigation_wellnav-data at /app/data
 # (wellnav.db, pipelines.db, disposal.db). That overlay is required — without it, /app/data
 # would be the repo data/ folder from the bind mount.
+# The ingest service appends weekly permit refreshes into that same volume.
+# The web service only reads it.
 #
 # Production: docker compose -f docker-compose.yml up -d
 # Do not let docker-compose.override.yml load on this host.
@@ -55,6 +57,18 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  ingest:
+    image: wellnav:latest
+    container_name: wellnav-ingest
+    command: ["python", "-m", "wellnav.ingest", "watch"]
+    volumes:
+      - /home/wellnav/Well_Navigation:/app
+      - wellnav-data:/app/data
+    environment:
+      TZ: America/Chicago
+      PYTHONUNBUFFERED: "1"
+    restart: unless-stopped
 
 volumes:
   wellnav-data:

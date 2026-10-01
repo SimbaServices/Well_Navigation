@@ -159,7 +159,7 @@ def refresh_permits(
     conn = connect()
     init_schema(conn)
     lifetime = int(get_meta(conn, "permit_lifetime_days", str(DEFAULT_PERMIT_LIFETIME_DAYS)))
-    last = get_cursor(conn, PERMIT_CURSOR)
+    last = get_cursor(conn, PERMIT_CURSOR) or get_cursor(conn, "tx_full_load_finished_at")
     approved_from, approved_to = approved_interval(last, from_date=from_date, to_date=to_date)
     cur = conn.execute(
         """
