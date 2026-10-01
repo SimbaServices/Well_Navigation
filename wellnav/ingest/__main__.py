@@ -13,6 +13,36 @@ from wellnav.ingest.runner import job_status, load_texas
 from wellnav.repository import WellRepository
 
 
+def refresh_texas_permitted(*, workers: int) -> dict:
+    """Pull every Texas GIS permitted location and append it to wells_tx.
+
+    A county that does not finish is pulled again before the weekly sleep.
+    Drilled wells already stored under the same API are not replaced.
+    """
+    counties = None
+    stats: dict = {}
+    for attempt in range(1, 6):
+        scope = "all counties" if not counties else f"{len(counties)} incomplete counties"
+        print(f"texas permitted locations attempt {attempt}: {scope}", flush=True)
+        stats = load_texas(
+            workers=workers,
+            counties=counties,
+            permitted_wells=True,
+            max_retries=12,
+        )
+        missing = list(stats.get("failed_counties") or [])
+        if stats.get("status") == "ok" and not missing:
+            print(f"texas permitted locations complete: {stats}", flush=True)
+            return stats
+        print(f"texas permitted locations incomplete: {missing or stats}", flush=True)
+        if not missing:
+            return stats
+        counties = missing
+        time.sleep(20)
+    print(f"texas permitted locations still incomplete: {stats}", flush=True)
+    return stats
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Well Navigation SQLite ingest")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -166,7 +196,10 @@ def main(argv: list[str] | None = None) -> int:
     mig = sub.add_parser("migrate", help="Request as-drilled GIS and move ready permits to wells_tx")
     mig.add_argument("--limit", type=int, default=400)
 
-    watch = sub.add_parser("watch", help="Repeat permit refresh + migrate weekly")
+    watch = sub.add_parser(
+        "watch",
+        help="Append every Texas permitted location to wells_tx, then repeat weekly",
+    )
     watch.add_argument("--hours", type=float, default=0, help="Override meta.permit_refresh_hours (168)")
     watch.add_argument("--workers", type=int, default=4)
     watch.add_argument("--once", action="store_true")
@@ -383,10 +416,7 @@ def main(argv: list[str] | None = None) -> int:
         hours = args.hours or float(get_meta(conn, "permit_refresh_hours", "168") or 168)
         conn.close()
         while True:
-            if args.gis:
-                print("refresh", load_texas(workers=args.workers, permit_only=True))
-            else:
-                print("refresh", refresh_permits())
+            refresh_texas_permitted(workers=args.workers)
             print("refresh-ok", refresh_permits(state="ok"))
             print("refresh-nm", refresh_permits(state="nm"))
             print("migrate", migrate_as_drilled())

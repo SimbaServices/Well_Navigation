@@ -196,6 +196,34 @@ def apply_operator_catalog(conn: sqlite3.Connection, state: str) -> dict:
     return patched
 
 
+def upsert_permitted_wells(conn: sqlite3.Connection, state: str, rows: list[dict]) -> int:
+    """Append GIS permitted locations into wells_{state}.
+
+    New APIs are inserted with symbol Permitted. Rows already stored as
+    Permitted are refreshed. An API that is already a drilled well is left alone.
+    """
+    if not rows:
+        return 0
+    table = wells_table(state)
+    placeholders = ",".join("?" * len(WELL_FIELDS))
+    cols = ",".join(WELL_FIELDS)
+    updates = _conflict_set(WELL_FIELDS, {"api", "first_seen_at"}, table)
+    sql = (
+        f"INSERT INTO {table} ({cols}) VALUES ({placeholders}) "
+        f"ON CONFLICT(api) DO UPDATE SET {updates} "
+        f"WHERE {table}.symbol = 'Permitted'"
+    )
+    payload = []
+    for row in rows:
+        item = _with_normalized_operator(row)
+        item["symbol"] = "Permitted"
+        item["migrated_from_permit"] = 1
+        payload.append(_values(item, WELL_FIELDS))
+    before = conn.total_changes
+    conn.executemany(sql, payload)
+    return conn.total_changes - before
+
+
 def upsert_wells(conn: sqlite3.Connection, state: str, rows: list[dict]) -> int:
     if not rows:
         return 0

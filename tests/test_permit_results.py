@@ -10,10 +10,10 @@ from urllib.parse import parse_qs, urlparse
 
 from wellnav.db import init_schema
 from wellnav.ingest.permits import approved_interval, ewa_row_to_permit
-from wellnav.ingest.persist import upsert_ewa_permits
+from wellnav.ingest.persist import upsert_ewa_permits, upsert_permitted_wells, upsert_wells
 from wellnav.parsers import parse_drilling_permit_results, rewrite_permit_page_url
 from wellnav.rrc import drilling_permit_search_data
-from wellnav.states import permits_table
+from wellnav.states import permits_table, wells_table
 
 SAMPLE = Path(__file__).resolve().parents[1] / "permits_request.txt"
 
@@ -174,6 +174,55 @@ class UpsertEwaPermitsTest(unittest.TestCase):
         self.assertEqual(rows[0]["operator"], "VTX ENERGY OPERATING, LLC")
         self.assertEqual(rows[0]["wellhead_lat"], 31.5)
         self.assertEqual(rows[0]["first_seen_at"], "2026-01-01")
+        conn.close()
+
+
+def _well(api8: str, symbol: str, lat: float) -> dict:
+    now = "2026-09-01T00:00:00+00:00"
+    return {
+        "api": f"42{api8}",
+        "api8": api8,
+        "well_name": f"Well {api8}",
+        "symbol": symbol,
+        "wellhead_lat": lat,
+        "wellhead_lon": -101.0,
+        "source": "rrc_gis",
+        "first_seen_at": now,
+        "last_seen_at": now,
+        "updated_at": now,
+    }
+
+
+class PermittedWellUpsertTest(unittest.TestCase):
+    def test_appends_permitted_locations_without_replacing_drilled_wells(self) -> None:
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        init_schema(conn)
+        upsert_wells(conn, "tx", [_well("00100001", "Oil Well", 31.1)])
+        changed = upsert_permitted_wells(
+            conn,
+            "tx",
+            [
+                _well("00100001", "Permitted Location", 31.2),
+                _well("00100002", "Permitted Location", 32.0),
+            ],
+        )
+        conn.commit()
+        table = wells_table("tx")
+        drilled = conn.execute(f"SELECT symbol, wellhead_lat FROM {table} WHERE api8='00100001'").fetchone()
+        permitted = conn.execute(f"SELECT symbol, wellhead_lat FROM {table} WHERE api8='00100002'").fetchone()
+        self.assertEqual(drilled["symbol"], "Oil Well")
+        self.assertEqual(drilled["wellhead_lat"], 31.1)
+        self.assertEqual(permitted["symbol"], "Permitted")
+        self.assertEqual(permitted["wellhead_lat"], 32.0)
+        self.assertEqual(changed, 1)
+
+        again = upsert_permitted_wells(conn, "tx", [_well("00100002", "Permitted Location", 32.5)])
+        conn.commit()
+        refreshed = conn.execute(f"SELECT symbol, wellhead_lat FROM {table} WHERE api8='00100002'").fetchone()
+        self.assertEqual(again, 1)
+        self.assertEqual(refreshed["symbol"], "Permitted")
+        self.assertEqual(refreshed["wellhead_lat"], 32.5)
         conn.close()
 
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from wellnav.db import ROOT, connect, get_meta, init_schema, session, set_cursor
 from wellnav.ingest.classify import utcnow
-from wellnav.ingest.persist import update_identities, upsert_permits, upsert_wells
+from wellnav.ingest.persist import update_identities, upsert_permits, upsert_permitted_wells, upsert_wells
 from wellnav.ingest.worker import run_partition
 from wellnav.states import DEFAULT_PERMIT_LIFETIME_DAYS, TX_COUNTIES
 
@@ -74,6 +74,7 @@ def load_texas(
     workers: int = 6,
     counties: list[str] | None = None,
     permit_only: bool = False,
+    permitted_wells: bool = False,
     identity_only: bool = False,
     delay: float = 0.15,
     state: str = "tx",
@@ -82,7 +83,7 @@ def load_texas(
     parts = _partitions(counties)
     if identity_only:
         kind = "identity_load"
-    elif permit_only:
+    elif permitted_wells or permit_only:
         kind = "permit_refresh"
     else:
         kind = "full_load"
@@ -117,7 +118,8 @@ def load_texas(
             "county_name": name,
             "lifetime_days": lifetime,
             "delay": delay,
-            "permit_only": permit_only,
+            "permit_only": permit_only or permitted_wells,
+            "permitted_wells": permitted_wells,
             "identity_only": identity_only,
             "job_id": job_id,
             "attempt": 1,
@@ -133,6 +135,7 @@ def load_texas(
         "failed": 0,
         "blocked_retries": 0,
         "partitions": len(parts),
+        "failed_counties": [],
     }
     ctx = mp.get_context("spawn")
     lock = ctx.Lock()
@@ -144,7 +147,8 @@ def load_texas(
         f"load-texas job {job_id}: {len(parts)} county partitions, "
         f"{worker_count} subprocesses, {delay:.2f}s spacing, max_retries={max_retries}"
         + (", identity-only" if identity_only else "")
-        + (", permit-only" if permit_only else "")
+        + (", permit-only" if permit_only and not permitted_wells else "")
+        + (", permitted-locations into wells_tx" if permitted_wells else "")
     )
 
     with ProcessPoolExecutor(
@@ -263,11 +267,13 @@ def _handle_result(
             )
             return
         totals["failed"] += 1
+        totals["failed_counties"].append(code)
         _mark_status(job_id, code, "failed", error=result.get("error"), finished=True)
         _log(f"  failed {code} {name} after {attempt} blocked attempts: {result.get('error')}")
         return
 
     totals["failed"] += 1
+    totals["failed_counties"].append(code)
     _mark_status(job_id, code, "failed", error=result.get("error"), finished=True)
     _log(f"  failed {code} {name}: {result.get('error')}")
 
@@ -311,6 +317,9 @@ def _commit_partition(job_id: int, state: str, result: dict, totals: dict) -> No
         if result.get("identity_only"):
             wells = update_identities(conn, state, result.get("identity_map") or {})
             permits = 0
+        elif result.get("permitted_wells"):
+            wells = upsert_permitted_wells(conn, state, result.get("wells") or [])
+            permits = upsert_permits(conn, state, result.get("permits") or [])
         else:
             wells = upsert_wells(conn, state, result.get("wells") or [])
             permits = upsert_permits(conn, state, result.get("permits") or [])

@@ -86,6 +86,7 @@ def run_partition(payload: dict) -> dict:
     lifetime_days = int(payload.get("lifetime_days") or DEFAULT_PERMIT_LIFETIME_DAYS)
     delay = float(payload.get("delay") or 0.12)
     permit_only = bool(payload.get("permit_only"))
+    permitted_wells = bool(payload.get("permitted_wells"))
     identity_only = bool(payload.get("identity_only"))
     try:
         scratch = _load_scratch(payload)
@@ -98,7 +99,9 @@ def run_partition(payload: dict) -> dict:
             surfaces = []
         else:
             where = f"API LIKE '{county_code}%'"
-            if permit_only:
+            if permitted_wells:
+                default_where = f"({where}) AND SYMNUM = 2"
+            elif permit_only:
                 nums = ",".join(str(n) for n in sorted(PERMIT_SYMNUMS))
                 default_where = f"({where}) AND SYMNUM IN ({nums})"
             else:
@@ -212,7 +215,14 @@ def run_partition(payload: dict) -> dict:
                 lifetime_days=lifetime_days,
                 identities=identity_map,
             )
-            if permit_only:
+            if permitted_wells:
+                wells = []
+                for record in permits:
+                    row = dict(record)
+                    row["symbol"] = "Permitted"
+                    row["migrated_from_permit"] = 1
+                    wells.append(row)
+            elif permit_only:
                 wells = []
         _clear_scratch(payload)
         return {
@@ -220,6 +230,7 @@ def run_partition(payload: dict) -> dict:
             "county_name": county_name,
             "ok": True,
             "blocked": False,
+            "permitted_wells": permitted_wells,
             "wells": wells,
             "permits": permits,
             "error": None,
