@@ -1,5 +1,5 @@
-What's New (App Store Connect → 1.7 → What's New, 4000-character limit):
+What's New (App Store Connect → 2.1.0 → What's New, 4000-character limit):
 
-Filter well results by the text in each column, and save a well from the star at the end of the row. Waste sites are searched by facility, operator, or permit. Directions and permit PDFs open in Safari. The phone map toolbar is smaller, opening directions can record an estimated disposal trip, and the map credit stays out of the selection sheet.
+Clear a search from the × in the search box. On Pins, select several locations and send them in one text or email. Account history lists each lookup as a readable card.
 
 Sign in with your work email to search wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. This app does not sell subscriptions. Organization admins buy seats on the website in Safari.
