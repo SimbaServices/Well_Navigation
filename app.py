@@ -21,6 +21,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from wellnav.accounts import CACHE, LOCATION_TTL, OPERATOR_TTL, SAVED, SEARCH_TTL, USERS
+from wellnav.cache_view import describe_cache_entries, history_stats
 from wellnav.feedback import FEEDBACK, KINDS
 from wellnav.user_settings import default_search_prefs
 from wellnav.auth import (
@@ -1510,8 +1511,8 @@ async def cache_panel(request: Request) -> HTMLResponse:
     html = render(
         "partials/cache.html",
         request,
-        entries=CACHE.list_entries(user["id"]),
-        stats=CACHE.stats(user["id"]),
+        entries=describe_cache_entries(CACHE.list_entries(user["id"])),
+        stats=history_stats(CACHE.stats(user["id"])),
     )
     return fragment_or_page(request, html, clear_suggest=True)
 

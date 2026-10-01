@@ -1,68 +1,59 @@
-<div class="result-head">
+<div class="result-head history-head">
   <div>
-    <h2>Your lookup cache</h2>
+    <h2>History</h2>
     <p class="muted">
-      {{ stats.entries }} entries · {{ stats.hits }} hits · {{ '%.1f'|format(stats.bytes / 1024) }} KB.
-      Local SQLite searches, operator matches, and wellhead locations from your account are stored here.
+      {{ stats.entries }} lookup{{ "s" if stats.entries != 1 else "" }}
+      {% if stats.hits %} · {{ stats.hits }} hit{{ "s" if stats.hits != 1 else "" }}{% endif %}
+      · {{ stats.size_label }}.
     </p>
   </div>
 </div>
 
 <div class="account-actions cache-actions">
-  <form action="/cache/purge" method="post" hx-post="/cache/purge" hx-target="#results">
+  <form action="/cache/purge" method="post"
+        hx-post="/cache/purge" hx-target="#account-body" hx-swap="innerHTML" hx-push-url="false">
     <button type="submit" class="ghost">Purge expired</button>
   </form>
-  <form action="/cache/clear" method="post" hx-post="/cache/clear" hx-target="#results">
+  <form action="/cache/clear" method="post"
+        hx-post="/cache/clear" hx-target="#account-body" hx-swap="innerHTML" hx-push-url="false">
     <input type="hidden" name="kind" value="search">
     <button type="submit" class="ghost">Clear searches</button>
   </form>
-  <form action="/cache/clear" method="post" hx-post="/cache/clear" hx-target="#results">
+  <form action="/cache/clear" method="post"
+        hx-post="/cache/clear" hx-target="#account-body" hx-swap="innerHTML" hx-push-url="false">
     <input type="hidden" name="kind" value="location">
     <button type="submit" class="ghost">Clear locations</button>
   </form>
   <form action="/cache/clear" method="post"
         hx-post="/cache/clear"
-        hx-target="#results"
-        hx-confirm="Clear your entire lookup cache?">
+        hx-target="#account-body"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+        hx-confirm="Clear your entire history?">
     <button type="submit" class="ghost danger-text">Clear all</button>
   </form>
 </div>
 
 {% if entries %}
-  <div class="table-wrap">
-    <table class="wells cache-table">
-      <thead>
-        <tr>
-          <th>Kind</th>
-          <th>Key</th>
-          <th>Hits</th>
-          <th>Size</th>
-          <th>Last used</th>
-          <th>Expires</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in entries %}
-          <tr>
-            <td><span class="pill">{{ entry.kind }}</span></td>
-            <td class="mono cache-key" title="{{ entry.cache_key }}">{{ entry.cache_key }}</td>
-            <td>{{ entry.hits }}</td>
-            <td>{{ entry.bytes }} B</td>
-            <td class="muted">{{ entry.last_hit_at.replace('T', ' ') }}</td>
-            <td class="muted">{{ entry.expires_at.replace('T', ' ') }}</td>
-            <td>
-              <form action="/cache/{{ entry.id }}/delete" method="post"
-                    hx-post="/cache/{{ entry.id }}/delete"
-                    hx-target="#results">
-                <button type="submit" class="ghost">Delete</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <ul class="history-list">
+    {% for entry in entries %}
+      <li class="history-item">
+        <div class="history-main">
+          <p class="history-kicker">
+            <span class="pill">{{ entry.kind_label }}</span>
+            {% if entry.context %}<span>{{ entry.context }}</span>{% endif %}
+          </p>
+          <p class="history-title">{{ entry.title }}</p>
+          <p class="history-meta muted">{{ entry.meta }}</p>
+        </div>
+        <form action="/cache/{{ entry.id }}/delete" method="post"
+              hx-post="/cache/{{ entry.id }}/delete"
+              hx-target="#account-body" hx-swap="innerHTML" hx-push-url="false">
+          <button type="submit" class="ghost">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
 {% else %}
-  <div class="empty">No cached lookups yet. Search or open a well while signed in and the local SQLite result is stored for you.</div>
+  <div class="empty">No history yet. Searches and well locations you open show up here until they expire.</div>
 {% endif %}

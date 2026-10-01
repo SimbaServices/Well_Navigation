@@ -1689,7 +1689,54 @@ body.gate .gate-tagline {
   padding: 0.25rem 0.65rem;
   font-size: 0.8rem;
 }
-.cache-key { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-head { margin-bottom: 0.35rem; }
+.history-head p { margin: 0.2rem 0 0; }
+.history-list {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(16, 20, 12, 0.45);
+}
+.history-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+.history-kicker .pill { margin: 0; }
+.history-title {
+  margin: 0.18rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.history-meta {
+  margin: 0.18rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.history-item form { margin: 0; }
+.history-item .ghost {
+  min-height: 1.7rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.75rem;
+}
 .phone-only { display: none; }
 
 @media (max-width: 960px) {
