@@ -127,6 +127,21 @@ class EwaRowToPermitTest(unittest.TestCase):
         self.assertEqual(record["source"], "rrc_ewa")
         self.assertEqual(record["profile"], "horizontal")
 
+    def test_mpc_cancel_is_cancelled(self) -> None:
+        record = ewa_row_to_permit(
+            {
+                "api": "38342457",
+                "permit_no": "918149",
+                "lease_name": "NORTH CREEK E",
+                "well_no": "0401MB",
+                "status": "MPC CANCEL",
+                "approved_at": "09/02/2026",
+            },
+            now="2026-10-01T15:00:00+00:00",
+            lifetime_days=730,
+        )
+        self.assertEqual(record["status"], "cancelled")
+
 
 class UpsertEwaPermitsTest(unittest.TestCase):
     def test_promotes_gis_placeholder_to_status_number(self) -> None:

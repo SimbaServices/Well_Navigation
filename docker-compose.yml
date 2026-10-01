@@ -7,7 +7,8 @@
 # SQLite: named volume well_navigation_wellnav-data at /app/data
 # (wellnav.db, pipelines.db, disposal.db). That overlay is required — without it, /app/data
 # would be the repo data/ folder from the bind mount.
-# The ingest service appends weekly permit refreshes into that same volume.
+# The ingest service refreshes permitted locations weekly, from the last
+# database update through today, into that same volume.
 # The web service only reads it.
 #
 # Production: docker compose -f docker-compose.yml up -d

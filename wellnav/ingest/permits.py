@@ -20,6 +20,7 @@ STATUS_MAP = {
     "CANCELLED": "cancelled",
     "CANCELED": "cancelled",
     "EXPIRED": "expired",
+    "MPC CANCEL": "cancelled",
 }
 
 
@@ -105,6 +106,8 @@ def ewa_row_to_permit(row: dict, *, now: str, lifetime_days: int) -> dict | None
         approved_day = _today_tx()
     expires = (approved_day + timedelta(days=lifetime_days)).isoformat()
     status_raw = (row.get("status") or "APPROVED").strip().upper()
+    if status_raw not in STATUS_MAP and "CANCEL" in status_raw:
+        status_raw = "CANCELLED"
     profile = (row.get("profile") or "").strip().lower()
     county_code = (row.get("county_code") or api8[:3]).zfill(3)
     return {
