@@ -77,6 +77,9 @@ let userLocationMarker = null;
 let locationWatchId = null;
 let lastUserLatLng = null;
 let pinMode = false;
+let pinBatchPlaces = [];
+let pinBatchPlatform = "";
+const pinBatchOn = new Map();
 let savedRoutes = [];
 let routesReady = null;
 let navRouteId = null;
@@ -92,6 +95,22 @@ let lastFollowLatLng = null;
 
 function searchInputEl() {
   return document.getElementById("q");
+}
+
+function clearSearchQuery() {
+  const q = searchInputEl();
+  if (!q) return;
+  q.value = "";
+  delete q.dataset.suppressLive;
+  q.dispatchEvent(new Event("input", { bubbles: true }));
+  const suggest = document.getElementById("operator-suggest");
+  if (suggest) {
+    suggest.replaceChildren();
+    suggest.dataset.dismissed = "1";
+  }
+  if (window.htmx) window.htmx.trigger(q, "htmx:abort");
+  q.dispatchEvent(new Event("search", { bubbles: true }));
+  q.focus();
 }
 
 function searchInputIsActive() {
@@ -3648,6 +3667,137 @@ function unpinAll() {
   paint({ fit: false });
 }
 
+function mapsDestination(platform, lat, lon) {
+  if (platform === "google") {
+    return `https://maps.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+  }
+  return `https://maps.apple.com/?daddr=${lat},${lon}`;
+}
+
+function batchShareBody(places, platform) {
+  return places
+    .map((place) => {
+      const lines = [place.label, mapsDestination(platform, place.lat, place.lon)];
+      const detail = String(place.detail || "").trim();
+      if (detail && detail !== place.label) lines.push(detail);
+      return lines.join("\r\n");
+    })
+    .join("\r\n\r\n");
+}
+
+function selectedBatchPlaces() {
+  return pinBatchPlaces.filter((place) => pinBatchOn.get(place.id) !== false);
+}
+
+function rememberPinBatch(rows) {
+  pinBatchPlaces = (rows || [])
+    .filter((row) => row && row.id && Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lon)))
+    .map((row) => ({
+      id: row.id,
+      label: row.label || "Pinned location",
+      detail: row.detail || "",
+      lat: Number(row.lat),
+      lon: Number(row.lon),
+    }));
+  const live = new Set(pinBatchPlaces.map((place) => place.id));
+  [...pinBatchOn.keys()].forEach((id) => {
+    if (!live.has(id)) pinBatchOn.delete(id);
+  });
+  pinBatchPlaces.forEach((place) => {
+    if (!pinBatchOn.has(place.id)) pinBatchOn.set(place.id, true);
+  });
+  const sheet = document.getElementById("pins-sheet");
+  if (sheet) sheet.classList.toggle("is-batch", pinBatchPlaces.length >= 2);
+}
+
+function syncPinBatchBar() {
+  const bar = document.getElementById("pin-batch");
+  const batch = pinBatchPlaces.length >= 2;
+  const picked = selectedBatchPlaces();
+  const all = document.getElementById("pin-batch-all");
+  if (all) {
+    all.disabled = !batch;
+    all.checked = batch && picked.length === pinBatchPlaces.length && pinBatchPlaces.length > 0;
+    all.indeterminate = batch && picked.length > 0 && picked.length < pinBatchPlaces.length;
+  }
+  if (!bar) return;
+  bar.hidden = !batch;
+  if (!batch) return;
+  const prompt = document.getElementById("pin-batch-prompt");
+  bar.querySelectorAll("[data-batch-platform]").forEach((btn) => {
+    const on = btn.dataset.batchPlatform === pinBatchPlatform;
+    btn.classList.toggle("is-selected", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const via = bar.querySelector(".pin-batch-via");
+  if (!pinBatchPlatform) {
+    if (via) via.hidden = true;
+    if (prompt) {
+      prompt.textContent = picked.length
+        ? "Selected pins go in one text or email. Choose a maps link."
+        : "Select at least one pin.";
+    }
+    return;
+  }
+  const name = sharePlatformName(pinBatchPlatform);
+  const count = picked.length;
+  const noun = count === 1 ? "pin" : "pins";
+  const subject = count === 1 ? picked[0].label || "Pinned location" : `${count} pins`;
+  const body = count ? batchShareBody(picked, pinBatchPlatform) : "";
+  const sms = bar.querySelector('[data-batch-via="sms"]');
+  const email = bar.querySelector('[data-batch-via="email"]');
+  if (sms) {
+    sms.href = count ? deviceShareHref("sms", subject, body) : "#";
+    sms.setAttribute("aria-disabled", count ? "false" : "true");
+    sms.setAttribute("aria-label", count ? `Text ${count} ${noun} with ${name}` : "Select pins to text");
+  }
+  if (email) {
+    email.href = count ? deviceShareHref("email", subject, body) : "#";
+    email.setAttribute("aria-disabled", count ? "false" : "true");
+    email.setAttribute("aria-label", count ? `Email ${count} ${noun} with ${name}` : "Select pins to email");
+  }
+  bar.querySelectorAll(".loc-share-source").forEach((el) => {
+    el.textContent = count ? `${count} ${noun} · ${name}` : name;
+  });
+  if (prompt) {
+    let note = count ? `Send ${count} ${noun} in one message` : "Select at least one pin.";
+    if (count && body.length > 1500) note += " A long list may be shortened by the text app.";
+    prompt.textContent = note;
+  }
+  if (via) via.hidden = false;
+}
+
+function bindPinBatch() {
+  if (document.documentElement.dataset.pinBatch === "1") return;
+  document.documentElement.dataset.pinBatch = "1";
+  const bar = document.getElementById("pin-batch");
+  if (bar) {
+    bar.addEventListener("click", (event) => {
+      const platformBtn = event.target.closest("[data-batch-platform]");
+      if (platformBtn) {
+        event.preventDefault();
+        pinBatchPlatform = platformBtn.dataset.batchPlatform || "";
+        syncPinBatchBar();
+        return;
+      }
+      const via = event.target.closest("[data-batch-via]");
+      if (via && via.getAttribute("aria-disabled") === "true") event.preventDefault();
+    });
+  }
+  const all = document.getElementById("pin-batch-all");
+  if (all) {
+    all.addEventListener("click", (event) => event.stopPropagation());
+    all.addEventListener("change", () => {
+      const on = all.checked;
+      pinBatchPlaces.forEach((place) => pinBatchOn.set(place.id, on));
+      document.querySelectorAll("#pins-rows .pin-batch-check").forEach((box) => {
+        box.checked = on;
+      });
+      syncPinBatchBar();
+    });
+  }
+}
+
 function renderPinsTable() {
   const body = document.getElementById("pins-rows");
   const clearAll = document.getElementById("unpin-all");
@@ -3659,7 +3809,11 @@ function renderPinsTable() {
     const well = store.wells[api];
     if (!well) return;
     rows.push({
+      id: `well:${api}`,
       label: well.name || formatApi(api),
+      detail: well.operator || "",
+      lat: Number(well.lat),
+      lon: Number(well.lon),
       kind: "Well",
       active: store.selected === api && !pinChrome && !disposalFocus,
       pick() {
@@ -3671,8 +3825,13 @@ function renderPinsTable() {
     });
   });
   if (pipelinePin && Number.isFinite(Number(pipelinePin.lat)) && Number.isFinite(Number(pipelinePin.lon))) {
+    const pipelineLabel = pipelinePin.operator || pipelinePin.system || "Pipeline point";
     rows.push({
-      label: pipelinePin.operator || pipelinePin.system || "Pipeline point",
+      id: "pipeline",
+      label: pipelineLabel,
+      detail: [pipelinePin.system, pipelinePin.commodity].filter((bit) => bit && bit !== pipelineLabel).join(" · "),
+      lat: Number(pipelinePin.lat),
+      lon: Number(pipelinePin.lon),
       kind: "Pipeline",
       active: !!pinChrome,
       pick() {
@@ -3693,7 +3852,11 @@ function renderPinsTable() {
   }
   if (disposalFocus && Number.isFinite(Number(disposalFocus.lat)) && Number.isFinite(Number(disposalFocus.lon))) {
     rows.push({
+      id: `swd:${disposalFocus.id || "site"}`,
       label: disposalFocus.name || "SWD",
+      detail: [disposalFocus.operator, disposalFocus.permit].filter(Boolean).join(" · "),
+      lat: Number(disposalFocus.lat),
+      lon: Number(disposalFocus.lon),
       kind: "SWD",
       active: !pinChrome && !store.selected,
       pick() {
@@ -3716,7 +3879,11 @@ function renderPinsTable() {
   routeRows().forEach((row) => {
     if (row.kind !== "pin") return;
     rows.push({
+      id: row.id,
       label: row.label || "Pinned spot",
+      detail: "",
+      lat: Number(row.lat),
+      lon: Number(row.lon),
       kind: "Spot",
       active: false,
       pick() {
@@ -3727,20 +3894,35 @@ function renderPinsTable() {
       },
     });
   });
+  rememberPinBatch(rows);
   if (clearAll) clearAll.hidden = !rows.length;
   if (!rows.length) {
     const empty = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 3;
+    cell.colSpan = 4;
     cell.className = "muted";
     cell.textContent = "No pinned locations.";
     empty.appendChild(cell);
     body.appendChild(empty);
+    syncPinBatchBar();
     return;
   }
   rows.forEach((row) => {
     const tr = document.createElement("tr");
     tr.className = "pin-row" + (row.active ? " is-selected" : "");
+    const pick = document.createElement("td");
+    pick.className = "pin-pick-col";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "pin-batch-check";
+    box.checked = pinBatchOn.get(row.id) !== false;
+    box.setAttribute("aria-label", `Include ${row.label} when sending pins`);
+    box.addEventListener("click", (event) => event.stopPropagation());
+    box.addEventListener("change", () => {
+      pinBatchOn.set(row.id, box.checked);
+      syncPinBatchBar();
+    });
+    pick.appendChild(box);
     const name = document.createElement("td");
     name.className = "pin-name";
     name.dataset.col = "location";
@@ -3762,9 +3944,9 @@ function renderPinsTable() {
       row.unpin();
     });
     action.appendChild(unpin);
-    tr.append(name, kind, action);
+    tr.append(pick, name, kind, action);
     tr.addEventListener("click", (event) => {
-      if (event.target.closest("button")) return;
+      if (event.target.closest("button, input, a")) return;
       row.pick();
     });
     body.appendChild(tr);
@@ -3774,11 +3956,12 @@ function renderPinsTable() {
   unmatched.hidden = true;
   const unmatchedCell = document.createElement("td");
   unmatchedCell.className = "empty";
-  unmatchedCell.colSpan = 3;
+  unmatchedCell.colSpan = 4;
   unmatchedCell.textContent = "No pinned locations match these filters.";
   unmatched.appendChild(unmatchedCell);
   body.appendChild(unmatched);
   if (window.WellnavColumnFilters) window.WellnavColumnFilters.reapply(body.closest("table"));
+  syncPinBatchBar();
 }
 
 function paint({ fit = false } = {}) {
@@ -4587,6 +4770,14 @@ document.getElementById("unpin-all")?.addEventListener("click", (event) => {
   event.preventDefault();
   unpinAll();
 });
+document.getElementById("query-clear")?.addEventListener("mousedown", (event) => {
+  event.preventDefault();
+});
+document.getElementById("query-clear")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  clearSearchQuery();
+});
+bindPinBatch();
 bindInfoTips();
 bindLocationShare();
 applyNetworkState();

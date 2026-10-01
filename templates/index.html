@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers28">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers29">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -66,6 +66,7 @@
           <span class="ph ph-disp-name">Facility name, e.g. SOUTH TEXAS DISPOSAL</span>
           <span class="ph ph-disp-op">Waste facility operator, e.g. R360</span>
           <span class="ph ph-disp-permit">Permit number, e.g. STF-0006</span>
+          <button type="button" class="query-clear" id="query-clear" aria-label="Clear search">×</button>
         </div>
         <div id="operator-suggest"></div>
       </div>
@@ -193,12 +194,30 @@
             <h2>Pinned</h2>
             <button type="button" class="ghost" id="unpin-all">Unpin all</button>
           </div>
+          <div id="pin-batch" class="pin-batch" hidden>
+            <p class="pin-batch-prompt muted" id="pin-batch-prompt">Selected pins go in one text or email. Choose a maps link.</p>
+            <div class="loc-share loc-share-compact">
+              <div class="loc-share-platforms" role="group" aria-label="Choose a maps link for the selected pins">
+                <button type="button" class="route apple" data-batch-platform="apple" aria-pressed="false">Apple Maps</button>
+                <button type="button" class="route google" data-batch-platform="google" aria-pressed="false">Google Maps</button>
+              </div>
+              <div class="pin-batch-via loc-share-via" hidden>
+                <div class="loc-share-actions">
+                  <a class="ghost" data-batch-via="sms" href="#"><span class="loc-share-kind">Text</span><span class="loc-share-source"></span></a>
+                  <a class="ghost" data-batch-via="email" href="#"><span class="loc-share-kind">Email</span><span class="loc-share-source"></span></a>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="table-wrap">
             <table class="wells pins-table">
               <thead>
                 <tr>
+                  <th class="pin-pick-col" scope="col">
+                    <input type="checkbox" id="pin-batch-all" aria-label="Select all pins to send">
+                  </th>
                   {{ col_head("Location", "location", "pins", local=true) }}
-                  {{ col_head("Type", "type", "pins", local=true) }}
+                  {{ col_head("Type", "type", "pins", local=true, extra="pin-kind-col") }}
                   {{ col_head("Unpin", "unpin", "pins", local=true, extra="save-col") }}
                 </tr>
               </thead>
@@ -277,7 +296,7 @@
   <script src="/static/js/auth-remember.js?v=2"></script>
   <script src="/static/js/offline-map.js?v=3"></script>
   <script src="/static/js/disposal-ux.js?v=5"></script>
-  <script src="/static/js/map.js?v=layers30"></script>
+  <script src="/static/js/map.js?v=layers31"></script>
   <script src="/static/js/layers.js?v=11"></script>
   <script src="/static/js/column-filter.js?v=5"></script>
   {% include 'partials/ux_capture.html' %}
