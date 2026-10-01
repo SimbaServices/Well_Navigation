@@ -19,7 +19,7 @@ Support URL: https://wellnav.simba.services
 Marketing URL: https://wellnav.simba.services
 Support email: wellnav@simba.services
 
-Version: 2.1.0
+Version: 1.7
 Build: 10 (Info.plist CFBundleVersion and CURRENT_PROJECT_VERSION). ExportOptions.plist lets Xcode bump the build if Connect already has 10.
 
 Description (App Store Connect, 4000-character limit):
