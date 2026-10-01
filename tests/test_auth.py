@@ -97,6 +97,26 @@ class PhoneAuthFlowTests(unittest.TestCase):
     def last_code(self) -> str:
         return _code(self.messages[-1][1])
 
+    def test_admin_creates_a_teammate_on_the_company_domain(self) -> None:
+        admin, error = self.users.register("lead@acme.test", "password12")
+        self.assertIsNone(error)
+        created, error = self.users.create_member(admin, "Hand@acme.test", "fieldpass1", "member")
+        self.assertIsNone(error)
+        self.assertEqual(created["email"], "hand@acme.test")
+        self.assertEqual(created["org_id"], admin["org_id"])
+        self.assertFalse(created["is_admin"])
+        self.assertIsNotNone(self.users.authenticate("hand@acme.test", "fieldpass1"))
+        again, error = self.users.create_member(admin, "hand@acme.test", "fieldpass1")
+        self.assertIsNone(again)
+        self.assertEqual(error, "That email is already registered.")
+        outsider, error = self.users.create_member(admin, "hand@other.test", "fieldpass1")
+        self.assertIsNone(outsider)
+        self.assertIn("@acme.test", error or "")
+        member, _ = self.users.authenticate("hand@acme.test", "fieldpass1")
+        blocked, error = self.users.create_member(member, "next@acme.test", "fieldpass1")
+        self.assertIsNone(blocked)
+        self.assertEqual(error, "Only an organization admin can add a person.")
+
     def test_signup_does_not_create_user_until_code(self) -> None:
         challenge, error = self.auth.start_signup("sam@example.com", "password12")
         self.assertIsNone(error)

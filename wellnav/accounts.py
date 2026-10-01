@@ -228,6 +228,42 @@ class UserStore:
         conn.commit()
         return self.get(member_id), None
 
+    def create_member(
+        self, admin: dict, email: str, password: str, role: str = "member"
+    ) -> tuple[dict | None, str | None]:
+        """Create a signed-in-ready account in the admin's organization."""
+        if not admin.get("is_admin") or not admin.get("org_id"):
+            return None, "Only an organization admin can add a person."
+        chosen = (role or "member").strip().lower()
+        if chosen not in {"admin", "member"}:
+            return None, "That role is not allowed."
+        clean, email_err = validate_email(email)
+        if email_err or not clean:
+            return None, email_err or "Enter a valid email address."
+        pass_err = validate_password(password)
+        if pass_err:
+            return None, pass_err
+        org = self.org(int(admin["org_id"]))
+        if not org:
+            return None, "This account is not in an organization yet."
+        domain = (org.get("domain") or "").strip().lower()
+        if "@" in domain or org_key(clean) != domain:
+            return None, f"Use an @{domain} email address."
+        if self.by_username(clean):
+            return None, "That email is already registered."
+        conn = _conn()
+        cur = conn.execute(
+            """
+            INSERT INTO users(
+                username, password_hash, email, email_verified_at,
+                org_id, role, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (clean, hash_password(password), clean, utcnow_iso(), int(org["id"]), chosen, utcnow_iso()),
+        )
+        conn.commit()
+        return self.get(int(cur.lastrowid)), None
+
     def delete_account(self, user: dict, password: str) -> tuple[bool, str | None]:
         if not user:
             return False, "Sign in again to delete this account."

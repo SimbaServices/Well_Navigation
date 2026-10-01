@@ -1631,6 +1631,22 @@ body.gate .gate-tagline {
   padding: 0.55rem 0.7rem;
   font: inherit;
 }
+.member-create { margin: 0.15rem 0 0.35rem; }
+.member-create input[type="email"],
+.member-create input[type="password"],
+.member-create select {
+  border: 1px solid var(--line);
+  background: #10140d;
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  min-width: 0;
+}
+.member-create input[type="email"] { width: min(16rem, 100%); }
+.member-create input[type="password"] { width: 9.5rem; }
+.member-create select { min-height: 2.2rem; }
+.member-create .primary { min-height: 2.2rem; }
 .billing-card .seat-form { margin-top: 0.25rem; }
 
 .save-form { margin: 0; display: inline-flex; }

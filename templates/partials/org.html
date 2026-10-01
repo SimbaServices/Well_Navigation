@@ -13,7 +13,31 @@
         · {{ ws.member_count }} people · no paid seats yet
       {% endif %}
     </p>
-    <p class="muted"><strong>Add a person</strong> by having them create a login with a <strong>{{ org.domain }}</strong> email.</p>
+    {% if ws.can_manage and '@' not in (org.domain or '') %}
+      <form class="seat-form member-create" action="/org/members" method="post"
+            hx-post="/org/members" hx-target="#team-body" hx-swap="innerHTML"
+            hx-push-url="false" hx-indicator="#spinner">
+        <label>Work email
+          <input type="email" name="email" required autocomplete="off" value="{{ create_email or '' }}" placeholder="name@{{ org.domain }}">
+        </label>
+        <label>Password
+          <input type="password" name="password" required minlength="8" autocomplete="new-password">
+        </label>
+        <label>Role
+          <select name="role">
+            <option value="member" selected>Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <button type="submit" class="primary">Create account</button>
+      </form>
+      <p class="muted">They sign in with this email and password. The address must be @{{ org.domain }}.</p>
+    {% else %}
+      <p class="muted"><strong>Add a person</strong> by having them create a login with a <strong>{{ org.domain }}</strong> email.</p>
+    {% endif %}
+  {% endif %}
+  {% if notice %}
+    <div class="banner">{{ notice }}</div>
   {% endif %}
   {% if error %}
     <div class="banner error">{{ error }}</div>

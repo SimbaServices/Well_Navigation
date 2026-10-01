@@ -552,6 +552,8 @@ def _team_html(
     *,
     team_tab: str = "people",
     error: str | None = None,
+    notice: str | None = None,
+    create_email: str = "",
     feedback_error: str | None = None,
     draft: dict | None = None,
 ) -> str:
@@ -565,6 +567,8 @@ def _team_html(
         members=workspace.get("members") or [],
         workspace=workspace,
         error=error,
+        notice=notice,
+        create_email=create_email,
         feedback_error=feedback_error,
         team_tab=team_tab,
         messages=messages,
@@ -785,6 +789,24 @@ async def org_remove(request: Request) -> HTMLResponse:
         html = _team_html(request, user, error=error)
         return fragment_or_page(request, html, clear_suggest=True)
     return await org_panel(request)
+
+
+async def org_create_member(request: Request) -> HTMLResponse:
+    user = current_user(request)
+    if not user:
+        return login_required_html(request)
+    data = await _form_params(request)
+    email = data.get("email") or ""
+    created, error = USERS.create_member(user, email, data.get("password", ""), data.get("role", "member"))
+    if error or not created:
+        html = _team_html(request, user, error=error or "Could not create that account.", create_email=email)
+        return fragment_or_page(request, html, clear_suggest=True)
+    html = _team_html(
+        request,
+        user,
+        notice=f"Created {created.get('email') or email}. They can sign in with that email and password.",
+    )
+    return fragment_or_page(request, html, clear_suggest=True)
 
 
 async def org_role(request: Request) -> HTMLResponse:
@@ -2065,6 +2087,7 @@ app = Starlette(
         Route("/feedback", feedback_create, methods=["POST"]),
         Route("/feedback/{message_id:int}/delete", feedback_delete, methods=["POST"]),
         Route("/org", org_panel),
+        Route("/org/members", org_create_member, methods=["POST"]),
         Route("/org/members/{member_id:int}/remove", org_remove, methods=["POST"]),
         Route("/org/members/{member_id:int}/role", org_role, methods=["POST"]),
         Route("/billing", billing_panel),
