@@ -27,12 +27,20 @@
     <article class="legal-card">
       <h2>Terms and conditions</h2>
       <p class="muted">Last updated September 16, 2026</p>
+      {% if ios_store %}
+      <p>These Terms and conditions (“Terms”) are a contract between you and <strong>Simba Services</strong> (“we,” “us”) for use of Well Navigation — the website at wellnav.simba.services and this app (together, the “Service”). Seat subscriptions are billed by <strong>MP Solutions</strong> as merchant of record through Stripe.</p>
+      {% else %}
       <p>These Terms and conditions (“Terms”) are a contract between you and <strong>Simba Services</strong> (“we,” “us”) for use of Well Navigation — the website at wellnav.simba.services, the iOS app, and the Google Play app (together, the “Service”). Seat subscriptions are billed by <strong>MP Solutions</strong> as merchant of record through Stripe.</p>
+      {% endif %}
       <p>By creating an account, signing in, or using the Service, you agree to these Terms and to our <a href="/privacy">Privacy policy</a>. If you do not agree, do not use the Service.</p>
 
       <h3>1. The Service</h3>
       <p>Well Navigation is a professional workspace for searching and mapping wells, pipelines, and waste-disposal sites in Texas, New Mexico, Oklahoma, and Louisiana. It is provided for informational and operational planning use by people in the oil and gas industry and related work.</p>
+      {% if ios_store %}
+      <p>Well Navigation is workplace software sold to organizations. Seats are billed per person on the website in Safari through Stripe Checkout. Cards are collected by Stripe for MP Solutions. This app opens the same signed-in workspace; it is not a general-purpose browser, it does not sell in-app purchases, and it does not collect payment.</p>
+      {% else %}
       <p>Well Navigation is workplace software sold to organizations. Seats are billed per person on the website (Safari or Chrome) through Stripe Checkout. Cards are collected by Stripe for MP Solutions. The iOS and Google Play apps open the same signed-in workspace; they are not general-purpose browsers, they do not sell in-app purchases, and they do not collect payment. App Store and Play billing are not used for Well Navigation access.</p>
+      {% endif %}
 
       <h3>2. Eligibility and accounts</h3>
       <ul>
@@ -50,7 +58,7 @@
         <li>Attempt to access another person’s account or data without permission.</li>
         <li>Probe, scan, or disrupt the Service, or overload it with automated requests beyond ordinary use.</li>
         <li>Scrape, resell, or republish the Service as a competing product, or remove notices from the interface.</li>
-        <li>Use the iOS or Google Play app as a general-purpose browser or to open arbitrary websites.</li>
+        <li>Use {% if ios_store %}this app{% else %}the iOS or Google Play app{% endif %} as a general-purpose browser or to open arbitrary websites.</li>
         <li>Misrepresent well, pipeline, or waste-site information obtained from the Service as an official survey, as-built, or excavation locate.</li>
       </ul>
 
@@ -93,7 +101,7 @@
 
       <h3>15. Contact</h3>
       <p>Simba Services<br>Well Navigation<br><a href="mailto:wellnav@simba.services">wellnav@simba.services</a></p>
-      <p>Billing merchant of record: MP Solutions, via Stripe. Payments are completed on the website, not in the iOS or Google Play apps.</p>
+      <p>Billing merchant of record: MP Solutions, via Stripe. Payments are completed on the website, not in {% if ios_store %}this app{% else %}the iOS or Google Play apps{% endif %}.</p>
       <p class="legal-cross">See also our <a href="/privacy">Privacy policy</a>.</p>
       <p><a href="/" class="ghost">Back to Well Navigation</a></p>
     </article>

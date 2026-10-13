@@ -61,6 +61,7 @@ from wellnav.billing import (
     create_portal_session,
     handle_webhook,
     is_billing_path,
+    is_ios_store_client,
     is_store_client,
     sync_checkout_session,
     update_subscription_seats,
@@ -254,7 +255,9 @@ def view_ctx(request: Request, **extra) -> dict:
         context["workspace"] = workspace_snapshot(user)
     context.setdefault("app_states", APP_STATES)
     context.setdefault("state_labels", STATE_LABELS)
-    context.setdefault("store_client", is_store_client(request.headers.get("user-agent") or ""))
+    user_agent = request.headers.get("user-agent") or ""
+    context.setdefault("store_client", is_store_client(user_agent))
+    context.setdefault("ios_store", is_ios_store_client(user_agent))
     context.setdefault("hotjar_id", hotjar_site_id())
     context.setdefault("clarity_id", clarity_project_id())
     context.setdefault("contentsquare_id", contentsquare_tag_id())

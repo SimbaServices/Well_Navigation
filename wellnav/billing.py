@@ -50,6 +50,12 @@ def is_store_client(user_agent: str) -> bool:
     return "WellNavigation/" in text and "store" in text.lower()
 
 
+def is_ios_store_client(user_agent: str) -> bool:
+    """True only for the App Store wrapper, so iOS copy does not mention Android."""
+    text = (user_agent or "").lower()
+    return is_store_client(user_agent) and "ios" in text and "android" not in text
+
+
 def env_flag(name: str, default: str = "") -> str:
     return (os.environ.get(name) or default).strip()
 

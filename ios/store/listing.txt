@@ -41,7 +41,7 @@ YOUR WORKSPACE
 Save wells to your account, reopen recent searches, and manage your team. People on the same company email domain share one organization. Admins assign seats and roles. Delete your account anytime from Account → Delete account.
 
 BILLING
-This app is free to download. It does not sell subscriptions and does not collect payment. Organization admins buy seats on the website in Safari. The same signed-in workspace works on the web, iOS, and Android.
+This app is free to download. It does not sell subscriptions and does not collect payment. Organization admins buy seats on the website in Safari. The same signed-in workspace works on the website and in this app.
 
 IMPORTANT
 Records come from public regulatory and published sources and can be incomplete or out of date. Well and pipeline locations are not a substitute for a One Call / 811 locate, an as-built survey, or operator drawings. Call 811 before you dig.

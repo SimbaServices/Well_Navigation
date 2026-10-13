@@ -50,7 +50,7 @@
 
   {% if ws.can_manage and not ws.complimentary %}
     {% if store_client %}
-      <p class="muted">This app does not sell seats or collect cards. Organization admins manage the workplace subscription on the website in Safari or Chrome.</p>
+      <p class="muted">This app does not sell seats or collect cards. Organization admins manage the workplace subscription on the website in {% if ios_store %}Safari{% else %}Safari or Chrome{% endif %}.</p>
       <div class="account-actions">
         <a class="primary" href="/login?next=/org&amp;external_browser=1">Open the website</a>
       </div>

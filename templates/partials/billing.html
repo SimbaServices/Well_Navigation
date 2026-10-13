@@ -5,14 +5,14 @@
     <div class="banner error">{{ error }}</div>
   {% endif %}
   {% if success and ws.allowed %}
-    <p>Seats are active. You can search wells, pipelines, and waste sites on the web and in the iOS / Play Store apps.</p>
+    <p>Seats are active. You can search wells, pipelines, and waste sites {% if ios_store %}in this app{% else %}on the web and in the iOS / Play Store apps{% endif %}.</p>
     <div class="account-actions">
       <a href="/" class="primary">Open workspace</a>
       <a href="/org" class="ghost"
          hx-get="/org" hx-target="#results" hx-push-url="true">Team and seats</a>
     </div>
   {% elif ws.complimentary %}
-    <p>You can search wells, pipelines, and waste sites on the web and in the iOS / Play Store apps.</p>
+    <p>You can search wells, pipelines, and waste sites {% if ios_store %}in this app{% else %}on the web and in the iOS / Play Store apps{% endif %}.</p>
     <div class="account-actions">
       <a href="/" class="primary">Open workspace</a>
       <a href="/org" class="ghost"
@@ -27,13 +27,13 @@
     </div>
   {% elif ws.can_manage %}
     {% if store_client %}
-      <p>Well Navigation is workplace software for your organization. This app does not sell subscriptions, collect cards, or use App Store or Play Store billing.</p>
+      <p>Well Navigation is workplace software for your organization. This app does not sell subscriptions, collect cards, or use in-app purchases.</p>
       {% if ws.paid %}
         <p><strong>{{ ws.seated_count }}</strong> of <strong>{{ ws.seat_count }}</strong> seats in use
           {% if ws.period_end %} · renews {{ ws.period_end }}{% endif %}
         </p>
       {% endif %}
-      <p class="muted">Organization admins buy and change seats on the website in Safari or Chrome.</p>
+      <p class="muted">Organization admins buy and change seats on the website in {% if ios_store %}Safari{% else %}Safari or Chrome{% endif %}.</p>
       <div class="account-actions">
         <a class="primary" href="/login?next=/billing&amp;external_browser=1">Open the website</a>
       </div>

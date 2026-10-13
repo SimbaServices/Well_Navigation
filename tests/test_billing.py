@@ -14,6 +14,7 @@ from wellnav.billing import (
     create_checkout_session,
     handle_webhook,
     is_billing_path,
+    is_ios_store_client,
     is_store_client,
     reset_price_cache,
     seat_price_label,
@@ -120,6 +121,8 @@ class BillingHelperTests(unittest.TestCase):
         self.assertTrue(is_store_client("Mozilla/5.0 WellNavigation/1.0 (Android; store)"))
         self.assertFalse(is_store_client("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1"))
         self.assertFalse(is_store_client("WellNavigation/1.0 (iOS)"))
+        self.assertTrue(is_ios_store_client("Mozilla/5.0 WellNavigation/1.0 (iOS; store)"))
+        self.assertFalse(is_ios_store_client("Mozilla/5.0 WellNavigation/1.0 (Android; store)"))
 
 
 class BillingAccessTests(unittest.TestCase):

@@ -120,6 +120,8 @@ Guideline 2.1 — bugs: Before resubmit, the developer must install the candidat
 
 Guideline 2.1 — access: One account type (work email + password). Demo credentials are in the Notes / username-password fields above. Do not delete appreview@simba.services. Use a separate disposable account for the deletion portion of the recording.
 
+Guideline 2.3.10 — metadata: The App Store description does not mention Android or any other mobile store. Inside the iOS app, billing, privacy, and terms also omit Android and Google Play. Apple Maps and Google Maps are directions links from a pinned location, not another app store.
+
 Guideline 2.3.3 — screenshots: App Store screenshots are real in-app screens (search, results, map, account), not splash-only images. Paths and upload instructions are in ios/store/listing.txt (ios/store/screenshots/upload-iphone/ and ipad-13 sets).
 
 Guideline 3.1.1 — payments: No IAP products to create or submit. The iOS app never collects payment; seat purchase is website-only in Safari via Stripe.

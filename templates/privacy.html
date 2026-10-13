@@ -27,7 +27,11 @@
     <article class="legal-card">
       <h2>Privacy policy</h2>
       <p class="muted">Last updated September 17, 2026</p>
+      {% if ios_store %}
+      <p>This policy describes how <strong>Simba Services</strong> (“we,” “us”) collects, uses, and shares information when you use Well Navigation — the website at wellnav.simba.services and this app (together, the “Service”). Seat charges are processed by Stripe for <strong>MP Solutions</strong> on the website.</p>
+      {% else %}
       <p>This policy describes how <strong>Simba Services</strong> (“we,” “us”) collects, uses, and shares information when you use Well Navigation — the website at wellnav.simba.services, the iOS app, and the Google Play app (together, the “Service”). Seat charges are processed by Stripe for <strong>MP Solutions</strong> on the website.</p>
+      {% endif %}
       <p>Questions: <a href="mailto:wellnav@simba.services">wellnav@simba.services</a>.</p>
 
       <h3>1. Who this applies to</h3>
@@ -39,7 +43,7 @@
         <li>Work email address and a hashed password.</li>
         <li>Organization membership inferred from your email domain (people on the same company domain share an organization; the first account on a domain is the admin).</li>
         <li>Email one-time codes used to create an account or reset a password.</li>
-        <li>Last login, the date and time you open the app, and the date and time of each interaction on the website and in the iOS and Android apps.</li>
+        <li>Last login, the date and time you open the app, and the date and time of each interaction on the website{% if ios_store %} and in this app{% else %} and in the iOS and Android apps{% endif %}.</li>
       </ul>
       <h4>Workspace data you create</h4>
       <ul>
@@ -54,10 +58,10 @@
       <h4>What we do not collect</h4>
       <ul>
         <li>We do not sell personal information.</li>
-        <li>We do not use third-party advertising or analytics SDKs in the iOS or Google Play apps. Website analytics (Hotjar and/or Microsoft Clarity) run on wellnav.simba.services only, not inside those apps.</li>
+        <li>We do not use third-party advertising or analytics SDKs in {% if ios_store %}this app{% else %}the iOS or Google Play apps{% endif %}. Website analytics (Hotjar and/or Microsoft Clarity) run on wellnav.simba.services only, not inside {% if ios_store %}this app{% else %}those apps{% endif %}.</li>
         <li>Those apps do not request access to your contacts, photos, or microphone. Device location is optional. It is used when you save offline routes to pinned places, to navigate those saved routes while you are offline, and when you open directions to a disposal site so the app can estimate drive time. Live navigation stays on your device. Map pins otherwise use well, pipeline, and waste-site coordinates from public regulatory sources.</li>
         <li>We do not collect mobile numbers in the current Service.</li>
-        <li>Payment card numbers are not collected in the iOS or Google Play apps. Well Navigation is a paid workplace product. Billing is handled on the website in Safari or Chrome, not as an in-app purchase.</li>
+        <li>Payment card numbers are not collected in {% if ios_store %}this app{% else %}the iOS or Google Play apps{% endif %}. Well Navigation is a paid workplace product. Billing is handled on the website in {% if ios_store %}Safari{% else %}Safari or Chrome{% endif %}, not as an in-app purchase.</li>
       </ul>
       <p>Well, pipeline, permit, and waste-site records shown in the Service come from public regulatory and published sources. Those records describe industry facilities, not your personal identity, unless you choose to save them to your account.</p>
 
@@ -72,19 +76,23 @@
         <li>Operate, secure, and troubleshoot the Service.</li>
         <li>Understand website usage with Hotjar, Microsoft Clarity, and Contentsquare (page views, clicks, and optional session replay on wellnav.simba.services).</li>
       </ul>
+      {% if ios_store %}
+      <p>This app loads the same signed-in workspace over HTTPS. It is not a general-purpose browser and has no address bar.</p>
+      {% else %}
       <p>The iOS and Google Play apps load the same signed-in workspace over HTTPS. They are not general-purpose browsers and have no address bar.</p>
+      {% endif %}
 
       <h3>4. Cookies and session</h3>
-      <p>A session cookie keeps you signed in after you enter your email and password, including after you close the website or the iOS and Google Play apps. That cookie lasts until you sign out, and it is refreshed while you use the Service. Sign out ends the session. If you check Remember me, this device stores your email and password so the sign-in form can be filled in after you sign out. That copy stays on the device. It is removed when you sign in with Remember me unchecked, when you set a new password, or when you delete your account. The website may also set Hotjar, Microsoft Clarity, or Contentsquare cookies for usage analytics. We do not use advertising cookies. The iOS and Google Play apps do not load those scripts.</p>
+      <p>A session cookie keeps you signed in after you enter your email and password, including after you close the website or {% if ios_store %}this app{% else %}the iOS and Google Play apps{% endif %}. That cookie lasts until you sign out, and it is refreshed while you use the Service. Sign out ends the session. If you check Remember me, this device stores your email and password so the sign-in form can be filled in after you sign out. That copy stays on the device. It is removed when you sign in with Remember me unchecked, when you set a new password, or when you delete your account. The website may also set Hotjar, Microsoft Clarity, or Contentsquare cookies for usage analytics. We do not use advertising cookies. {% if ios_store %}This app does not load those scripts.{% else %}The iOS and Google Play apps do not load those scripts.{% endif %}</p>
 
       <h3>5. Sharing</h3>
       <p>We share information only as needed to run the Service:</p>
       <ul>
         <li><strong>Organization admins</strong> on your email domain can see your email and role, manage seats, and change your role or remove you from the organization. They cannot delete your account for you; you delete it yourself.</li>
-        <li><strong>Payments</strong> use Stripe on the website (Safari or Chrome) for MP Solutions. Stripe receives the card or wallet details you enter. We receive subscription status, seat quantity, and billing email — not your full card number. The iOS and Google Play apps do not open Stripe Checkout or collect cards.</li>
+        <li><strong>Payments</strong> use Stripe on the website ({% if ios_store %}Safari{% else %}Safari or Chrome{% endif %}) for MP Solutions. Stripe receives the card or wallet details you enter. We receive subscription status, seat quantity, and billing email — not your full card number. {% if ios_store %}This app does not open Stripe Checkout or collect cards.{% else %}The iOS and Google Play apps do not open Stripe Checkout or collect cards.{% endif %}</li>
         <li><strong>Email delivery</strong> uses our mail host (mail.simba.services) to send verification codes.</li>
         <li><strong>Maps</strong> in the browser or app load map tiles from providers such as Esri, OpenStreetMap, or USGS. Those providers may receive the tile request from your device. If you tap <strong>Save for offline</strong>, the app stores USGS tiles along the routes from your location to each pinned place, plus those route lines, on your device so the map still works without a signal. To build a driving route, our server sends the start and destination coordinates to the Open Source Routing Machine (<code>router.project-osrm.org</code>), which uses OpenStreetMap roads. We do not keep that location on the server. If a road route is unavailable, the app stores a direct line on your device instead. Esri tiles are not stored. You can remove the saved tiles and routes with <strong>Clear saved maps</strong>.</li>
-        <li><strong>Hotjar, Microsoft Clarity, and Contentsquare</strong> on the website receive page views, clicks, and session recordings so we can improve the product. Those scripts are not loaded in the iOS or Google Play apps.</li>
+        <li><strong>Hotjar, Microsoft Clarity, and Contentsquare</strong> on the website receive page views, clicks, and session recordings so we can improve the product. Those scripts are not loaded in {% if ios_store %}this app{% else %}the iOS or Google Play apps{% endif %}.</li>
         <li><strong>Simba Services UX recordings</strong> automatically capture signed-in workspace sessions for @simba.services accounts so we can review the product. Those files are stored on our server. They are not used for customer billing. Passwords are masked.</li>
         <li>We may disclose information if required by law or to protect the Service, our users, or the public.</li>
       </ul>
@@ -94,7 +102,7 @@
       <p>We keep account and workspace data while your account is open. Lookup cache entries expire on a short schedule. Server logs are kept only as long as needed for operations and security. When you delete your account, we remove your login, saved wells, and search/cache history associated with that account. Testing notes stay on your organization's board so the team keeps that feedback; you or an organization admin can remove a note from the board. Organization records that other people still use are kept. Residual copies may remain in encrypted backups for a limited period until those backups rotate.</p>
 
       <h3>7. Account deletion and your choices</h3>
-      <p>You can delete your account on the website or in the iOS or Google Play app: open <a href="/account">Account</a>, choose <strong>Delete account</strong>, enter your password, and type DELETE. That permanently removes your login, saved wells, and search history. Other people in your organization keep their own accounts.</p>
+      <p>You can delete your account on the website or in {% if ios_store %}this app{% else %}the iOS or Google Play app{% endif %}: open <a href="/account">Account</a>, choose <strong>Delete account</strong>, enter your password, and type DELETE. That permanently removes your login, saved wells, and search history. Other people in your organization keep their own accounts.</p>
       <p>You may also email <a href="mailto:wellnav@simba.services">wellnav@simba.services</a> to ask what personal information we hold, to correct it, or to request deletion if you cannot use the in-app flow.</p>
       <p>If you are a California resident, you may have rights under the CCPA/CPRA to know, delete, and correct personal information, and to opt out of “sale” or “sharing” as those terms are defined by statute. We do not sell or share personal information as those terms are defined. We will not discriminate against you for exercising those rights.</p>
 
@@ -105,7 +113,7 @@
       <p>The Service is operated from the United States and is intended for professional use related to U.S. oil and gas records. If you access it from another country, your information may be processed in the United States.</p>
 
       <h3>10. Payments</h3>
-      <p>Well Navigation is a paid professional workspace billed per organization seat. We do not process card numbers inside the iOS or Google Play apps, and those apps do not include in-app purchases. Subscription and seat charges are collected on the website by Stripe for MP Solutions.</p>
+      <p>Well Navigation is a paid professional workspace billed per organization seat. We do not process card numbers inside {% if ios_store %}this app, and it does not include in-app purchases{% else %}the iOS or Google Play apps, and those apps do not include in-app purchases{% endif %}. Subscription and seat charges are collected on the website by Stripe for MP Solutions.</p>
 
       <h3>11. Changes</h3>
       <p>We may update this policy. The “Last updated” date at the top will change. Material changes will be posted on this page. Continued use of the Service after an update means you accept the revised policy.</p>
