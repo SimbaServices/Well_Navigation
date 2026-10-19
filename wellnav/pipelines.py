@@ -118,6 +118,9 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA busy_timeout=60000")
+    from wellnav.textnorm import register as _register_textnorm
+
+    _register_textnorm(conn)
     return conn
 
 
@@ -432,22 +435,29 @@ def _contains(q: str) -> str:
     return f"%{(q or '').strip()}%"
 
 
+def _text_match(column: str, needle: str) -> tuple[str, list]:
+    from wellnav.textnorm import match_sql
+
+    return match_sql(column, needle)
+
+
 def search_operators(q: str, limit: int = 40, path: Path | None = None) -> list[dict]:
     needle = (q or "").strip()
     if len(needle) < 2:
         return []
     like = _contains(needle)
+    op_sql, op_args = _text_match("operator", needle)
     conn = connect(path)
     init_schema(conn)
     tables = listed_pipeline_tables(conn)
     union = " UNION ALL ".join(
         f"SELECT p5_num, operator, system_name, t4_permit, minx, miny, maxx, maxy FROM {table} "
-        f"WHERE operator LIKE ? OR p5_num LIKE ?"
+        f"WHERE {op_sql} OR p5_num LIKE ?"
         for table in tables
     )
     params: list = []
     for _ in tables:
-        params.extend([like, like])
+        params.extend([*op_args, like])
     rows = conn.execute(
         f"""
         SELECT
@@ -476,6 +486,8 @@ def search_systems(q: str, limit: int = 40, path: Path | None = None) -> list[di
     if len(needle) < 2:
         return []
     like = _contains(needle)
+    sys_sql, sys_args = _text_match("system_name", needle)
+    sub_sql, sub_args = _text_match("subsystem", needle)
     conn = connect(path)
     init_schema(conn)
     tables = listed_pipeline_tables(conn)
@@ -483,12 +495,12 @@ def search_systems(q: str, limit: int = 40, path: Path | None = None) -> list[di
         f"SELECT system_name, operator, p5_num, t4_permit, subsystem, pipeline_id, "
         f"minx, miny, maxx, maxy FROM {table} "
         f"WHERE IFNULL(TRIM(system_name), '') != '' "
-        f"AND (system_name LIKE ? OR subsystem LIKE ? OR pipeline_id LIKE ?)"
+        f"AND ({sys_sql} OR {sub_sql} OR pipeline_id LIKE ?)"
         for table in tables
     )
     params: list = []
     for _ in tables:
-        params.extend([like, like, like])
+        params.extend([*sys_args, *sub_args, like])
     rows = conn.execute(
         f"""
         SELECT

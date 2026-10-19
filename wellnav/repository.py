@@ -19,6 +19,7 @@ from wellnav.states import (
 )
 from wellnav.operators import collapse_operators, normalize_operator_name
 from wellnav.well_status import status_label, status_match_sql
+from wellnav.textnorm import match_sql
 
 
 def _states_arg(state: str | list[str] | None) -> list[str]:
@@ -81,9 +82,14 @@ def _column_filters_sql(columns: dict[str, str] | None, *, kind: str) -> tuple[s
         clauses.append(f"({expr}) LIKE ? ESCAPE '\\'")
         args.append(_contains_like(value))
 
+    def contains_text(column: str, value: str) -> None:
+        sql, extra = match_sql(column, value)
+        clauses.append(sql)
+        args.extend(extra)
+
     name = (columns.get("name") or "").strip()
     if name:
-        contains("well_name", name)
+        contains_text("well_name", name)
     api = (columns.get("api") or "").strip()
     if api:
         digits = "".join(ch for ch in api if ch.isdigit())
@@ -96,10 +102,10 @@ def _column_filters_sql(columns: dict[str, str] | None, *, kind: str) -> tuple[s
         contains(status_match_sql(kind), status)
     operator = (columns.get("operator") or "").strip()
     if operator:
-        contains("operator", operator)
+        contains_text("operator", operator)
     lease = (columns.get("lease") or "").strip()
     if lease:
-        contains("lease_name", lease)
+        contains_text("lease_name", lease)
     county = _county_needle(columns.get("county") or "")
     if county:
         contains("county", county)
@@ -343,7 +349,7 @@ class WellRepository:
         needle = (q or "").strip()
         if len(needle) < 2:
             return []
-        like = f"%{needle}%"
+        name_sql, name_args = match_sql("well_name", needle)
         cap = max(1, int(limit))
         collected: list[sqlite3.Row] = []
         for code in _states_arg(state):
@@ -355,12 +361,12 @@ class WellRepository:
                            wellhead_lat, wellhead_lon, toe_lat, toe_lon,
                            '{code}' AS state, 'as_drilled' AS kind, '' AS status
                     FROM {w}
-                    WHERE well_name LIKE ?
+                    WHERE {name_sql}
                       AND TRIM(COALESCE(well_name, '')) != ''
                     ORDER BY well_name COLLATE NOCASE, api
                     LIMIT ?
                     """,
-                    (like, cap),
+                    (*name_args, cap),
                 ).fetchall()
             )
             collected.extend(
@@ -370,13 +376,13 @@ class WellRepository:
                            wellhead_lat, wellhead_lon, NULL AS toe_lat, NULL AS toe_lon,
                            '{code}' AS state, 'permit' AS kind, status
                     FROM {p}
-                    WHERE well_name LIKE ?
+                    WHERE {name_sql}
                       AND TRIM(COALESCE(well_name, '')) != ''
                       AND status NOT IN ('migrated')
                     ORDER BY well_name COLLATE NOCASE, api
                     LIMIT ?
                     """,
-                    (like, cap),
+                    (*name_args, cap),
                 ).fetchall()
             )
         collected.sort(key=lambda row: ((row["well_name"] or "").upper(), row["api"] or ""))
@@ -413,7 +419,7 @@ class WellRepository:
         needle = (q or "").strip()
         if len(needle) < 2:
             return []
-        like = f"%{needle}%"
+        like = needle
         states = _states_arg(state)
         rows: list[sqlite3.Row] = []
         fetch_limit = max(limit * 8, 80)
@@ -501,22 +507,22 @@ class WellRepository:
         needle = (q or "").strip()
         if len(needle) < 2:
             return []
-        like = f"%{needle}%"
+        lease_sql, lease_args = match_sql("lease_name", needle)
         parts: list[str] = []
         args: list = []
         for code in _states_arg(state):
             w, p = wells_table(code), permits_table(code)
             parts.append(
                 f"SELECT lease_name AS name, lease_no, district, county FROM {w} "
-                f"WHERE lease_name LIKE ? AND lease_name IS NOT NULL AND lease_name != ''"
+                f"WHERE {lease_sql} AND lease_name IS NOT NULL AND lease_name != ''"
             )
-            args.append(like)
+            args.extend(lease_args)
             parts.append(
                 f"SELECT lease_name, lease_no, district, county FROM {p} "
-                f"WHERE lease_name LIKE ? AND lease_name IS NOT NULL AND lease_name != '' "
+                f"WHERE {lease_sql} AND lease_name IS NOT NULL AND lease_name != '' "
                 f"AND status NOT IN ('migrated')"
             )
-            args.append(like)
+            args.extend(lease_args)
         rows = self.conn.execute(
             f"{' UNION '.join(parts)} ORDER BY name LIMIT ?",
             (*args, limit),
@@ -541,6 +547,7 @@ class WellRepository:
         return self._search_operators_table("tx", like, limit)
 
     def _search_operators_table(self, state: str, like: str, limit: int) -> list[sqlite3.Row] | None:
+        """`like` is the raw search text; matching ignores punctuation and case."""
         table = operators_table(state)
         try:
             count = self.conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
@@ -552,28 +559,29 @@ class WellRepository:
             f"""
             SELECT operator_number AS number, operator_name AS name, 1 AS hits
             FROM {table}
-            WHERE operator_name LIKE ?
+            WHERE {match_sql("operator_name", like)[0]}
             ORDER BY name
             LIMIT ?
             """,
-            (like, limit),
+            (*match_sql("operator_name", like)[1], limit),
         ).fetchall()
 
     def _search_operators_from_wells(self, state: str, like: str, limit: int) -> list[sqlite3.Row]:
         w, p = wells_table(state), permits_table(state)
+        op_sql, op_args = match_sql("operator", like)
         return self.conn.execute(
             f"""
             SELECT operator_number AS number, operator AS name, COUNT(*) AS hits FROM {w}
-            WHERE operator LIKE ? AND TRIM(COALESCE(operator, '')) != ''
+            WHERE {op_sql} AND TRIM(COALESCE(operator, '')) != ''
             GROUP BY operator_number, operator
             UNION ALL
             SELECT operator_number, operator, COUNT(*) FROM {p}
-            WHERE operator LIKE ? AND TRIM(COALESCE(operator, '')) != ''
+            WHERE {op_sql} AND TRIM(COALESCE(operator, '')) != ''
               AND status NOT IN ('migrated')
             GROUP BY operator_number, operator
             ORDER BY name LIMIT ?
             """,
-            (like, like, limit),
+            (*op_args, *op_args, limit),
         ).fetchall()
 
     def _filters(
@@ -619,9 +627,9 @@ class WellRepository:
         if mode == "operator":
             if operator_number:
                 return "operator_number = ?", [operator_number]
-            return "operator LIKE ?", [f"%{q}%"]
+            return match_sql("operator", q)
         if q:
-            return "well_name LIKE ?", [f"%{q}%"]
+            return match_sql("well_name", q)
         return "1=1", []
 
     def _stacked_filters(
@@ -649,8 +657,9 @@ class WellRepository:
                 args.extend(names)
             clauses.append(f"({' OR '.join(parts)})")
         if name:
-            clauses.append("well_name LIKE ?")
-            args.append(f"%{name}%")
+            name_sql, name_args = match_sql("well_name", name)
+            clauses.append(name_sql)
+            args.extend(name_args)
         if api:
             eight = _api8(api)
             if eight:

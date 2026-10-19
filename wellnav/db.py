@@ -111,6 +111,9 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path), timeout=60, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    from wellnav.textnorm import register as _register_textnorm
+
+    _register_textnorm(conn)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA foreign_keys=ON")
