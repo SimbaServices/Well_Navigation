@@ -96,6 +96,9 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA busy_timeout=60000")
+    from wellnav.textnorm import register as _register_textnorm
+
+    _register_textnorm(conn)
     return conn
 
 
@@ -418,9 +421,13 @@ def search_sites(
     if len(needle) < 2:
         return []
     like = _contains(needle)
+    from wellnav.textnorm import match_sql
+
+    op_sql, op_args = match_sql("operator", needle)
+    fac_sql, fac_args = match_sql("facility", needle)
     if kind == "operator":
-        where = "operator LIKE ?"
-        params: tuple = (like,)
+        where = op_sql
+        params: tuple = tuple(op_args)
     elif kind == "permit":
         where = "permit_no LIKE ?"
         params = (like,)
@@ -428,8 +435,8 @@ def search_sites(
         where = "county LIKE ?"
         params = (like,)
     else:
-        where = "facility LIKE ? OR operator LIKE ? OR permit_no LIKE ? OR county LIKE ?"
-        params = (like, like, like, like)
+        where = f"{fac_sql} OR {op_sql} OR permit_no LIKE ? OR county LIKE ?"
+        params = (*fac_args, *op_args, like, like)
     conn = connect(path)
     init_schema(conn)
     try:
