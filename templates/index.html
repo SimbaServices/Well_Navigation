@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <title>Well Navigation</title>
   <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/static/css/app.css?v=layers31">
+  <link rel="stylesheet" href="/static/css/app.css?v=layers35">
   {% include 'partials/store_boot.html' %}
   <script src="/static/vendor/htmx.min.js"></script>
   <script src="/static/vendor/leaflet/leaflet.js"></script>
@@ -70,6 +70,7 @@
         </div>
         <div id="operator-suggest"></div>
       </div>
+      <div id="filter-chips" class="active-chips" aria-label="Active search filters" hidden></div>
       <button type="submit" class="primary sr-only" name="commit" value="1">Search</button>
 
       {% set scope = search_prefs.scope if search_prefs is defined else 'wells' %}
@@ -298,7 +299,8 @@
   <script src="/static/js/disposal-ux.js?v=5"></script>
   <script src="/static/js/map.js?v=layers31"></script>
   <script src="/static/js/layers.js?v=11"></script>
-  <script src="/static/js/column-filter.js?v=5"></script>
+  <script src="/static/js/column-filter.js?v=6"></script>
+  <script src="/static/js/search-filters.js?v=1"></script>
   {% include 'partials/ux_capture.html' %}
 </body>
 </html>
