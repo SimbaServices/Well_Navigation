@@ -35,3 +35,11 @@ keystore.properties
 # Contentsquare wizard (generated)
 .cs-wizard/
 .cursor/
+
+# Local edit backups and database files
+*.bak-*
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db-wal
+*.db-shm
