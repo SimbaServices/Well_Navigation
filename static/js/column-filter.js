@@ -117,8 +117,8 @@
     if (!input) return;
     event.preventDefault();
     syncHidden(input);
-    if (isLocalFilter(input)) return;
-    if (window.htmx) window.htmx.trigger(input, "search");
+    if (!isLocalFilter(input) && window.htmx) window.htmx.trigger(input, "search");
+    confirmClose(input);
   });
 
   document.addEventListener("submit", (event) => {
@@ -128,9 +128,15 @@
     const input = form.querySelector(".col-filter-input");
     if (!input) return;
     syncHidden(input);
-    if (isLocalFilter(input) || !window.htmx) return;
-    window.htmx.trigger(input, "search");
+    if (!isLocalFilter(input) && window.htmx) window.htmx.trigger(input, "search");
+    confirmClose(input);
   });
+
+  /* Enter / keyboard check mark: filter is applied, so close the box and drop the keyboard. */
+  function confirmClose(input) {
+    closeFilters(null);
+    if (typeof input.blur === "function") input.blur();
+  }
 
   function onFilterEdit(event) {
     const input = event.target && event.target.closest && event.target.closest(".col-filter-input");

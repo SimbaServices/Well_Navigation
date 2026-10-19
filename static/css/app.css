@@ -2709,3 +2709,27 @@ table.wells.pins-table .ghost {
     pointer-events: auto !important;
   }
 }
+
+/* Fuzzy search suggestions: bounded, scrollable dropdown above the map. */
+.stage-search #operator-suggest {
+  position: relative;
+  z-index: 40;
+  max-height: min(360px, calc(100dvh - 7rem - var(--safe-top, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Header filters: iOS zooms the page when a focused input is under 16px,
+   and quick taps on headers can trigger double-tap zoom. */
+table th.col-sortable,
+table th .col-filter-toggle { touch-action: manipulation; }
+@media (pointer: coarse), (max-width: 960px) {
+  .col-filter input { font-size: 16px; }
+}
+
+/* Active search filter chips under the search box */
+.active-chips { margin: 0.3rem 0 0; }
+.active-chips[hidden] { display: none; }
+#wells-count .clear-all { margin-left: 0.25rem; }

@@ -53,7 +53,8 @@
 {% macro count_line() -%}
 <p class="muted" id="wells-count"{% if column_partial %} hx-swap-oob="outerHTML"{% endif %}>
   {% if subtitle %}{{ subtitle }} · {% endif %}
-  {% if total %}{{ start }}–{{ end }} of {{ total }}{% else %}No matches{% endif %}
+  {% set n_active = (f.operators|default([])|selectattr('active')|list|length) + (1 if (f.name and f.name_active) else 0) + (1 if (f.api and f.api_active) else 0) + (cols|length) + (1 if lease_no else 0) %}
+  {% if total %}{{ start }}–{{ end }} of {{ total }}{% else %}No matches{% if n_active %} — No results with {{ n_active }} active filter{{ '' if n_active == 1 else 's' }}. <button type="button" class="ghost clear-all" data-clear-filters="1">Clear filters</button>{% endif %}{% endif %}
   {% if from_cache %}<span class="pill">cached</span>{% endif %}
 </p>
 {%- endmacro %}
